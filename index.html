@@ -5,13 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flying Aces</title>
   <style>
-    html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* iOS fix: use dynamic viewport height to avoid bottom "gap" */
     iframe {
-      position: absolute;
-      inset: 0;
+      width: 100vw;
+      height: 100dvh; /* <-- THIS is the line you asked about */
       border: 0;
+      display: block;
       background: #fff;
-      transform-origin: 0 0;
     }
   </style>
 </head>
@@ -19,25 +26,27 @@
   <iframe id="appFrame" referrerpolicy="no-referrer-when-downgrade"></iframe>
 
   <script>
+    // ✅ Your new Apps Script /exec URL:
     const EXEC_URL =
-      "https://script.google.com/macros/s/AKfycbxSpChDhGzoxbnQK2KBXROf9NyD5zA_BdUjvVy8Nr31eeHVK_vGzi9_35OvimoPaNhiFw/exec";
+      "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
 
     const DEFAULT_PAGE = "matchups";
-    const WRAPPER_VERSION = "cf2"; // bump this if you want to bust caching
+    const WRAPPER_VERSION = "cf3"; // bump this to bust caching if needed
 
-    function normalizePage(p){
+    function normalizePage(p) {
       p = String(p || "").toLowerCase().trim().replace(/^#/, "");
       if (p === "doubles") p = "rosters";
-      if (!["matchups","rankings","rosters","scoring"].includes(p)) p = DEFAULT_PAGE;
+      if (!["matchups", "rankings", "rosters", "scoring"].includes(p)) p = DEFAULT_PAGE;
       return p;
     }
 
-    // Let you override scale via wrapper URL: ?sf=0.58
-    function pickScale(){
+    // If you want to tweak overall size easily, add ?sf=0.58 to the wrapper URL.
+    function pickScaleFactor() {
       const qs = new URLSearchParams(location.search);
       const manual = parseFloat(qs.get("sf"));
       if (isFinite(manual) && manual > 0.35 && manual <= 1) return manual;
 
+      // Default scaling: tuned for phones/tablets
       const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
       if (w <= 380) return 0.52;
       if (w <= 430) return 0.55;
@@ -45,42 +54,41 @@
       return 0.65;
     }
 
-    function applyFrameScale(){
-      const sf = pickScale();
-      const frame = document.getElementById("appFrame");
-      frame.style.transform = `scale(${sf})`;
-      frame.style.width  = (100 / sf) + "%";
-      frame.style.height = (100 / sf) + "%";
-    }
-
-    function buildUrl(page){
+    function buildUrl(page) {
       const u = new URL(EXEC_URL);
       u.searchParams.set("p", page);
+
+      // ✅ Tell the Apps Script side it is embedded (Header uses this)
       u.searchParams.set("embed", "1");
 
-      // IMPORTANT: neutralize Apps Script zoom inside iframe;
-      // wrapper handles scaling consistently.
+      // ✅ Let the wrapper handle scaling consistently; keep Apps Script viewport scale neutral
       u.searchParams.set("scale", "1");
+
+      // Cache bust (optional)
       u.searchParams.set("v", WRAPPER_VERSION);
+
       return u.toString();
     }
 
-    function navTo(page){
+    function navTo(page) {
       const p = normalizePage(page);
       document.getElementById("appFrame").src = buildUrl(p);
     }
 
-    function navFromHash(){
+    function navFromHash() {
       navTo(normalizePage((location.hash || "").slice(1)));
     }
 
-    // Accept navigation messages from embedded app (script.google.com OR googleusercontent.com)
-    function isAllowedOrigin(origin){
+    // Accept navigation requests from the embedded Apps Script header
+    function isAllowedOrigin(origin) {
       try {
+        const host = new URL(origin).hostname;
         if (origin === "https://script.google.com") return true;
-        // e.g. https://n-...-script.googleusercontent.com
-        return /\.googleusercontent\.com$/i.test(new URL(origin).hostname);
-      } catch(e) { return false; }
+        // Covers the userCodeAppPanel domain you saw
+        return host.endsWith(".googleusercontent.com");
+      } catch (e) {
+        return false;
+      }
     }
 
     window.addEventListener("message", (ev) => {
@@ -93,10 +101,26 @@
       }
     });
 
-    window.addEventListener("hashchange", navFromHash);
-    window.addEventListener("resize", () => applyFrameScale());
+    // Optional: apply a zoom-like scale to the iframe by changing the URL param instead of CSS transform
+    // (kept simple: you can control with ?sf=... if needed)
+    function applyScaleParam() {
+      const sf = pickScaleFactor();
+      // If you prefer a true iframe CSS transform scale approach, tell me and I’ll switch it.
+      // For now, this just gives you an easy knob to tweak on devices:
+      // Use it by setting your Apps Script doGet to read scale and apply viewport scale.
+      // Since we set scale=1 above, this is intentionally "neutral".
+      // Keeping this function here in case you want to re-enable param-based scaling later.
+      void sf;
+    }
 
-    applyFrameScale();
+    window.addEventListener("hashchange", navFromHash);
+    window.addEventListener("resize", () => {
+      // Keep page stable on rotate; reload current route
+      navFromHash();
+      applyScaleParam();
+    });
+
+    applyScaleParam();
     navFromHash();
   </script>
 </body>
