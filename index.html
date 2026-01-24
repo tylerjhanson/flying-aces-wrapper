@@ -5,24 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flying Aces</title>
   <style>
-    html, body { height: 100%; margin: 0; }
-    iframe { width: 100vw; height: 100vh; border: 0; display:block; background:#fff; }
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+    iframe {
+      position: absolute;
+      inset: 0;
+      border: 0;
+      background: #fff;
+      transform-origin: 0 0;
+    }
   </style>
 </head>
 <body>
   <iframe id="appFrame" referrerpolicy="no-referrer-when-downgrade"></iframe>
 
   <script>
-    const EXEC_URL = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
-    const DEFAULT_PAGE = "matchups";
+    const EXEC_URL =
+      "https://script.google.com/macros/s/AKfycbxSpChDhGzoxbnQK2KBXROf9NyD5zA_BdUjvVy8Nr31eeHVK_vGzi9_35OvimoPaNhiFw/exec";
 
-    function pickScale(){
-      const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
-      if (w <= 380) return 0.52;
-      if (w <= 430) return 0.55;
-      if (w <= 520) return 0.60;
-      return 0.65;
-    }
+    const DEFAULT_PAGE = "matchups";
+    const WRAPPER_VERSION = "cf2"; // bump this if you want to bust caching
 
     function normalizePage(p){
       p = String(p || "").toLowerCase().trim().replace(/^#/, "");
@@ -31,25 +32,59 @@
       return p;
     }
 
+    // Let you override scale via wrapper URL: ?sf=0.58
+    function pickScale(){
+      const qs = new URLSearchParams(location.search);
+      const manual = parseFloat(qs.get("sf"));
+      if (isFinite(manual) && manual > 0.35 && manual <= 1) return manual;
+
+      const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
+      if (w <= 380) return 0.52;
+      if (w <= 430) return 0.55;
+      if (w <= 520) return 0.60;
+      return 0.65;
+    }
+
+    function applyFrameScale(){
+      const sf = pickScale();
+      const frame = document.getElementById("appFrame");
+      frame.style.transform = `scale(${sf})`;
+      frame.style.width  = (100 / sf) + "%";
+      frame.style.height = (100 / sf) + "%";
+    }
+
     function buildUrl(page){
       const u = new URL(EXEC_URL);
       u.searchParams.set("p", page);
       u.searchParams.set("embed", "1");
-      u.searchParams.set("scale", String(pickScale()));
+
+      // IMPORTANT: neutralize Apps Script zoom inside iframe;
+      // wrapper handles scaling consistently.
+      u.searchParams.set("scale", "1");
+      u.searchParams.set("v", WRAPPER_VERSION);
       return u.toString();
     }
 
     function navTo(page){
-      document.getElementById("appFrame").src = buildUrl(normalizePage(page));
+      const p = normalizePage(page);
+      document.getElementById("appFrame").src = buildUrl(p);
     }
 
     function navFromHash(){
       navTo(normalizePage((location.hash || "").slice(1)));
     }
 
-    // Accept nav requests from the embedded app Header
+    // Accept navigation messages from embedded app (script.google.com OR googleusercontent.com)
+    function isAllowedOrigin(origin){
+      try {
+        if (origin === "https://script.google.com") return true;
+        // e.g. https://n-...-script.googleusercontent.com
+        return /\.googleusercontent\.com$/i.test(new URL(origin).hostname);
+      } catch(e) { return false; }
+    }
+
     window.addEventListener("message", (ev) => {
-      if (ev.origin !== "https://script.google.com") return;
+      if (!isAllowedOrigin(ev.origin)) return;
       const d = ev.data || {};
       if (d.type === "FA_NAV" && d.page) {
         const p = normalizePage(d.page);
@@ -59,11 +94,9 @@
     });
 
     window.addEventListener("hashchange", navFromHash);
-    window.addEventListener("resize", () => {
-      // optional: re-apply scale on rotate/resize
-      navFromHash();
-    });
+    window.addEventListener("resize", () => applyFrameScale());
 
+    applyFrameScale();
     navFromHash();
   </script>
 </body>
