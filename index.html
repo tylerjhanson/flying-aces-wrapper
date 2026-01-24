@@ -6,23 +6,23 @@
   <title>Flying Aces</title>
   <style>
     html, body { height: 100%; margin: 0; }
-    body { background: #000; }
-    iframe {
-      width: 100vw;
-      height: 100vh;
-      border: 0;
-      display: block;
-      background: #fff;
-    }
+    iframe { width: 100vw; height: 100vh; border: 0; display:block; background:#fff; }
   </style>
 </head>
 <body>
   <iframe id="appFrame" referrerpolicy="no-referrer-when-downgrade"></iframe>
 
   <script>
-    const EXEC_URL = "https://script.google.com/macros/s/AKfycbzhjEdNVIx7ZIIbEhK4x19mor2UvdmWizLkfgdpCwp6XaD-0V99jw1S3Z13d1VKPeQ/exec";
+    const EXEC_URL = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
     const DEFAULT_PAGE = "matchups";
-    const DEFAULT_SCALE = "0.65"; // adjust if you want
+
+    function pickScale(){
+      const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
+      if (w <= 380) return 0.52;
+      if (w <= 430) return 0.55;
+      if (w <= 520) return 0.60;
+      return 0.65;
+    }
 
     function normalizePage(p){
       p = String(p || "").toLowerCase().trim().replace(/^#/, "");
@@ -35,21 +35,19 @@
       const u = new URL(EXEC_URL);
       u.searchParams.set("p", page);
       u.searchParams.set("embed", "1");
-      u.searchParams.set("scale", DEFAULT_SCALE);
+      u.searchParams.set("scale", String(pickScale()));
       return u.toString();
     }
 
     function navTo(page){
-      const p = normalizePage(page);
-      document.getElementById("appFrame").src = buildUrl(p);
+      document.getElementById("appFrame").src = buildUrl(normalizePage(page));
     }
 
     function navFromHash(){
-      const page = normalizePage((location.hash || "").slice(1));
-      navTo(page);
+      navTo(normalizePage((location.hash || "").slice(1)));
     }
 
-    // Allow the embedded app (Header) to ask us to navigate so the hash stays correct.
+    // Accept nav requests from the embedded app Header
     window.addEventListener("message", (ev) => {
       if (ev.origin !== "https://script.google.com") return;
       const d = ev.data || {};
@@ -61,6 +59,11 @@
     });
 
     window.addEventListener("hashchange", navFromHash);
+    window.addEventListener("resize", () => {
+      // optional: re-apply scale on rotate/resize
+      navFromHash();
+    });
+
     navFromHash();
   </script>
 </body>
