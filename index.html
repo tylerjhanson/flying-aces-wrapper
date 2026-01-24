@@ -1,251 +1,93 @@
-<style>
-/* ======================
-   HEADER LAYOUT
-   ====================== */
-.fa-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flying Aces</title>
 
-  /* ✅ IMPORTANT: don't add extra horizontal inset on top of body padding */
-  padding: 0 !important;
-
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  box-sizing: border-box;
-}
-
-/* Match Rankings control-content + input-grid spacing */
-.fa-header .fa-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px !important;
-
-  /* ✅ same as Rankings .control-content padding */
-  padding: 8px 6px !important;
-
-  margin: 0 !important;
-
-  /* ✅ remove the "frame" look */
-  border: none !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-}
-
-/* ======================
-   TAB BUTTONS
-   ====================== */
-.fa-header .fa-tabs a,
-.fa-header .fa-tabs a:visited,
-.fa-header .fa-tabs a:link {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box !important;
-
-  font-family: "Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight: 900 !important;
-  font-size: 20px !important;
-  letter-spacing: 0.2px !important;
-  line-height: 1 !important;
-
-  /* ✅ match Rankings label height */
-  height: 50px !important;
-  min-height: 50px !important;
-
-  padding: 0 10px !important;
-
-  text-decoration: none !important;
-  color: #222 !important;
-
-  /* Match Rankings rounding */
-  border-radius: 8px !important;
-
-  /* Remove border so it doesn't feel inset */
-  border: none !important;
-
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
-
-  transition:
-    background .18s ease,
-    color .18s ease,
-    box-shadow .18s ease,
-    transform .08s ease;
-}
-
-.fa-header .fa-tabs a:not(.active):hover {
-  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
-}
-
-.fa-header .fa-tabs a.active {
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-
-  filter: brightness(1.06);
-
-  height: 50px !important;
-  min-height: 50px !important;
-}
-
-.fa-header .fa-tabs a:active {
-  transform: scale(0.99);
-}
-
-@media (max-width: 420px) {
-  .fa-header .fa-tabs {
-    padding: 6px 6px !important;
-  }
-  .fa-header .fa-tabs a,
-  .fa-header .fa-tabs a.active {
-    height: 46px !important;
-    min-height: 46px !important;
-    font-size: 18px !important;
-    padding: 0 8px !important;
-  }
-}
-</style>
-
-<div class="fa-header">
-  <nav class="fa-tabs">
-    <a id="nav-rankings" href="?p=rankings">RANKINGS</a>
-    <a id="nav-scoring"  href="?p=scoring">SCORING</a>
-    <a id="nav-rosters"  href="?p=rosters">ROSTERS</a>
-    <a id="nav-matchups" href="?p=matchups">MATCHUPS</a>
-  </nav>
-</div>
-
-<script>
-(function () {
-  function getParam(name){
-    try {
-      var q = window.location.search || '';
-      var m = q.match(new RegExp('[?&]' + name + '=([^&]+)'));
-      return m ? decodeURIComponent(m[1].replace(/\+/g,' ')) : '';
-    } catch(e){ return ''; }
-  }
-
-  var map = {
-    'nav-rankings': 'rankings',
-    'nav-scoring':  'scoring',
-    'nav-rosters':  'rosters',
-    'nav-matchups': 'matchups'
-  };
-
-  // ✅ Consider "embedded" if embed=1 OR we’re inside any iframe
-  var embedRaw = (getParam('embed') || '').toLowerCase();
-  var isEmbedParam = (embedRaw === '1' || embedRaw === 'true' || embedRaw === 'yes');
-
-  var isInIframe = false;
-  try { isInIframe = (window.top !== window); } catch (e) { isInIframe = true; }
-
-  var isEmbed = isEmbedParam || isInIframe;
-
-  // Preserve across clicks if present
-  var scale = getParam('scale');
-  var v     = getParam('v');
-
-  function extraQS(){
-    var parts = [];
-    // If we’re embedded, keep embed=1 so subsequent pages stay in embed mode
-    if (isEmbed) parts.push('embed=1');
-    if (scale)   parts.push('scale=' + encodeURIComponent(scale));
-    if (v)       parts.push('v=' + encodeURIComponent(v));
-    return parts.length ? ('&' + parts.join('&')) : '';
-  }
-
-  function postNav(page){
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type:'FA_NAV', page: page }, '*');
-        return true;
-      }
-    } catch(e){}
-    return false;
-  }
-
-  // Wire up links
-  Object.keys(map).forEach(function(id){
-    var a = document.getElementById(id);
-    if (!a) return;
-
-    a.removeAttribute('target');
-
-    var href = '?p=' + map[id] + extraQS();
-    a.href = href;
-
-    if (isEmbed) {
-      // Stay inside wrapper
-      a.setAttribute('target', '_self');
-      a.addEventListener('click', function(ev){
-        ev.preventDefault();
-        // Parent wrapper keeps pages.dev/#... in sync; fallback navigates inside iframe
-        if (!postNav(map[id])) window.location.href = href;
-      }, { capture:true });
-    } else {
-      // Normal top-level usage (no iframe): regular navigation
-      a.setAttribute('target', '_self');
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden;
     }
-  });
 
-  // Active tab logic (same approach as your stable file)
-  function setActiveKey(key){
-    key = String(key || '').toLowerCase();
-    if (key === 'doubles') key = 'rosters';
-
-    var ids = {
-      rankings: 'nav-rankings',
-      scoring:  'nav-scoring',
-      rosters:  'nav-rosters',
-      matchups: 'nav-matchups'
-    };
-
-    var all = document.querySelectorAll('.fa-tabs a');
-    all.forEach(function(x){ x.classList.remove('active'); });
-
-    var el = document.getElementById(ids[key] || ids.matchups);
-    if (el) el.classList.add('active');
-  }
-
-  function detectActive(){
-    try {
-      var p = (getParam('p') || '').toLowerCase();
-      if (p === 'doubles') p = 'rosters';
-      if (p && ['rankings','scoring','rosters','matchups'].indexOf(p) !== -1) {
-        setActiveKey(p); return;
-      }
-
-      if (document.getElementById('panel-CURRENT')) { setActiveKey('rosters'); return; }
-      if (document.getElementById('team1Table') || document.getElementById('team2Table')) { setActiveKey('matchups'); return; }
-      if (document.getElementById('table-body')) { setActiveKey('rankings'); return; }
-      if (document.getElementById('b1') || document.getElementById('b2') || document.getElementById('b9')) { setActiveKey('scoring'); return; }
-
-      var t = (document.title || '').toLowerCase();
-      if (t.indexOf('ranking') !== -1) { setActiveKey('rankings'); return; }
-      if (t.indexOf('scor')    !== -1) { setActiveKey('scoring');  return; }
-      if (t.indexOf('roster')  !== -1) { setActiveKey('rosters');  return; }
-      if (t.indexOf('double')  !== -1) { setActiveKey('rosters');  return; }
-      if (t.indexOf('matchup') !== -1) { setActiveKey('matchups'); return; }
-
-      setActiveKey('matchups');
-    } catch (e) {
-      setActiveKey('matchups');
+    /* ✅ THIS is where your iframe sizing goes */
+    iframe {
+      width: 100vw;
+      height: 100vh;   /* fallback */
+      height: 100dvh;  /* modern mobile */
+      border: 0;
+      display: block;
+      background: #fff;
     }
-  }
+  </style>
+</head>
 
-  document.addEventListener('DOMContentLoaded', detectActive);
-  window.addEventListener('load', function(){ setTimeout(detectActive, 0); });
+<body>
+  <iframe id="app" title="Flying Aces"></iframe>
 
-  // Immediate feedback on click
-  var tabs = document.querySelectorAll('.fa-tabs a');
-  tabs.forEach(function(a){
-    a.addEventListener('click', function(){
-      tabs.forEach(function(x){ x.classList.remove('active'); });
-      a.classList.add('active');
-    }, { capture: true });
-  });
-})();
-</script>
+  <script>
+  (() => {
+    // ✅ Your Apps Script Web App exec URL
+    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+
+    // ✅ This is passed into doGet(e).parameter.scale
+    // Set this to match how your direct Apps Script app looks on mobile.
+    const SCALE = "0.65";
+
+    const DEFAULT_PAGE = "matchups";
+    const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+
+    function normalizePage(p) {
+      p = String(p || "").toLowerCase().replace(/^#/, "");
+      if (!allowed.has(p)) p = DEFAULT_PAGE;
+      if (p === "doubles") p = "rosters";
+      return p;
+    }
+
+    function buildSrc(page) {
+      const p = normalizePage(page);
+      const u = new URL(EXEC);
+      u.searchParams.set("p", p);
+      u.searchParams.set("embed", "1");
+      u.searchParams.set("scale", SCALE);
+
+      // cache-bust when switching pages (helps when Google caches HTML)
+      u.searchParams.set("v", Date.now().toString(36));
+
+      return u.toString();
+    }
+
+    const iframe = document.getElementById("app");
+
+    function loadFromHash() {
+      const page = normalizePage(location.hash.slice(1));
+      iframe.src = buildSrc(page);
+    }
+
+    // Header inside the iframe should post: { type:'FA_NAV', page:'rankings' }
+    window.addEventListener("message", (ev) => {
+      const d = ev && ev.data;
+      if (!d || d.type !== "FA_NAV") return;
+
+      const page = normalizePage(d.page);
+      const cur = normalizePage(location.hash.slice(1));
+
+      if (page !== cur) {
+        location.hash = "#" + page;
+      } else {
+        iframe.src = buildSrc(page);
+      }
+    });
+
+    window.addEventListener("hashchange", loadFromHash);
+
+    if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
+    loadFromHash();
+  })();
+  </script>
+</body>
+</html>
