@@ -20,15 +20,6 @@
       background: #fff;
     }
 
-    /* We scale THIS wrapper (more reliable than scaling the iframe directly on iOS) */
-    #scaled {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: 0 0;
-      will-change: transform;
-    }
-
     #app {
       width: 100%;
       height: 100%;
@@ -36,20 +27,35 @@
       display: block;
       background: #fff;
     }
+
+    /* tiny debug badge so we can confirm the wrapper is live + which scale is applied */
+    #dbg {
+      position: fixed;
+      left: 8px;
+      bottom: 8px;
+      z-index: 999999;
+      padding: 6px 8px;
+      border-radius: 10px;
+      font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      pointer-events: none;
+      white-space: pre;
+    }
   </style>
 </head>
 <body>
   <div id="frameWrap">
-    <div id="scaled">
-      <iframe id="app" title="Flying Aces"></iframe>
-    </div>
+    <iframe id="app" title="Flying Aces"></iframe>
   </div>
+  <div id="dbg"></div>
 
   <script>
   (() => {
     const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
     const DEFAULT_PAGE = "matchups";
     const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+    const WRAPPER_VER = "scale-param-v1";
 
     function normalizePage(p) {
       p = String(p || "").toLowerCase().replace(/^#/, "");
@@ -58,15 +64,14 @@
       return p;
     }
 
-    // Supports:
-    //   https://.../?sf=0.66#matchups  (recommended)
-    // Also recovers:
-    //   https://.../#matchups?sf=0.66  (old/wrong order)
+    // Optional manual override:
+    //   https://YOUR.pages.dev/?sf=0.72#matchups
     function getSfFromUrl() {
       const qs = new URLSearchParams(location.search || "");
       const v1 = parseFloat(qs.get("sf"));
       if (isFinite(v1)) return v1;
 
+      // If someone put ?sf= in the hash by accident, try to recover it
       const h = String(location.hash || "");
       const idx = h.indexOf("?");
       if (idx !== -1) {
@@ -81,41 +86,64 @@
       const manual = getSfFromUrl();
       if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
 
-      // ✅ FINAL default that you tested
-      return 0.66;
+      const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
+
+      // Tuned to match your "direct Apps Script" mobile look.
+      if (w <= 380) return 0.70;
+      if (w <= 430) return 0.72;
+      if (w <= 520) return 0.78;
+      return 1.00;
     }
 
-    const scaled = document.getElementById("scaled");
     const iframe = document.getElementById("app");
+    const dbg = document.getElementById("dbg");
 
-    function applyScale() {
-      const s = pickScale();
-      // expand layout box, then scale down/up so visible area matches viewport
-      scaled.style.width = (100 / s) + "vw";
-      scaled.style.height = (100 / s) + "vh";
-      scaled.style.transform = "scale(" + s + ")";
-      return s;
+    function updateDbg(s) {
+      dbg.textContent =
+        "Wrapper: " + WRAPPER_VER + "\n" +
+        "scale=" + s.toFixed(3) + "  (try ?sf=0.72)\n" +
+        "vw=" + (window.innerWidth||0) + "  vh=" + (window.innerHeight||0) + "\n" +
+        "hash=" + location.hash;
     }
 
     function buildSrc(page) {
       const p = normalizePage(page);
+      const s = pickScale();
+
       const u = new URL(EXEC);
       u.searchParams.set("p", p);
 
-      // Keep Apps Script viewport neutral; wrapper controls sizing
-      u.searchParams.set("scale", "1");
+      // ✅ Let Apps Script set the viewport scale (prevents 100vh/scroll bugs from transform scaling)
+      u.searchParams.set("scale", String(s));
       u.searchParams.set("embed", "1");
 
       // cache-bust to avoid Google HTML caching
       u.searchParams.set("v", Date.now().toString(36));
+
+      updateDbg(s);
       return u.toString();
     }
 
     function loadFromHash() {
-      // Allow hashes like #matchups?sf=0.66 (ignore the ? part for routing)
       const raw = location.hash.slice(1);
       const page = normalizePage(raw.split("?")[0]);
       iframe.src = buildSrc(page);
+    }
+
+    function maybeRefreshScale() {
+      // If the viewport width/height changed enough (rotate), reload the current page with the new scale.
+      const cur = normalizePage(location.hash.slice(1).split("?")[0]);
+      const want = pickScale();
+      let have = NaN;
+      try {
+        const u = new URL(iframe.src);
+        have = parseFloat(u.searchParams.get("scale") || "NaN");
+      } catch (e) {}
+      updateDbg(want);
+
+      if (!isFinite(have) || Math.abs(want - have) > 0.01) {
+        iframe.src = buildSrc(cur);
+      }
     }
 
     window.addEventListener("message", (ev) => {
@@ -131,18 +159,22 @@
     });
 
     window.addEventListener("hashchange", () => {
-      applyScale();
       loadFromHash();
     });
 
     window.addEventListener("resize", () => {
-      applyScale();
-      // no need to reload iframe on resize
+      // On most devices this is just URL bar show/hide; don't spam reloads.
+      updateDbg(pickScale());
+    });
+
+    window.addEventListener("orientationchange", () => {
+      // Rotation actually changes effective layout; reload current view with updated scale param.
+      setTimeout(maybeRefreshScale, 200);
     });
 
     if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
 
-    applyScale();
+    updateDbg(pickScale());
     loadFromHash();
   })();
   </script>
