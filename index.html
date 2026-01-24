@@ -9,27 +9,64 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      background: #fff;
       overflow: hidden;
+      background: #fff;
     }
-    iframe {
-      width: 100vw;
-      height: 100vh;   /* fallback */
-      height: 100dvh;  /* iOS/modern mobile */
+
+    #frameWrap {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    /* We scale THIS wrapper (more reliable than scaling the iframe directly on iOS) */
+    #scaled {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
       border: 0;
       display: block;
       background: #fff;
     }
+
+    /* tiny debug badge so we can confirm the wrapper is live + which scale is applied */
+    #dbg {
+      position: fixed;
+      left: 8px;
+      bottom: 8px;
+      z-index: 999999;
+      padding: 6px 8px;
+      border-radius: 10px;
+      font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      pointer-events: none;
+      white-space: pre;
+    }
   </style>
 </head>
 <body>
-  <iframe id="app" title="Flying Aces"></iframe>
+  <div id="frameWrap">
+    <div id="scaled">
+      <iframe id="app" title="Flying Aces"></iframe>
+    </div>
+  </div>
+  <div id="dbg"></div>
 
   <script>
   (() => {
-    const EXEC = 'https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec';
+    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
     const DEFAULT_PAGE = "matchups";
     const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+    const WRAPPER_VER = "transform-v1";
 
     function normalizePage(p) {
       p = String(p || "").toLowerCase().replace(/^#/, "");
@@ -38,35 +75,77 @@
       return p;
     }
 
-    // Override scale by adding ?sf=0.48 to your pages.dev URL
+    // ✅ Correct override format:
+    //   https://YOUR.pages.dev/?sf=0.72#matchups
+    // Also supports the old (wrong) format by reading from the hash too: #matchups?sf=0.72
+    function getSfFromUrl() {
+      const qs = new URLSearchParams(location.search || "");
+      const v1 = parseFloat(qs.get("sf"));
+      if (isFinite(v1)) return v1;
+
+      // If someone put ?sf= in the hash by accident, try to recover it
+      const h = String(location.hash || "");
+      const idx = h.indexOf("?");
+      if (idx !== -1) {
+        const hqs = new URLSearchParams(h.slice(idx + 1));
+        const v2 = parseFloat(hqs.get("sf"));
+        if (isFinite(v2)) return v2;
+      }
+      return NaN;
+    }
+
     function pickScale() {
-      const qs = new URLSearchParams(location.search);
-      const manual = parseFloat(qs.get("sf"));
-      if (isFinite(manual) && manual >= 0.40 && manual <= 1.0) return String(manual);
+      const manual = getSfFromUrl();
+      // allow very wide testing range so you can see it definitely change
+      if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
 
       const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
 
-      // Smaller defaults to better match your direct Apps Script mobile look
-      if (w <= 380) return "0.46";
-      if (w <= 430) return "0.48";
-      if (w <= 520) return "0.52";
-      return "0.65";
+      // Default tuned to match your "direct Apps Script" mobile look more closely.
+      // (Smaller = more content fits.)
+      if (w <= 380) return 0.70;
+      if (w <= 430) return 0.72;
+      if (w <= 520) return 0.78;
+      return 1.00;
+    }
+
+    const scaled = document.getElementById("scaled");
+    const iframe = document.getElementById("app");
+    const dbg = document.getElementById("dbg");
+
+    function applyScale() {
+      const s = pickScale();
+      // expand layout box, then scale down/up so visible area matches viewport
+      scaled.style.width = (100 / s) + "vw";
+      scaled.style.height = (100 / s) + "vh";
+      scaled.style.transform = "scale(" + s + ")";
+
+      dbg.textContent =
+        "Wrapper: " + WRAPPER_VER + "\n" +
+        "sf=" + s.toFixed(3) + "  (try ?sf=0.72)\n" +
+        "vw=" + (window.innerWidth||0) + "  vh=" + (window.innerHeight||0) + "\n" +
+        "hash=" + location.hash;
+      return s;
     }
 
     function buildSrc(page) {
       const p = normalizePage(page);
       const u = new URL(EXEC);
       u.searchParams.set("p", p);
+
+      // Keep Apps Script viewport neutral; wrapper controls sizing
+      u.searchParams.set("scale", "1");
       u.searchParams.set("embed", "1");
-      u.searchParams.set("scale", pickScale());
-      u.searchParams.set("v", Date.now().toString(36)); // cache-bust
+
+      // cache-bust to avoid Google HTML caching
+      u.searchParams.set("v", Date.now().toString(36));
       return u.toString();
     }
 
-    const iframe = document.getElementById("app");
-
     function loadFromHash() {
-      const page = normalizePage(location.hash.slice(1));
+      // Allow hashes like #matchups?sf=0.72 (we ignore the ? part for routing)
+      const raw = location.hash.slice(1);
+      const page = normalizePage(raw.split("?")[0]);
       iframe.src = buildSrc(page);
     }
 
@@ -75,18 +154,26 @@
       if (!d || d.type !== "FA_NAV") return;
 
       const page = normalizePage(d.page);
-      const cur  = normalizePage(location.hash.slice(1));
+      const curRaw = location.hash.slice(1);
+      const cur = normalizePage(curRaw.split("?")[0]);
 
       if (page !== cur) location.hash = "#" + page;
       else iframe.src = buildSrc(page);
     });
 
-    window.addEventListener("hashchange", loadFromHash);
-    window.addEventListener("resize", () => {
+    window.addEventListener("hashchange", () => {
+      applyScale();
       loadFromHash();
     });
 
+    window.addEventListener("resize", () => {
+      applyScale();
+      // no need to reload iframe on resize
+    });
+
     if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
+
+    applyScale();
     loadFromHash();
   })();
   </script>
