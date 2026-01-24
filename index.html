@@ -2,20 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
   <style>
     html, body {
-      height: 100%;
       margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
       overflow: hidden;
-      background: #000;
     }
-
-    /* iOS fix: use dynamic viewport height to avoid bottom "gap" */
+    /* Put your iframe sizing here */
     iframe {
       width: 100vw;
-      height: 100dvh; /* <-- THIS is the line you asked about */
+      height: 100vh;   /* fallback */
+      height: 100dvh;  /* modern mobile */
       border: 0;
       display: block;
       background: #fff;
@@ -23,105 +24,70 @@
   </style>
 </head>
 <body>
-  <iframe id="appFrame" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  <iframe id="app" title="Flying Aces"></iframe>
 
   <script>
-    // ✅ Your new Apps Script /exec URL:
-    const EXEC_URL =
-      "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+  (() => {
+    // ✅ Your Apps Script Web App exec URL
+    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+
+    // Pick the mobile scale that matches your direct Apps Script experience.
+    // (This becomes doGet(e).parameter.scale)
+    const SCALE = "0.65";
 
     const DEFAULT_PAGE = "matchups";
-    const WRAPPER_VERSION = "cf3"; // bump this to bust caching if needed
+    const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
     function normalizePage(p) {
-      p = String(p || "").toLowerCase().trim().replace(/^#/, "");
+      p = String(p || "").toLowerCase().replace(/^#/, "");
+      if (!allowed.has(p)) p = DEFAULT_PAGE;
       if (p === "doubles") p = "rosters";
-      if (!["matchups", "rankings", "rosters", "scoring"].includes(p)) p = DEFAULT_PAGE;
       return p;
     }
 
-    // If you want to tweak overall size easily, add ?sf=0.58 to the wrapper URL.
-    function pickScaleFactor() {
-      const qs = new URLSearchParams(location.search);
-      const manual = parseFloat(qs.get("sf"));
-      if (isFinite(manual) && manual > 0.35 && manual <= 1) return manual;
-
-      // Default scaling: tuned for phones/tablets
-      const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
-      if (w <= 380) return 0.52;
-      if (w <= 430) return 0.55;
-      if (w <= 520) return 0.60;
-      return 0.65;
-    }
-
-    function buildUrl(page) {
-      const u = new URL(EXEC_URL);
-      u.searchParams.set("p", page);
-
-      // ✅ Tell the Apps Script side it is embedded (Header uses this)
+    function buildSrc(page) {
+      const p = normalizePage(page);
+      const u = new URL(EXEC);
+      u.searchParams.set("p", p);
       u.searchParams.set("embed", "1");
+      u.searchParams.set("scale", SCALE);
 
-      // ✅ Let the wrapper handle scaling consistently; keep Apps Script viewport scale neutral
-      u.searchParams.set("scale", "1");
-
-      // Cache bust (optional)
-      u.searchParams.set("v", WRAPPER_VERSION);
+      // cache-bust when switching pages (helps when Google caches html)
+      u.searchParams.set("v", Date.now().toString(36));
 
       return u.toString();
     }
 
-    function navTo(page) {
-      const p = normalizePage(page);
-      document.getElementById("appFrame").src = buildUrl(p);
+    const iframe = document.getElementById("app");
+
+    function loadFromHash() {
+      const page = normalizePage(location.hash.slice(1));
+      iframe.src = buildSrc(page);
     }
 
-    function navFromHash() {
-      navTo(normalizePage((location.hash || "").slice(1)));
-    }
-
-    // Accept navigation requests from the embedded Apps Script header
-    function isAllowedOrigin(origin) {
-      try {
-        const host = new URL(origin).hostname;
-        if (origin === "https://script.google.com") return true;
-        // Covers the userCodeAppPanel domain you saw
-        return host.endsWith(".googleusercontent.com");
-      } catch (e) {
-        return false;
-      }
-    }
-
+    // Header inside the iframe posts: { type:'FA_NAV', page:'rankings' }
     window.addEventListener("message", (ev) => {
-      if (!isAllowedOrigin(ev.origin)) return;
-      const d = ev.data || {};
-      if (d.type === "FA_NAV" && d.page) {
-        const p = normalizePage(d.page);
-        if (location.hash !== "#" + p) location.hash = "#" + p;
-        else navTo(p);
+      const d = ev && ev.data;
+      if (!d || d.type !== "FA_NAV") return;
+
+      const page = normalizePage(d.page);
+      const cur = normalizePage(location.hash.slice(1));
+
+      if (page !== cur) {
+        location.hash = "#" + page;
+      } else {
+        // If same hash, still reload iframe
+        iframe.src = buildSrc(page);
       }
     });
 
-    // Optional: apply a zoom-like scale to the iframe by changing the URL param instead of CSS transform
-    // (kept simple: you can control with ?sf=... if needed)
-    function applyScaleParam() {
-      const sf = pickScaleFactor();
-      // If you prefer a true iframe CSS transform scale approach, tell me and I’ll switch it.
-      // For now, this just gives you an easy knob to tweak on devices:
-      // Use it by setting your Apps Script doGet to read scale and apply viewport scale.
-      // Since we set scale=1 above, this is intentionally "neutral".
-      // Keeping this function here in case you want to re-enable param-based scaling later.
-      void sf;
+    window.addEventListener("hashchange", loadFromHash);
+
+    if (!location.hash) {
+      location.hash = "#" + DEFAULT_PAGE;
     }
-
-    window.addEventListener("hashchange", navFromHash);
-    window.addEventListener("resize", () => {
-      // Keep page stable on rotate; reload current route
-      navFromHash();
-      applyScaleParam();
-    });
-
-    applyScaleParam();
-    navFromHash();
+    loadFromHash();
+  })();
   </script>
 </body>
 </html>
