@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
-
   <style>
     html, body {
       margin: 0;
@@ -14,29 +13,24 @@
       overflow: hidden;
     }
 
-    /* ✅ THIS is where your iframe sizing goes */
+    /* ✅ This is exactly where that iframe rule goes */
     iframe {
       width: 100vw;
       height: 100vh;   /* fallback */
-      height: 100dvh;  /* modern mobile */
+      height: 100dvh;  /* iOS/modern mobile */
       border: 0;
       display: block;
       background: #fff;
     }
   </style>
 </head>
-
 <body>
   <iframe id="app" title="Flying Aces"></iframe>
 
   <script>
   (() => {
-    // ✅ Your Apps Script Web App exec URL
-    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
-
-    // ✅ This is passed into doGet(e).parameter.scale
-    // Set this to match how your direct Apps Script app looks on mobile.
-    const SCALE = "0.65";
+    const EXEC =
+      "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
 
     const DEFAULT_PAGE = "matchups";
     const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
@@ -48,16 +42,23 @@
       return p;
     }
 
+    // ✅ Dynamic scale so mobile matches your "stable" look better.
+    // Tweak these 3 numbers if you want slightly bigger/smaller.
+    function pickScale() {
+      const w = Math.min(window.innerWidth || 400, window.screen?.width || 400);
+      if (w <= 380) return "0.52";
+      if (w <= 430) return "0.55";
+      if (w <= 520) return "0.60";
+      return "0.65";
+    }
+
     function buildSrc(page) {
       const p = normalizePage(page);
       const u = new URL(EXEC);
       u.searchParams.set("p", p);
       u.searchParams.set("embed", "1");
-      u.searchParams.set("scale", SCALE);
-
-      // cache-bust when switching pages (helps when Google caches HTML)
-      u.searchParams.set("v", Date.now().toString(36));
-
+      u.searchParams.set("scale", pickScale());
+      u.searchParams.set("v", Date.now().toString(36)); // cache-bust
       return u.toString();
     }
 
@@ -68,19 +69,16 @@
       iframe.src = buildSrc(page);
     }
 
-    // Header inside the iframe should post: { type:'FA_NAV', page:'rankings' }
+    // Receive nav requests from Header.html
     window.addEventListener("message", (ev) => {
       const d = ev && ev.data;
       if (!d || d.type !== "FA_NAV") return;
 
       const page = normalizePage(d.page);
-      const cur = normalizePage(location.hash.slice(1));
+      const cur  = normalizePage(location.hash.slice(1));
 
-      if (page !== cur) {
-        location.hash = "#" + page;
-      } else {
-        iframe.src = buildSrc(page);
-      }
+      if (page !== cur) location.hash = "#" + page;
+      else iframe.src = buildSrc(page);
     });
 
     window.addEventListener("hashchange", loadFromHash);
