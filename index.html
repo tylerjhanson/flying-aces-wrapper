@@ -95,6 +95,10 @@
         return new URLSearchParams(location.search).get(name);
       }
 
+      // Cache-bust token should be stable for the whole wrapper session.
+      // (Mobile browsers fire lots of resize events while scrolling; changing v would force reloads.)
+      const SESSION_V = qs("v") || String(Date.now());
+
       function normalizePage(p) {
         p = String(p || "").trim().toLowerCase();
         if (!p) return DEFAULT_PAGE;
@@ -141,7 +145,7 @@
         u.searchParams.set("scale", String(s));
 
         // Cache-bust only if not provided
-        u.searchParams.set("v", qs("v") || String(Date.now()));
+        u.searchParams.set("v", SESSION_V);
 
         return { url: u.toString(), page: p, scale: s };
       }
@@ -193,11 +197,27 @@
       });
 
       window.addEventListener("hashchange", () => navigate(getTargetPage(), false));
+      let _resizeT = null;
       window.addEventListener("resize", () => {
         setVhVar();
-        // If breakpoint changes, refresh so iframe gets new viewport scale
-        navigate(currentPage || getTargetPage(), false);
+        // Mobile browsers fire many resize events while scrolling (address bar show/hide).
+        // Only reload the iframe if the chosen scale actually changes (e.g., orientation / breakpoint).
+        clearTimeout(_resizeT);
+        _resizeT = setTimeout(() => {
+          const next = pickScale();
+          if (currentScale == null || Math.abs(next - currentScale) > 0.0005) {
+            navigate(currentPage || getTargetPage(), true);
+          }
+        }, 180);
       });
+
+      // iOS Safari: keep --vh updated when the visual viewport changes (keyboard / address bar)
+      if (window.visualViewport) {
+        try {
+          window.visualViewport.addEventListener("resize", setVhVar);
+          window.visualViewport.addEventListener("scroll", setVhVar);
+        } catch (e) {}
+      }
 
       // Debug UI toggle: ?debug=1
       if (qs("debug") === "1") {
