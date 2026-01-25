@@ -110,14 +110,25 @@
 
       // Source of truth: iframe viewport scale (NOT wrapper transform)
       function pickScale() {
-        // Wrapper no longer drives viewport zoom; keep scale = 1 by default.
-        // You can still override manually: ?scale=0.9 (or ?s=0.9)
+        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
         const overrideRaw = qs("s") || qs("sf") || qs("scale");
         if (overrideRaw != null) {
           const v = Number(overrideRaw);
-          if (Number.isFinite(v) && v >= 0.6 && v <= 1.1) return +v.toFixed(3);
+          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
         }
-        return 1.0;
+
+        // Auto scale by viewport width (CSS pixels)
+        const w = Math.min(
+          window.innerWidth || 9999,
+          document.documentElement.clientWidth || 9999,
+          screen.width || 9999
+        );
+
+        // Phones
+        if (w <= 430) return 0.56;   // Pixel 7a / iPhone mini-ish
+        if (w <= 520) return 0.62;   // larger phones
+        if (w <= 820) return 0.72;   // small tablets / narrow desktop
+        return 1.00;                // wide screens
       }
 
       function buildSrc(page) {
@@ -127,7 +138,7 @@
         const u = new URL(EXEC);
         u.searchParams.set("p", p);
         u.searchParams.set("embed", "1");
-        if (Math.abs(s - 1) > 0.0005) u.searchParams.set("scale", String(s));
+        u.searchParams.set("scale", String(s));
 
         // Cache-bust only if not provided
         u.searchParams.set("v", qs("v") || String(Date.now()));
