@@ -10,37 +10,71 @@
 
   <style>
     :root { --s: 1; }
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#fff; }
 
-    /* The page itself does NOT scroll; the iframe does (native, smooth, accurate). */
-    #viewport{
-      position:fixed;
-      inset:0;
+    html, body { margin:0; width:100%; height:100%; background:#fff; overflow:hidden; }
+
+    /* ===== Mode A (Zoom browsers): native iframe scroll, scaled with zoom ===== */
+    #modeZoom { position:fixed; inset:0; display:none; overflow:hidden; background:#fff; }
+    #zoomWrap{
+      position:absolute; top:0; left:0;
+      width: calc(100vw / var(--s));
+      height: calc(100dvh / var(--s));
+      height: calc(100vh / var(--s));
       overflow:hidden;
-      background:#fff;
-      touch-action: pan-y;
     }
+    #zoomWrap.zoomOn{ zoom: var(--s); }
 
-    #app{
-      position:absolute;
-      top:0; left:0;
+    #appZoom{
+      width:100%;
+      height:100%;
       border:0;
       display:block;
       background:#fff;
+    }
 
-      /* Scale the iframe visually, but expand its layout box so it still fills the screen */
-      width: calc(100vw / var(--s));
-      height: calc(100dvh / var(--s));
-      height: calc(100vh / var(--s)); /* fallback */
+    /* ===== Mode B (No-zoom browsers like iOS Safari): outer scroll + transform scale ===== */
+    #modeScroll { position:fixed; inset:0; display:none; background:#fff; }
+
+    #frameWrap{
+      position:absolute; inset:0;
+      overflow-y:auto; overflow-x:hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      background:#fff;
+    }
+    #scrollArea{ position:relative; width:100%; }
+    #spacer{ width:100%; height:1600px; } /* JS overwrites */
+    #scaled{
+      position:absolute; top:0; left:0;
       transform-origin: 0 0;
-      transform: scale(var(--s));
+      will-change: transform;
+      width: calc(100vw / var(--s));
+    }
+    #appTall{
+      width:100%;
+      border:0;
+      display:block;
+      background:#fff;
+      height:1600px; /* JS overwrites */
     }
   </style>
 </head>
 
 <body>
-  <div id="viewport">
-    <iframe id="app" title="Flying Aces"></iframe>
+  <!-- Mode A -->
+  <div id="modeZoom">
+    <div id="zoomWrap"><iframe id="appZoom" title="Flying Aces"></iframe></div>
+  </div>
+
+  <!-- Mode B -->
+  <div id="modeScroll">
+    <div id="frameWrap">
+      <div id="scrollArea">
+        <div id="spacer"></div>
+        <div id="scaled"><iframe id="appTall" title="Flying Aces"></iframe></div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -49,7 +83,28 @@
   const DEFAULT_PAGE = "matchups";
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-  const iframe = document.getElementById("app");
+  // Bottom pad to guarantee the last few confirmed matches are reachable in Mode B.
+  const PAD = 140;
+  const MIN_H = 900;
+  const MAX_H = 65000;
+
+  const CAN_ZOOM = (() => {
+    try { return !!(window.CSS && CSS.supports && CSS.supports("zoom: 1")); }
+    catch(e){ return false; }
+  })();
+
+  const modeZoom   = document.getElementById("modeZoom");
+  const modeScroll = document.getElementById("modeScroll");
+  const zoomWrap   = document.getElementById("zoomWrap");
+  const appZoom    = document.getElementById("appZoom");
+
+  const frameWrap  = document.getElementById("frameWrap");
+  const spacer     = document.getElementById("spacer");
+  const scaled     = document.getElementById("scaled");
+  const appTall    = document.getElementById("appTall");
+
+  let lastContentH = 0;
+  let raf = 0;
 
   function normalizePage(p){
     p = String(p || "").toLowerCase().replace(/^#/, "").trim();
@@ -59,20 +114,23 @@
   }
 
   function pickScale(){
-    // Optional manual override: ?sf=0.66
+    // Manual override: ?sf=0.66
     const qs = new URLSearchParams(location.search || "");
     const manual = parseFloat(qs.get("sf"));
     if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual;
 
     const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
-    if (w <= 430) return 0.66;   // phone
-    if (w <= 520) return 0.68;   // large phone / small tablet
-    return 1.00;                 // desktop
+    if (w <= 430) return 0.66;
+    if (w <= 520) return 0.72;
+    return 1.00;
   }
 
-  function applyScale(){
+  function setScaleVar(){
     const s = pickScale();
     document.documentElement.style.setProperty("--s", String(s));
+    // Mode B uses transform, so apply it here
+    scaled.style.transform = "scale(" + s + ")";
+    return s;
   }
 
   function buildSrc(page){
@@ -80,20 +138,77 @@
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
     u.searchParams.set("embed", "1");
-
-    // IMPORTANT: let the wrapper do scaling; keep GAS at scale=1 to avoid double-scaling.
+    // Keep GAS at scale=1 to avoid double-scaling. Wrapper handles it.
     u.searchParams.set("scale", "1");
-
-    // cache-bust
     u.searchParams.set("v", Date.now().toString(36));
     return u.toString();
+  }
+
+  function showMode(){
+    if (CAN_ZOOM){
+      modeZoom.style.display = "block";
+      modeScroll.style.display = "none";
+      zoomWrap.classList.add("zoomOn");
+    } else {
+      modeZoom.style.display = "none";
+      modeScroll.style.display = "block";
+    }
+  }
+
+  function applyTallHeights(force){
+    if (CAN_ZOOM) return;
+    const s = pickScale();
+
+    const baseH = Math.max(MIN_H, Math.min(MAX_H, (lastContentH || 2200)));
+    const iframeH = baseH + PAD;
+    const spacerH = Math.ceil(iframeH * s);
+
+    // Only mutate DOM if something changed
+    if (force || (parseInt(appTall.style.height||"0",10) !== iframeH)) {
+      appTall.style.height = iframeH + "px";
+      spacer.style.height = spacerH + "px";
+      scaled.style.width = (100 / s) + "vw";
+      scaled.style.transform = "scale(" + s + ")";
+    }
+  }
+
+  function scheduleApply(force){
+    if (raf) return;
+    raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
+      raf = 0;
+      applyTallHeights(!!force);
+    });
+  }
+
+  function requestHeightReporting(){
+    if (CAN_ZOOM) return;
+    try{
+      appTall.contentWindow && appTall.contentWindow.postMessage({ type: "FA_NEED_HEIGHT", on: true }, "*");
+      // Ask once more after a beat (some browsers need the doc to be ready)
+      setTimeout(() => {
+        try{ appTall.contentWindow && appTall.contentWindow.postMessage({ type: "FA_PING_HEIGHT" }, "*"); }catch(e){}
+      }, 500);
+    }catch(e){}
   }
 
   function loadFromHash(){
     const raw = location.hash.slice(1);
     const page = normalizePage(raw.split("?")[0]);
-    applyScale();
-    iframe.src = buildSrc(page);
+
+    showMode();
+    setScaleVar();
+
+    const src = buildSrc(page);
+    if (CAN_ZOOM){
+      appZoom.src = src;
+    } else {
+      lastContentH = 0;
+      appTall.src = src;
+      applyTallHeights(true);
+      try { frameWrap.scrollTop = 0; } catch(e){}
+      // Start height reporting once the iframe begins loading
+      requestHeightReporting();
+    }
   }
 
   function okOrigin(origin){
@@ -110,17 +225,32 @@
     if (d.type === "FA_NAV") {
       const page = normalizePage(d.page);
       const cur = normalizePage(location.hash.slice(1).split("?")[0]);
-
       if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page);
+      else loadFromHash();
+      return;
+    }
+
+    if (!CAN_ZOOM && d.type === "FA_HEIGHT") {
+      const hRaw = (d.height != null) ? d.height : d.h;
+      const h = parseInt(hRaw, 10);
+      if (!isFinite(h) || h <= 0) return;
+      const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
+      if (Math.abs(clamped - lastContentH) < 12) return;
+      lastContentH = clamped;
+      scheduleApply(false);
       return;
     }
   });
 
   window.addEventListener("hashchange", loadFromHash);
   window.addEventListener("resize", () => {
-    // Re-apply scale without reloading the page
-    applyScale();
+    // Re-apply scale; only reload in zoom mode because iframe size depends on scale.
+    setScaleVar();
+    if (CAN_ZOOM){
+      // No reload needed; zoom + CSS vars update layout.
+      return;
+    }
+    scheduleApply(true);
   });
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
