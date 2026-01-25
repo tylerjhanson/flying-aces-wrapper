@@ -9,129 +9,65 @@
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
   <style>
-    :root { --bg: #f7f8fa; }
     html, body {
-      margin: 0; padding: 0;
-      background: var(--bg);
-      overflow: auto;
+      margin: 0;
+      padding: 0;
       height: 100%;
+      overflow: hidden; /* iframe handles scrolling */
+      background: #f7f8fa;
     }
-    /* Outer scroller */
-    #frameWrap{
+
+    iframe {
       position: fixed;
       inset: 0;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-      background: var(--bg);
-    }
-    /* Hide scrollbars (keeps scrolling) */
-    #frameWrap::-webkit-scrollbar { width: 0; height: 0; }
-    #frameWrap { scrollbar-width: none; }
-
-    /* Scaled canvas */
-    #scaled{
-      transform-origin: top left;
-      will-change: transform;
-    }
-
-    iframe{
       width: 100vw;
+      height: 100vh;   /* fallback */
+      height: 100dvh;  /* modern mobile browsers */
       border: 0;
       display: block;
-      background: transparent;
+      background: #f7f8fa;
     }
   </style>
 </head>
 
 <body>
-  <div id="frameWrap">
-    <div id="scaled">
-      <iframe id="appFrame" scrolling="yes" referrerpolicy="no-referrer-when-downgrade"></iframe>
-    </div>
-  </div>
+  <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
 
   <script>
-  (function(){
-    const WRAPPER_VER = "transform-v2-origin"; // cache-bust marker
+  (() => {
+    // ✅ Your published Apps Script /exec URL (from your earlier working index.html)
+    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
 
-    // === CONFIG ===
-    const DEFAULT_PAGE = "matchups"; // if no hash
-    // Your Apps Script web app base. Must be the published /exec URL.
-    // If you already had this defined in your v3 file, keep your exact URL.
-    const GAS_BASE = (function(){
-      // If your current index.html already defines GAS_BASE, paste it here exactly.
-      // Fallback attempts to read from querystring ?base=... if you use that.
-      const p = new URLSearchParams(location.search);
-      const b = p.get("base") || "";
-      return b;
-    })();
+    const DEFAULT_PAGE = "matchups";
+    const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-    // If you hardcoded your /exec URL before, put it here:
-    // const GAS_BASE = "https://script.google.com/macros/s/XXXXX/exec";
-
-    const iframe = document.getElementById("appFrame");
-    const wrap   = document.getElementById("frameWrap");
-    const scaled = document.getElementById("scaled");
-
-    let lastContentHeight = 0;
-    let currentScale = 1;
-
-    // Prefer `zoom` when supported: avoids Android/Chrome "scroll ceiling"
-    const supportsZoom = (typeof CSS !== "undefined" && CSS.supports) ? CSS.supports("zoom: 1") : false;
-
-    function normalizePage(p){
-      p = (p || "").toLowerCase().replace(/^#/, "").trim();
-      if (!p) return DEFAULT_PAGE;
-      if (p === "doubles") return "rosters";
-      if (["rankings","scoring","rosters","matchups"].includes(p)) return p;
-      return DEFAULT_PAGE;
+    function normalizePage(p) {
+      p = String(p || "").toLowerCase().replace(/^#/, "").trim();
+      if (!allowed.has(p)) p = DEFAULT_PAGE;
+      if (p === "doubles") p = "rosters";
+      return p;
     }
 
-    function buildSrc(page){
-      // Keep whatever query params you use. Many setups use `?p=matchups&embed=1`
-      // If your current live file has specific params, keep them.
-      const embed = "1";
-      const url = GAS_BASE
-        ? (GAS_BASE + "?p=" + encodeURIComponent(page) + "&embed=" + embed + "&v=" + encodeURIComponent(WRAPPER_VER))
-        : ("about:blank");
-      return url;
+    function buildSrc(page) {
+      const p = normalizePage(page);
+      const u = new URL(EXEC);
+      u.searchParams.set("p", p);
+      u.searchParams.set("embed", "1");
+      // cache-bust so you always see latest GAS HTML
+      u.searchParams.set("v", Date.now().toString(36));
+      return u.toString();
     }
 
-    function applyScale(){
-      const w = wrap.clientWidth || window.innerWidth || 360;
-      // Your prior scale logic likely used a "design width" like 520 or 560.
-      // Keep it consistent with your current working setup.
-      const DESIGN_W = 520;
-      const s = Math.max(0.5, Math.min(1, w / DESIGN_W));
-      currentScale = s;
+    const iframe = document.getElementById("app");
 
-      if (supportsZoom) {
-        scaled.style.transform = "";
-        scaled.style.zoom = String(s);
-      } else {
-        scaled.style.zoom = "";
-        scaled.style.transform = "scale(" + s + ")";
-      }
-
-      // Ensure the outer scroller can reach the full content when scaling is applied.
-      if (lastContentHeight > 0) {
-        const layoutH = supportsZoom ? lastContentHeight : Math.ceil(lastContentHeight / s);
-        scaled.style.height = (layoutH + 40) + "px";
-      } else {
-        scaled.style.height = "120vh";
-      }
-
-      iframe.style.height = lastContentHeight ? (lastContentHeight + 40) + "px" : "120vh";
-    }
-
-    function loadFromHash(){
+    function loadFromHash() {
       const raw = location.hash.slice(1);
       const page = normalizePage(raw.split("?")[0]);
       iframe.src = buildSrc(page);
     }
 
-    // Listen for height updates from GAS pages
-    function acceptOrigin(origin){
+    // Accept navigation messages from Apps Script pages (Header.html sends FA_NAV)
+    function okOrigin(origin) {
       return /^https:\/\/script\.google\.com$/.test(origin) ||
              /^https:\/\/script\.googleusercontent\.com$/.test(origin) ||
              /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
@@ -139,40 +75,19 @@
 
     window.addEventListener("message", (ev) => {
       const d = ev && ev.data;
-      if (!d) return;
-
-      // ✅ IMPORTANT: accept nested-frame messages by origin (desktop fix)
-      if (!acceptOrigin(ev.origin)) return;
-
-      // Height messages
-      if (d.type === "FA_HEIGHT" && typeof d.h === "number") {
-        lastContentHeight = Math.max(0, Math.floor(d.h));
-        applyScale();
-        return;
-      }
-
-      // Navigation messages
-      if (d.type !== "FA_NAV") return;
+      if (!d || d.type !== "FA_NAV") return;
+      if (!okOrigin(ev.origin)) return;
 
       const page = normalizePage(d.page);
-      const curRaw = location.hash.slice(1);
-      const cur = normalizePage(curRaw.split("?")[0]);
+      const cur = normalizePage(location.hash.slice(1).split("?")[0]);
 
       if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page);
+      else iframe.src = buildSrc(page); // same tab → refresh
     });
 
-    window.addEventListener("hashchange", () => {
-      applyScale();
-      loadFromHash();
-    });
-
-    window.addEventListener("resize", () => {
-      applyScale();
-    });
+    window.addEventListener("hashchange", loadFromHash);
 
     if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
-    applyScale();
     loadFromHash();
   })();
   </script>
