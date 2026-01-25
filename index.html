@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Flying Aces</title>
 
   <link rel="icon" type="image/png" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
@@ -12,17 +12,34 @@
     :root { --s: 1; }
     html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; }
 
-    /* ===== ANDROID/DESKTOP MODE (native iframe scroll) ===== */
+    /* ===== ANDROID/DESKTOP MODE (native iframe scroll, but wrapper-scaled) ===== */
+    #nativeWrap{
+      position:fixed;
+      inset:0;
+      overflow:hidden;           /* page itself does not scroll */
+      background:#fff;
+      display:none;              /* toggled by JS */
+      overscroll-behavior:contain;
+    }
+    #nativeScaled{
+      position:absolute;
+      top:0; left:0;
+      transform-origin:0 0;
+      will-change:transform;
+      width:  calc(100vw  / var(--s));
+      height: calc(100dvh / var(--s));
+      height: calc(100vh  / var(--s)); /* fallback */
+      transform: scale(var(--s));
+    }
     #nativeFrame{
-      width:100vw;
-      height:100dvh;
-      height:100vh;
+      width:100%;
+      height:100%;
       border:0;
-      display:none; /* toggled by JS */
+      display:block;
       background:#fff;
     }
 
-    /* ===== iOS MODE (wrapper scroll + scaled content) ===== */
+    /* ===== iOS MODE (wrapper scroll + scaled content + height sync) ===== */
     #frameWrap{
       position:fixed;
       inset:0;
@@ -55,8 +72,12 @@
 </head>
 
 <body>
-  <!-- Android/desktop: simple iframe, native scroll -->
-  <iframe id="nativeFrame" title="Flying Aces"></iframe>
+  <!-- Android/desktop: native scroll INSIDE the iframe, but visually scaled by wrapper -->
+  <div id="nativeWrap">
+    <div id="nativeScaled">
+      <iframe id="nativeFrame" title="Flying Aces"></iframe>
+    </div>
+  </div>
 
   <!-- iOS: outer scroller + scaled content + height sync -->
   <div id="frameWrap">
@@ -75,17 +96,18 @@
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
   // iOS mode needs a little bottom guard because the in-page bottom button bar can cover last rows.
-  // This is in *screen pixels* (visible), so you’ll actually notice changes.
   const PAD_VISIBLE = 260;   // try 220–320 if you ever need to tune
   const MIN_H = 900;
   const MAX_H = 65000;
 
+  const nativeWrap  = document.getElementById("nativeWrap");
   const nativeFrame = document.getElementById("nativeFrame");
+
   const frameWrap   = document.getElementById("frameWrap");
   const spacer      = document.getElementById("spacer");
   const iosFrame    = document.getElementById("iosFrame");
 
-  const scaled = document.documentElement; // we store --s on :root
+  const root = document.documentElement;
 
   let isIOS = false;
   try {
@@ -114,12 +136,13 @@
     return 1.00;
   }
 
-  function buildSrc(page, scaleParam){
+  function buildSrc(page){
     const p = normalizePage(page);
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
     u.searchParams.set("embed", "1");
-    u.searchParams.set("scale", String(scaleParam)); // used by Code.gs viewport
+    // IMPORTANT: keep Apps Script scale=1 (we scale in wrapper on ALL devices now)
+    u.searchParams.set("scale", "1");
     u.searchParams.set("v", Date.now().toString(36));
     return u.toString();
   }
@@ -130,16 +153,14 @@
 
   function applyIOSLayout(force){
     const s = pickScale();
-    scaled.style.setProperty("--s", String(s));
+    root.style.setProperty("--s", String(s));
 
     const baseH = Math.max(MIN_H, Math.min(MAX_H, lastContentH || Math.max(1800, (window.innerHeight||800) * 2.5)));
-    // Convert visible pad into unscaled pixels so visible pad stays constant after scaling.
     const padUnscaled = Math.ceil(PAD_VISIBLE / s);
     const iframeH = baseH + padUnscaled;
 
     const spacerH = Math.ceil(iframeH * s);
 
-    // Update only if changed
     if (force || iosFrame.style.height !== (iframeH + "px")) iosFrame.style.height = iframeH + "px";
     if (force || spacer.style.height !== (spacerH + "px")) spacer.style.height = spacerH + "px";
   }
@@ -153,7 +174,6 @@
   }
 
   function requestHeightReports(){
-    // Ask the embedded page to start reporting height (Header.html listens for this)
     try { iosFrame.contentWindow.postMessage({ type:"FA_HEIGHT_REQ", on:true }, "*"); } catch(e){}
   }
 
@@ -175,8 +195,8 @@
       if (page !== cur) location.hash = "#" + page;
       else {
         // refresh current
-        if (isIOS) iosFrame.src = buildSrc(page, 1);
-        else nativeFrame.src = buildSrc(page, pickScale());
+        if (isIOS) iosFrame.src = buildSrc(page);
+        else nativeFrame.src = buildSrc(page);
       }
       return;
     }
@@ -197,40 +217,37 @@
     const raw = location.hash.slice(1);
     const page = normalizePage(raw.split("?")[0]);
 
+    // Always compute and apply scale in wrapper
+    root.style.setProperty("--s", String(pickScale()));
+
     if (isIOS) {
-      // iOS: wrapper scroll + transform scaling + height sync
-      nativeFrame.style.display = "none";
+      nativeWrap.style.display = "none";
       frameWrap.style.display = "block";
 
       lastContentH = 0;
       scheduleIOS(true);
 
-      // IMPORTANT: keep Apps Script scale=1 to avoid double scaling (we scale in wrapper)
-      iosFrame.src = buildSrc(page, 1);
+      iosFrame.src = buildSrc(page);
 
-      // Reset wrapper scroll
       try { frameWrap.scrollTop = 0; } catch(e){}
 
-      // After load, request height reporting
       const once = () => { requestHeightReports(); iosFrame.removeEventListener("load", once); };
       iosFrame.addEventListener("load", once);
     } else {
-      // Android/desktop: native iframe scroll; use Apps Script viewport scale
       frameWrap.style.display = "none";
-      nativeFrame.style.display = "block";
+      nativeWrap.style.display = "block";
 
-      nativeFrame.src = buildSrc(page, pickScale());
+      nativeFrame.src = buildSrc(page);
     }
   }
 
   window.addEventListener("hashchange", loadFromHash);
+
+  // IMPORTANT: on Android Chrome, resize fires a lot (address bar).
+  // We only update scale; we do NOT reload the iframe.
   window.addEventListener("resize", () => {
+    root.style.setProperty("--s", String(pickScale()));
     if (isIOS) scheduleIOS(true);
-    else {
-      // reload if the breakpoint scale changes (rotate)
-      const page = normalizePage(location.hash.slice(1).split("?")[0]);
-      nativeFrame.src = buildSrc(page, pickScale());
-    }
   });
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
@@ -242,7 +259,6 @@
 /* ===== DEBUG PANEL (no DevTools needed) =====
    Add ?debug=1 to the Cloudflare URL, e.g.:
    https://flyingaces.lufberydiscgolf.com/?debug=1#matchups
-   Shows mode, computed scale, and the live iframe URL so we can confirm embed/scale params.
 */
 (function(){
   try{
@@ -267,11 +283,10 @@
     panel.appendChild(title);
 
     function getMode(){
-      var nf = document.getElementById("nativeFrame");
+      var nw = document.getElementById("nativeWrap");
       var iw = document.getElementById("frameWrap");
-      if (nf && nf.style.display !== "none") return "ANDROID/DESKTOP native iframe scroll";
+      if (nw && nw.style.display !== "none") return "ANDROID/DESKTOP native iframe scroll (wrapper scaled)";
       if (iw && iw.style.display !== "none") return "iOS wrapper scroll";
-      // Fallback
       return "unknown";
     }
 
@@ -305,10 +320,8 @@
       "background:#444;color:#fff;font-weight:700;cursor:pointer;",
       "Refresh values"
     );
-    var note = el("span","opacity:.85;","(open iframe URL directly to test Apps Script scale)");
     btnRow.appendChild(copyBtn);
     btnRow.appendChild(refreshBtn);
-    btnRow.appendChild(note);
     panel.appendChild(btnRow);
 
     copyBtn.onclick = async function(){
@@ -318,7 +331,6 @@
         copyBtn.textContent = "Copied!";
         setTimeout(function(){ copyBtn.textContent = "Copy iframe URL"; }, 900);
       }catch(e){
-        // Fallback prompt
         window.prompt("Copy iframe URL:", v);
       }
     };
