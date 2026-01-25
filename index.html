@@ -95,10 +95,6 @@
         return new URLSearchParams(location.search).get(name);
       }
 
-      // Cache-bust token should be stable for the whole wrapper session.
-      // (Mobile browsers fire lots of resize events while scrolling; changing v would force reloads.)
-      const SESSION_V = qs("v") || String(Date.now());
-
       function normalizePage(p) {
         p = String(p || "").trim().toLowerCase();
         if (!p) return DEFAULT_PAGE;
@@ -114,25 +110,14 @@
 
       // Source of truth: iframe viewport scale (NOT wrapper transform)
       function pickScale() {
-        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
+        // Wrapper no longer drives viewport zoom; keep scale = 1 by default.
+        // You can still override manually: ?scale=0.9 (or ?s=0.9)
         const overrideRaw = qs("s") || qs("sf") || qs("scale");
         if (overrideRaw != null) {
           const v = Number(overrideRaw);
-          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
+          if (Number.isFinite(v) && v >= 0.6 && v <= 1.1) return +v.toFixed(3);
         }
-
-        // Auto scale by viewport width (CSS pixels)
-        const w = Math.min(
-          window.innerWidth || 9999,
-          document.documentElement.clientWidth || 9999,
-          screen.width || 9999
-        );
-
-        // Phones
-        if (w <= 430) return 0.60;   // Pixel 7a / iPhone mini-ish
-        if (w <= 520) return 0.66;   // larger phones
-        if (w <= 820) return 0.75;   // small tablets / narrow desktop
-        return 1.00;                // wide screens
+        return 1.0;
       }
 
       function buildSrc(page) {
@@ -142,10 +127,10 @@
         const u = new URL(EXEC);
         u.searchParams.set("p", p);
         u.searchParams.set("embed", "1");
-        u.searchParams.set("scale", String(s));
+        if (Math.abs(s - 1) > 0.0005) u.searchParams.set("scale", String(s));
 
         // Cache-bust only if not provided
-        u.searchParams.set("v", SESSION_V);
+        u.searchParams.set("v", qs("v") || String(Date.now()));
 
         return { url: u.toString(), page: p, scale: s };
       }
@@ -197,27 +182,11 @@
       });
 
       window.addEventListener("hashchange", () => navigate(getTargetPage(), false));
-      let _resizeT = null;
       window.addEventListener("resize", () => {
         setVhVar();
-        // Mobile browsers fire many resize events while scrolling (address bar show/hide).
-        // Only reload the iframe if the chosen scale actually changes (e.g., orientation / breakpoint).
-        clearTimeout(_resizeT);
-        _resizeT = setTimeout(() => {
-          const next = pickScale();
-          if (currentScale == null || Math.abs(next - currentScale) > 0.0005) {
-            navigate(currentPage || getTargetPage(), true);
-          }
-        }, 180);
+        // If breakpoint changes, refresh so iframe gets new viewport scale
+        navigate(currentPage || getTargetPage(), false);
       });
-
-      // iOS Safari: keep --vh updated when the visual viewport changes (keyboard / address bar)
-      if (window.visualViewport) {
-        try {
-          window.visualViewport.addEventListener("resize", setVhVar);
-          window.visualViewport.addEventListener("scroll", setVhVar);
-        } catch (e) {}
-      }
 
       // Debug UI toggle: ?debug=1
       if (qs("debug") === "1") {
