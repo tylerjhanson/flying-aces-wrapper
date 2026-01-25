@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
 
+  <!-- Favicons (use your actual site icon image) -->
   <link rel="icon" type="image/png" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
@@ -13,22 +14,18 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;   /* outer scroll container handles scrolling */
+      overflow: hidden;
       background: #fff;
     }
 
     #frameWrap {
       position: fixed;
       inset: 0;
-      overflow: auto;     /* ✅ allow scrolling */
-      -webkit-overflow-scrolling: touch;
+      overflow: hidden;
       background: #fff;
     }
 
-    /* Hide scrollbars (keeps scrolling) */
-    #frameWrap::-webkit-scrollbar { width: 0; height: 0; }
-    #frameWrap { scrollbar-width: none; }
-
+    /* We scale THIS wrapper (more reliable than scaling the iframe directly on iOS) */
     #scaled {
       position: absolute;
       top: 0;
@@ -39,6 +36,7 @@
 
     #app {
       width: 100%;
+      height: 100%;
       border: 0;
       display: block;
       background: #fff;
@@ -49,138 +47,115 @@
 <body>
   <div id="frameWrap">
     <div id="scaled">
-      <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
+      <iframe id="app" title="Flying Aces"></iframe>
     </div>
   </div>
-
 <script>
-(() => {
-  const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
-  const DEFAULT_PAGE = "matchups";
-  const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+  (() => {
+    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+    const DEFAULT_PAGE = "matchups";
+    const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+    const WRAPPER_VER = "transform-v1";
 
-  // ✅ Your preferred scale
-  const DEFAULT_SCALE = 0.66;
-
-  // ✅ Big enough to always reach Confirmed matches (even if height pings fail)
-  const PLACEHOLDER_IFRAME_H = 18000; // px
-  const PAD = 900;                    // extra px below content
-
-  const scaled = document.getElementById("scaled");
-  const iframe = document.getElementById("app");
-
-  let lastContentH = 0;
-
-  function normalizePage(p) {
-    p = String(p || "").toLowerCase().replace(/^#/, "");
-    if (!allowed.has(p)) p = DEFAULT_PAGE;
-    if (p === "doubles") p = "rosters";
-    return p;
-  }
-
-  function getSfFromUrl() {
-    const qs = new URLSearchParams(location.search || "");
-    const v = parseFloat(qs.get("sf"));
-    if (isFinite(v)) return v;
-    const h = String(location.hash || "");
-    const idx = h.indexOf("?");
-    if (idx !== -1) {
-      const hqs = new URLSearchParams(h.slice(idx + 1));
-      const v2 = parseFloat(hqs.get("sf"));
-      if (isFinite(v2)) return v2;
+    function normalizePage(p) {
+      p = String(p || "").toLowerCase().replace(/^#/, "");
+      if (!allowed.has(p)) p = DEFAULT_PAGE;
+      if (p === "doubles") p = "rosters";
+      return p;
     }
-    return NaN;
-  }
 
-  const supportsZoom = (typeof CSS !== "undefined" && CSS.supports) ? CSS.supports("zoom: 1") : false;
+    // ✅ Correct override format:
+    //   https://YOUR.pages.dev/?sf=0.72#matchups
+    // Also supports the old (wrong) format by reading from the hash too: #matchups?sf=0.72
+    function getSfFromUrl() {
+      const qs = new URLSearchParams(location.search || "");
+      const v1 = parseFloat(qs.get("sf"));
+      if (isFinite(v1)) return v1;
 
-  function pickScale() {
-    const manual = getSfFromUrl();
-    if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
-    return DEFAULT_SCALE;
-  }
+      // If someone put ?sf= in the hash by accident, try to recover it
+      const h = String(location.hash || "");
+      const idx = h.indexOf("?");
+      if (idx !== -1) {
+        const hqs = new URLSearchParams(h.slice(idx + 1));
+        const v2 = parseFloat(hqs.get("sf"));
+        if (isFinite(v2)) return v2;
+      }
+      return NaN;
+    }
 
-  function buildSrc(page) {
-    const p = normalizePage(page);
-    const u = new URL(EXEC);
-    u.searchParams.set("p", p);
-    u.searchParams.set("scale", "1");
-    u.searchParams.set("embed", "1");
-    u.searchParams.set("v", Date.now().toString(36)); // cache-bust
-    return u.toString();
-  }
+    function pickScale() {
+      const manual = getSfFromUrl();
+      // allow very wide testing range so you can see it definitely change
+      if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
 
-  function applyScaleAndHeights() {
-    const s = pickScale();
+      const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
 
-    // Use zoom where supported (Chrome/Android + desktop Chrome) to avoid transform scroll quirks.
-    if (supportsZoom) {
-      scaled.style.zoom = String(s);
-      scaled.style.transform = "";
-    } else {
-      scaled.style.zoom = "";
+      // Default tuned to match your "direct Apps Script" mobile look more closely.
+      // (Smaller = more content fits.)
+      if (w <= 430) return 0.66;
+      if (w <= 520) return 0.72;
+      return 1.00;
+    }
+
+    const scaled = document.getElementById("scaled");
+    const iframe = document.getElementById("app");
+    function applyScale() {
+      const s = pickScale();
+      // expand layout box, then scale down/up so visible area matches viewport
+      scaled.style.width = (100 / s) + "vw";
+      scaled.style.height = (100 / s) + "vh";
       scaled.style.transform = "scale(" + s + ")";
+      return s;
     }
 
-    // Ensure the scaled canvas still fills the viewport width
-    scaled.style.width = (100 / s) + "vw";
+    function buildSrc(page) {
+      const p = normalizePage(page);
+      const u = new URL(EXEC);
+      u.searchParams.set("p", p);
 
-    // Give iframe a height that is always scrollable.
-    const desiredH = Math.max(PLACEHOLDER_IFRAME_H, (lastContentH ? (lastContentH + PAD) : 0));
+      // Keep Apps Script viewport neutral; wrapper controls sizing
+      u.searchParams.set("scale", "1");
+      u.searchParams.set("embed", "1");
 
-    // ✅ Critical: iframe must be tall, since internal scrolling is unreliable when scaled
-    iframe.style.height = desiredH + "px";
-
-    // ✅ Also give the wrapper something tall to scroll (extra is fine)
-    // For zoom we compensate a bit to make sure scroll area is never short.
-    const layoutH = supportsZoom ? Math.ceil(desiredH / s) : desiredH;
-    scaled.style.height = layoutH + "px";
-  }
-
-  function loadFromHash() {
-    const raw = location.hash.slice(1);
-    const page = normalizePage(raw.split("?")[0]);
-    lastContentH = 0;            // reset; placeholder will cover until we get FA_HEIGHT
-    applyScaleAndHeights();
-    iframe.src = buildSrc(page);
-  }
-
-  function okOrigin(origin) {
-    return /^https:\/\/script\.google\.com$/.test(origin) ||
-           /^https:\/\/script\.googleusercontent\.com$/.test(origin) ||
-           /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
-  }
-
-  window.addEventListener("message", (ev) => {
-    const d = ev && ev.data;
-    if (!d) return;
-    if (!okOrigin(ev.origin)) return;
-
-    // Height messages (if your Header/Matchups sends them)
-    if (d.type === "FA_HEIGHT" && typeof d.h === "number") {
-      // clamp to avoid insane values if something goes wrong
-      lastContentH = Math.max(0, Math.min(60000, Math.floor(d.h)));
-      applyScaleAndHeights();
-      return;
+      // cache-bust to avoid Google HTML caching
+      u.searchParams.set("v", Date.now().toString(36));
+      return u.toString();
     }
 
-    // Navigation messages from header
-    if (d.type === "FA_NAV") {
+    function loadFromHash() {
+      // Allow hashes like #matchups?sf=0.72 (we ignore the ? part for routing)
+      const raw = location.hash.slice(1);
+      const page = normalizePage(raw.split("?")[0]);
+      iframe.src = buildSrc(page);
+    }
+
+    window.addEventListener("message", (ev) => {
+      const d = ev && ev.data;
+      if (!d || d.type !== "FA_NAV") return;
+
       const page = normalizePage(d.page);
       const curRaw = location.hash.slice(1);
       const cur = normalizePage(curRaw.split("?")[0]);
 
       if (page !== cur) location.hash = "#" + page;
       else iframe.src = buildSrc(page);
-    }
-  });
+    });
 
-  window.addEventListener("hashchange", loadFromHash);
-  window.addEventListener("resize", applyScaleAndHeights);
+    window.addEventListener("hashchange", () => {
+      applyScale();
+      loadFromHash();
+    });
 
-  if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
-  loadFromHash();
-})();
-</script>
+    window.addEventListener("resize", () => {
+      applyScale();
+      // no need to reload iframe on resize
+    });
+
+    if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
+
+    applyScale();
+    loadFromHash();
+  })();
+  </script>
 </body>
 </html>
