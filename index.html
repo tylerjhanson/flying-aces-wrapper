@@ -9,49 +9,21 @@
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
   <style>
-    html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#fff; }
-
-    /* ✅ Single scroller */
-    #frameWrap{
-      position:fixed; inset:0;
-      overflow-y:auto; overflow-x:hidden;
-      -webkit-overflow-scrolling:touch;
-      overscroll-behavior:contain;
-      touch-action:pan-y;
-      background:#fff;
-    }
-
-    #scrollArea{ position:relative; width:100%; }
-
-    /* Spacer defines the scroll height precisely */
-    #spacer{ width:100%; height:1200px; }
-
-    /* Scaled content sits on top of the spacer */
-    #scaled{
-      position:absolute; top:0; left:0;
-      transform-origin:0 0;
-      will-change:transform;
-    }
-
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; }
+    /* Let the iframe page handle scrolling natively (fast + no extra blank scroll). */
     #app{
-      width:100%;
+      width:100vw;
+      height:100dvh;      /* modern mobile */
+      height:100vh;       /* fallback */
       border:0;
       display:block;
       background:#fff;
-      height:1200px; /* JS overwrites */
     }
   </style>
 </head>
 
 <body>
-  <div id="frameWrap">
-    <div id="scrollArea">
-      <div id="spacer"></div>
-      <div id="scaled">
-        <iframe id="app" title="Flying Aces"></iframe>
-      </div>
-    </div>
-  </div>
+  <iframe id="app" title="Flying Aces"></iframe>
 
 <script>
 (() => {
@@ -59,26 +31,7 @@
   const DEFAULT_PAGE = "matchups";
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-  // Small bottom pad so the last couple rows are always reachable, without huge extra scroll.
-  // If you still clip by ~1-2 rows, bump to 200.
-  const PAD = 120;      // px
-  const MIN_H = 900;    // px safety
-  const MAX_H = 65000;  // px safety
-
-  const CAN_ZOOM = (() => {
-    try { return !!(window.CSS && CSS.supports && CSS.supports("zoom: 1")); }
-    catch(e){ return false; }
-  })();
-
-  const frameWrap = document.getElementById("frameWrap");
-  const spacer    = document.getElementById("spacer");
-  const scaled    = document.getElementById("scaled");
-  const iframe    = document.getElementById("app");
-
-  let lastContentH = 0;
-  let lastScale = 0;
-  let lastW = 0;
-  let raf = 0;
+  const iframe = document.getElementById("app");
 
   function normalizePage(p){
     p = String(p || "").toLowerCase().replace(/^#/, "").trim();
@@ -87,96 +40,33 @@
     return p;
   }
 
-  function getSfFromUrl(){
+  // We pass scale to Apps Script, which already sets the page's meta viewport initial-scale.
+  // This avoids parent zoom/transform (which caused extra scroll + clunkiness).
+  function pickScale(){
     const qs = new URLSearchParams(location.search || "");
-    const v1 = parseFloat(qs.get("sf"));
-    if (isFinite(v1)) return v1;
+    const manual = parseFloat(qs.get("scale"));
+    if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual.toString();
 
-    const h = String(location.hash || "");
-    const idx = h.indexOf("?");
-    if (idx !== -1){
-      const hqs = new URLSearchParams(h.slice(idx + 1));
-      const v2 = parseFloat(hqs.get("sf"));
-      if (isFinite(v2)) return v2;
-    }
-    return NaN;
-  }
-
-  function pickScale(w){
-    const manual = getSfFromUrl();
-    if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
-
-    if (w <= 430) return 0.66;
-    if (w <= 520) return 0.72;
-    return 1.00;
-  }
-
-  function fallbackHeight(){
-    // conservative, but not huge; will be replaced quickly by FA_HEIGHT
-    const vh = window.innerHeight || 800;
-    return Math.round(Math.max(1800, vh * 2.6));
-  }
-
-  function applyLayout(force){
     const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
-    const s = pickScale(w);
-
-    const baseH = Math.max(MIN_H, Math.min(MAX_H, (lastContentH || fallbackHeight())));
-    const iframeH = baseH + PAD;
-    const spacerH = Math.ceil(iframeH * s);
-
-    // Only touch DOM if something actually changed (reduces lag)
-    const scaleChanged = (Math.abs(s - lastScale) > 0.001) || force;
-    const sizeChanged  = (w !== lastW) || force;
-    const heightChanged = (spacerH !== parseInt(spacer.style.height || "0", 10)) || force;
-
-    if (scaleChanged || sizeChanged) {
-      scaled.style.width = (100 / s) + "vw";
-      if (CAN_ZOOM) {
-        scaled.style.zoom = String(s);
-        scaled.style.transform = "none";
-      } else {
-        scaled.style.zoom = "";
-        scaled.style.transform = "scale(" + s + ")";
-      }
-      lastScale = s;
-      lastW = w;
-    }
-
-    if (heightChanged) {
-      iframe.style.height = iframeH + "px";
-      spacer.style.height = spacerH + "px";
-    }
-  }
-
-  function scheduleApply(force){
-    if (raf) return;
-    raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
-      raf = 0;
-      applyLayout(!!force);
-    });
+    if (w <= 430) return "0.66";
+    if (w <= 520) return "0.72";
+    return "1";
   }
 
   function buildSrc(page){
     const p = normalizePage(page);
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
-    u.searchParams.set("scale", "1");
     u.searchParams.set("embed", "1");
-    u.searchParams.set("v", Date.now().toString(36));
+    u.searchParams.set("scale", pickScale());
+    u.searchParams.set("v", Date.now().toString(36)); // cache-bust
     return u.toString();
   }
 
   function loadFromHash(){
     const raw = location.hash.slice(1);
     const page = normalizePage(raw.split("?")[0]);
-
-    lastContentH = 0;          // wait for FA_HEIGHT from the new page
-    scheduleApply(true);
-
     iframe.src = buildSrc(page);
-
-    try { frameWrap.scrollTop = 0; } catch(e){}
   }
 
   function okOrigin(origin){
@@ -194,41 +84,19 @@
       const page = normalizePage(d.page);
       const cur = normalizePage(location.hash.slice(1).split("?")[0]);
       if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page);
+      else iframe.src = buildSrc(page); // refresh current
       return;
     }
-
-    if (d.type === "FA_HEIGHT") {
-      const hRaw = (d.height != null) ? d.height : d.h;
-      const h = parseInt(hRaw, 10);
-      if (!isFinite(h) || h <= 0) return;
-
-      const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
-      if (Math.abs(clamped - lastContentH) < 8) return;
-
-      lastContentH = clamped;
-      // Delay slightly so bursts of changes collapse into one update
-      setTimeout(() => scheduleApply(false), 60);
-      return;
-    }
-  });
-
-  // IMPORTANT: ignore resize events that are only address-bar height jitter
-  // Only re-apply when width changes meaningfully.
-  let lastResizeW = window.innerWidth || 0;
-  window.addEventListener("resize", () => {
-    const w = window.innerWidth || 0;
-    if (Math.abs(w - lastResizeW) < 18) return; // ignore small height-only jitter
-    lastResizeW = w;
-    scheduleApply(true);
+    // Ignore FA_HEIGHT if present (we're using native iframe scrolling now).
   });
 
   window.addEventListener("hashchange", loadFromHash);
+  window.addEventListener("resize", () => {
+    // If the scale breakpoint changes (phone rotate), reload with new scale.
+    iframe.src = buildSrc(normalizePage(location.hash.slice(1)));
+  });
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
-
-  // initial
-  scheduleApply(true);
   loadFromHash();
 })();
 </script>
