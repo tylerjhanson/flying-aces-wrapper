@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
 
-  <!-- Favicons (use your actual site icon image) -->
+  <!-- Favicons -->
   <link rel="icon" type="image/png" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
@@ -14,14 +15,18 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow: hidden; /* scroll happens inside frameWrap */
       background: #fff;
     }
 
+    /* Scroll container (this is what fixes "can't scroll far enough") */
     #frameWrap {
       position: fixed;
       inset: 0;
-      overflow: hidden;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
       background: #fff;
     }
 
@@ -36,10 +41,10 @@
 
     #app {
       width: 100%;
-      height: 100%;
       border: 0;
       display: block;
       background: #fff;
+      height: 100%; /* JS will replace with px when we receive FA_HEIGHT */
     }
   </style>
 </head>
@@ -50,12 +55,22 @@
       <iframe id="app" title="Flying Aces"></iframe>
     </div>
   </div>
-<script>
+
+  <script>
   (() => {
     const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
     const DEFAULT_PAGE = "matchups";
     const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
-    const WRAPPER_VER = "transform-v1";
+
+    // If the embedded page (Header.html) sends FA_HEIGHT, we use it to size the iframe.
+    // That makes Round 1 + Round 2 confirmed lists fully scrollable on mobile.
+    let lastContentH = 0;            // unscaled px height reported by the GAS page
+    const MAX_H = 60000;             // safety clamp
+    const MIN_H = 700;               // safety clamp
+
+    const frameWrap = document.getElementById("frameWrap");
+    const scaled = document.getElementById("scaled");
+    const iframe = document.getElementById("app");
 
     function normalizePage(p) {
       p = String(p || "").toLowerCase().replace(/^#/, "");
@@ -64,7 +79,7 @@
       return p;
     }
 
-    // ✅ Correct override format:
+    // Correct override format:
     //   https://YOUR.pages.dev/?sf=0.72#matchups
     // Also supports the old (wrong) format by reading from the hash too: #matchups?sf=0.72
     function getSfFromUrl() {
@@ -72,7 +87,6 @@
       const v1 = parseFloat(qs.get("sf"));
       if (isFinite(v1)) return v1;
 
-      // If someone put ?sf= in the hash by accident, try to recover it
       const h = String(location.hash || "");
       const idx = h.indexOf("?");
       if (idx !== -1) {
@@ -85,27 +99,47 @@
 
     function pickScale() {
       const manual = getSfFromUrl();
-      // allow very wide testing range so you can see it definitely change
       if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
 
       const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
-
-      // Default tuned to match your "direct Apps Script" mobile look more closely.
-      // (Smaller = more content fits.)
       if (w <= 430) return 0.66;
       if (w <= 520) return 0.72;
       return 1.00;
     }
 
-    const scaled = document.getElementById("scaled");
-    const iframe = document.getElementById("app");
-    function applyScale() {
+    // Prefer CSS zoom where available (Chrome/Edge) because it avoids the "scroll way too far"
+    // issue that transform can create. Fall back to transform for Safari/iOS.
+    const CAN_ZOOM = (() => {
+      try { return !!(window.CSS && CSS.supports && CSS.supports("zoom: 1")); }
+      catch (e) { return false; }
+    })();
+
+    function estimatedFallbackH() {
+      const vh = window.innerHeight || 800;
+      // Enough room to show the confirmed matches area even before FA_HEIGHT arrives.
+      return Math.round(Math.max(1600, vh * 2.2));
+    }
+
+    function applyScaleAndSize() {
       const s = pickScale();
-      // expand layout box, then scale down/up so visible area matches viewport
+
+      // Expand layout box; then zoom/scale so visible width matches viewport.
       scaled.style.width = (100 / s) + "vw";
-      scaled.style.height = (100 / s) + "vh";
-      scaled.style.transform = "scale(" + s + ")";
-      return s;
+
+      // Height: use the embedded page's measured height when available.
+      const baseH = lastContentH || estimatedFallbackH();
+
+      // Size the iframe in unscaled pixels, so it never has its own scrollbar.
+      iframe.style.height = baseH + "px";
+      scaled.style.height = baseH + "px";
+
+      if (CAN_ZOOM) {
+        scaled.style.zoom = String(s);
+        scaled.style.transform = "none";
+      } else {
+        scaled.style.zoom = "";
+        scaled.style.transform = "scale(" + s + ")";
+      }
     }
 
     function buildSrc(page) {
@@ -123,37 +157,60 @@
     }
 
     function loadFromHash() {
-      // Allow hashes like #matchups?sf=0.72 (we ignore the ? part for routing)
       const raw = location.hash.slice(1);
       const page = normalizePage(raw.split("?")[0]);
+
+      // Reset height until the new page reports its own height
+      lastContentH = 0;
+      applyScaleAndSize();
+
       iframe.src = buildSrc(page);
+
+      // Put user back at top on tab change (keeps scrolling predictable)
+      try { frameWrap.scrollTop = 0; } catch(e){}
     }
 
     window.addEventListener("message", (ev) => {
       const d = ev && ev.data;
-      if (!d || d.type !== "FA_NAV") return;
+      if (!d || typeof d !== "object") return;
 
-      const page = normalizePage(d.page);
-      const curRaw = location.hash.slice(1);
-      const cur = normalizePage(curRaw.split("?")[0]);
+      if (d.type === "FA_NAV") {
+        const page = normalizePage(d.page);
+        const curRaw = location.hash.slice(1);
+        const cur = normalizePage(curRaw.split("?")[0]);
 
-      if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page);
+        if (page !== cur) location.hash = "#" + page;
+        else iframe.src = buildSrc(page);
+        return;
+      }
+
+      // ✅ Height reporting from embedded GAS pages (Header.html)
+      if (d.type === "FA_HEIGHT") {
+        const h = parseInt(d.height ?? d.h ?? 0, 10);
+        if (!isFinite(h) || h <= 0) return;
+
+        const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
+        // Ignore tiny jitter
+        if (Math.abs(clamped - lastContentH) < 8) return;
+
+        lastContentH = clamped;
+        applyScaleAndSize();
+        return;
+      }
     });
 
     window.addEventListener("hashchange", () => {
-      applyScale();
+      applyScaleAndSize();
       loadFromHash();
     });
 
     window.addEventListener("resize", () => {
-      applyScale();
-      // no need to reload iframe on resize
+      applyScaleAndSize();
     });
 
     if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
 
-    applyScale();
+    applyScaleAndSize();
     loadFromHash();
   })();
   </script>
