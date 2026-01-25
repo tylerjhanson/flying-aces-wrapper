@@ -4,336 +4,215 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
-
-  <!-- Favicons (keep your existing icon) -->
-  <link rel="icon" type="image/png" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
-  <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
-
   <style>
-    :root {
-      /* JS sets this to window.innerHeight * 0.01 */
-      --vh: 1vh;
-      --dbg-bg: rgba(0,0,0,.72);
-    }
+    :root { --vh: 1vh; }
 
     html, body {
       margin: 0;
-      width: 100%;
+      padding: 0;
       height: 100%;
-      background: #fff;
-      overflow: hidden; /* page itself should not scroll */
-      overscroll-behavior: none;
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
+      overflow: hidden; /* wrapper never scrolls; iframe does */
+      background: #0b0c10;
     }
 
-    /* Fullscreen iframe. Scrolling happens INSIDE the iframe. */
+    /* Fullscreen iframe */
     #app {
       position: fixed;
       inset: 0;
       width: 100%;
       height: calc(var(--vh) * 100);
       border: 0;
-      display: block;
-      background: #fff;
+      background: #ffffff;
     }
 
-    /* Optional debug overlay (?debug=1) */
-    #dbg {
+    @supports (height: 100dvh) {
+      #app { height: 100dvh; }
+    }
+
+    /* Optional debug overlay */
+    #debug {
       position: fixed;
       left: 10px;
       right: 10px;
       bottom: 10px;
-      z-index: 999999;
-      background: var(--dbg-bg);
-      color: #fff;
-      font: 12px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding: 10px 12px;
       border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.25;
+      z-index: 999999;
+      display: none;
     }
-    #dbg .row { margin: 4px 0; }
-    #dbg .label { opacity: .85; margin-right: 6px; }
-    #dbg code {
-      display: block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      background: rgba(255,255,255,.12);
-      padding: 6px 8px;
-      border-radius: 10px;
-    }
-    #dbg .btns { display:flex; gap:8px; margin-top: 10px; }
-    #dbg button {
-      appearance: none;
+    #debug .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    #debug code { color: #b7ffb7; word-break: break-all; }
+    #debug button {
       border: 0;
       border-radius: 10px;
-      padding: 10px 12px;
-      font-weight: 800;
-      background: rgba(255,255,255,.16);
-      color: #fff;
+      padding: 8px 10px;
+      font-weight: 700;
       cursor: pointer;
     }
-    #dbg button.primary { background: #2d6cff; }
-    #dbg button:active { transform: scale(.99); }
   </style>
 </head>
-
 <body>
-  <iframe id="app" title="Flying Aces" allow="clipboard-read; clipboard-write" referrerpolicy="no-referrer"></iframe>
+  <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
 
-  <div id="dbg" hidden>
-    <div class="row"><span class="label">FA DEBUG</span><span id="dbgMode"></span></div>
-    <div class="row"><span class="label">Scale</span><span id="dbgScale"></span></div>
-    <div class="row"><span class="label">Page</span><span id="dbgPage"></span></div>
-    <div class="row"><span class="label">Iframe</span><code id="dbgUrl"></code></div>
-    <div class="btns">
-      <button class="primary" id="btnCopy">Copy iframe URL</button>
+  <div id="debug">
+    <div class="row" style="justify-content:space-between">
+      <div><b>FA DEBUG</b> — native iframe scroll + iframe viewport scaling</div>
+      <div id="dbgScale"></div>
+    </div>
+    <div style="margin-top:6px">
+      <div><b>Page:</b> <span id="dbgPage"></span></div>
+      <div><b>Iframe:</b> <code id="dbgSrc"></code></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="btnCopy">Copy iframe URL</button>
       <button id="btnReload">Reload</button>
-      <button id="btnSmaller">-</button>
-      <button id="btnBigger">+</button>
     </div>
   </div>
 
-<script>
-(() => {
-  // ======= CONFIG =======
-  const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
-  const DEFAULT_PAGE = "matchups";
-  const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
-  const WRAPPER_VER = "native-iframe-scroll-v1";
+  <script>
+    (function () {
+      // ✅ Your Apps Script web app exec URL:
+      const EXEC = "https://script.google.com/macros/s/AKfycbyD80f8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4yIA8TvihUztv9H2wGh4vDSpDa/exec";
 
-  // ======= DOM =======
-  const iframe = document.getElementById("app");
-  const dbg = document.getElementById("dbg");
-  const dbgMode = document.getElementById("dbgMode");
-  const dbgScale = document.getElementById("dbgScale");
-  const dbgPage = document.getElementById("dbgPage");
-  const dbgUrl = document.getElementById("dbgUrl");
+      const ALLOWED = new Set(["rankings", "scoring", "rosters", "matchups"]);
+      const DEFAULT_PAGE = "matchups";
 
-  // ======= HELPERS =======
-  function qs() {
-    try { return new URLSearchParams(location.search || ""); }
-    catch (_) { return new URLSearchParams(""); }
-  }
+      const iframe = document.getElementById("app");
+      const debugEl = document.getElementById("debug");
+      const dbgScale = document.getElementById("dbgScale");
+      const dbgPage = document.getElementById("dbgPage");
+      const dbgSrc  = document.getElementById("dbgSrc");
 
-  function normalizePage(p) {
-    p = String(p || "").toLowerCase().replace(/^#/, "");
-    if (!allowed.has(p)) p = DEFAULT_PAGE;
-    if (p === "doubles") p = "rosters";
-    return p;
-  }
+      let currentPage = null;
+      let currentScale = null;
 
-  function pageFromUrl() {
-    // Prefer hash (#matchups). Fallback: ?p=matchups.
-    const h = String(location.hash || "").replace(/^#/, "");
-    if (h) return normalizePage(h);
-    const p = (qs().get("p") || "");
-    return normalizePage(p);
-  }
-
-  function clamp(n, lo, hi) {
-    n = Number(n);
-    if (!isFinite(n)) return NaN;
-    return Math.min(hi, Math.max(lo, n));
-  }
-
-  function getScaleOverride() {
-    const q = qs();
-    // Support: ?sf=0.60 OR ?scale=0.60 OR ?s=0.60
-    const raw = q.get("sf") ?? q.get("scale") ?? q.get("s");
-    const n = clamp(parseFloat(raw), 0.45, 1.0);
-    return isFinite(n) ? n : NaN;
-  }
-
-  function pickScale() {
-    const manual = getScaleOverride();
-    if (isFinite(manual)) return manual;
-
-    const w = Math.min(
-      window.innerWidth || 400,
-      (window.screen && window.screen.width) || 400
-    );
-
-    // Defaults (tuned for phones):
-    // - Small phones: 0.60
-    // - Large phones/small tablets: 0.66
-    // - Desktop: 1.00
-    if (w <= 430) return 0.60;
-    if (w <= 520) return 0.66;
-    return 1.00;
-  }
-
-  function buildSrc(page, scale) {
-    const p = normalizePage(page);
-    const s = clamp(scale, 0.45, 1.0);
-
-    const u = new URL(EXEC);
-    u.searchParams.set("p", p);
-    u.searchParams.set("embed", "1");
-    // IMPORTANT: scale the Apps Script page via viewport meta (doGet), not via wrapper CSS transforms.
-    u.searchParams.set("scale", String(s));
-
-    // Cache-bust to avoid Google HTML caching
-    u.searchParams.set("v", Date.now().toString(36));
-
-    return u.toString();
-  }
-
-  function setVh() {
-    // Stabilize full-height sizing across mobile address-bar changes.
-    const vh = (window.innerHeight || 1) * 0.01;
-    document.documentElement.style.setProperty("--vh", vh + "px");
-  }
-
-  function isDebug() {
-    const d = (qs().get("debug") || "").toLowerCase();
-    return d === "1" || d === "true" || d === "yes";
-  }
-
-  function updateDebug(mode, page, scale, url) {
-    if (!dbg || dbg.hidden) return;
-    dbgMode.textContent = mode;
-    dbgPage.textContent = page;
-    dbgScale.textContent = String(scale);
-    dbgUrl.textContent = url;
-  }
-
-  function modeLabel() {
-    const ua = navigator.userAgent || "";
-    const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
-    return (isiOS ? "iOS" : "ANDROID/DESKTOP") + " native iframe scroll (no wrapper transform)";
-  }
-
-  const MODE_LABEL = modeLabel();
-  let lastPage = "";
-  function load(page) {
-    const p = normalizePage(page);
-    const s = pickScale();
-    const url = buildSrc(p, s);
-
-    lastPage = p;
-    iframe.src = url;
-    updateDebug(MODE_LABEL, p, s, url);
-  }
-
-  // ======= ROUTING =======
-  function ensureHash() {
-    // If someone loads /?p=matchups, normalize into #matchups for consistent navigation.
-    const want = pageFromUrl();
-    if (!location.hash) {
-      try { location.replace(location.pathname + location.search + "#" + want); }
-      catch (_) { location.hash = "#" + want; }
-    }
-  }
-
-  function onHashChange() {
-    const p = pageFromUrl();
-    load(p);
-  }
-
-  // ======= POSTMESSAGE FROM IFRAME (Header.html tabs) =======
-  window.addEventListener("message", (ev) => {
-    const d = ev && ev.data;
-    if (!d || typeof d !== "object") return;
-
-    // Navigation event from the embedded Apps Script header.
-    if (d.type === "FA_NAV" && d.page) {
-      const p = normalizePage(d.page);
-      if (p === lastPage) {
-        // Force reload of same page (retap active tab)
-        load(p);
-        return;
+      function qs(name) {
+        return new URLSearchParams(location.search).get(name);
       }
-      location.hash = "#" + p;
-      return;
-    }
 
-    // If you ever re-enable wrapper scrolling in the future, you can handle FA_HEIGHT here.
-  });
+      function normalizePage(p) {
+        p = String(p || "").trim().toLowerCase();
+        if (!p) return DEFAULT_PAGE;
+        // allow "#matchups?x=1" etc
+        p = p.split("?")[0].split("&")[0].replace(/^#/, "");
+        return ALLOWED.has(p) ? p : DEFAULT_PAGE;
+      }
 
-  // ======= DEBUG BUTTONS =======
-  function setScaleInUrl(newScale) {
-    const s = clamp(newScale, 0.45, 1.0);
-    const u = new URL(location.href);
-    u.searchParams.set("sf", String(s));
-    // Keep other params (debug, etc). Reload.
-    location.href = u.toString();
-  }
+      function setVhVar() {
+        // keeps height stable with mobile address bar changes
+        document.documentElement.style.setProperty("--vh", (window.innerHeight * 0.01) + "px");
+      }
 
-  function wireDebugButtons() {
-    if (!dbg || dbg.hidden) return;
-
-    const btnCopy = document.getElementById("btnCopy");
-    const btnReload = document.getElementById("btnReload");
-    const btnSmaller = document.getElementById("btnSmaller");
-    const btnBigger = document.getElementById("btnBigger");
-
-    btnCopy.addEventListener("click", async () => {
-      const text = String(dbgUrl.textContent || "");
-      try {
-        await navigator.clipboard.writeText(text);
-        btnCopy.textContent = "Copied!";
-        setTimeout(() => (btnCopy.textContent = "Copy iframe URL"), 900);
-      } catch (_) {
-        // fallback
-        try {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          ta.remove();
-          btnCopy.textContent = "Copied!";
-          setTimeout(() => (btnCopy.textContent = "Copy iframe URL"), 900);
-        } catch (e) {
-          alert("Copy failed. Long-press the URL to select it.");
+      // Source of truth: iframe viewport scale (NOT wrapper transform)
+      function pickScale() {
+        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
+        const overrideRaw = qs("s") || qs("sf") || qs("scale");
+        if (overrideRaw != null) {
+          const v = Number(overrideRaw);
+          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
         }
+
+        // Auto scale by viewport width (CSS pixels)
+        const w = Math.min(
+          window.innerWidth || 9999,
+          document.documentElement.clientWidth || 9999,
+          screen.width || 9999
+        );
+
+        // Phones
+        if (w <= 430) return 0.60;   // Pixel 7a / iPhone mini-ish
+        if (w <= 520) return 0.66;   // larger phones
+        if (w <= 820) return 0.75;   // small tablets / narrow desktop
+        return 1.00;                // wide screens
       }
-    });
 
-    btnReload.addEventListener("click", () => load(pageFromUrl()));
+      function buildSrc(page) {
+        const p = normalizePage(page);
+        const s = pickScale();
 
-    btnSmaller.addEventListener("click", () => {
-      const cur = pickScale();
-      setScaleInUrl((cur - 0.02));
-    });
+        const u = new URL(EXEC);
+        u.searchParams.set("p", p);
+        u.searchParams.set("embed", "1");
+        u.searchParams.set("scale", String(s));
 
-    btnBigger.addEventListener("click", () => {
-      const cur = pickScale();
-      setScaleInUrl((cur + 0.02));
-    });
-  }
+        // Cache-bust only if not provided
+        u.searchParams.set("v", qs("v") || String(Date.now()));
 
-  // ======= INIT =======
-  setVh();
-  let lastW = window.innerWidth;
-  window.addEventListener("resize", () => {
-    setVh();
-    // Mobile browsers frequently fire resize while scrolling (address bar show/hide).
-    // Reload ONLY when width changes meaningfully (orientation / breakpoint change).
-    const w = window.innerWidth;
-    if (Math.abs(w - lastW) >= 120 && !document.hidden) {
-      lastW = w;
-      load(pageFromUrl());
-    }
-  }, { passive: true });
+        return { url: u.toString(), page: p, scale: s };
+      }
 
-  if (isDebug()) {
-    dbg.hidden = false;
-    updateDebug("(boot)", pageFromUrl(), pickScale(), "");
-    wireDebugButtons();
-  }
+      function getTargetPage() {
+        // Prefer hash routing for the wrapper
+        const fromHash = normalizePage((location.hash || "").slice(1));
+        // Also accept ?p= for deep links
+        const fromQuery = normalizePage(qs("p"));
+        return (location.hash && location.hash.length > 1) ? fromHash : fromQuery || DEFAULT_PAGE;
+      }
 
-  ensureHash();
-  onHashChange();
-  window.addEventListener("hashchange", onHashChange);
+      function updateDebug(url, page, scale) {
+        if (debugEl.style.display !== "block") return;
+        dbgScale.textContent = "Scale: " + scale;
+        dbgPage.textContent = page;
+        dbgSrc.textContent = url;
+      }
 
-  // Small sanity marker (helps confirm deploy)
-  console.log("FA wrapper", WRAPPER_VER);
-})();
-</script>
+      function navigate(page, forceReload) {
+        const built = buildSrc(page);
+
+        // Track + reload only when needed
+        const scaleChanged = (currentScale == null) || (Math.abs(built.scale - currentScale) > 0.0005);
+        const pageChanged  = (currentPage == null) || (built.page !== currentPage);
+
+        currentPage = built.page;
+        currentScale = built.scale;
+
+        if (forceReload || pageChanged || scaleChanged || iframe.src !== built.url) {
+          iframe.src = built.url;
+        }
+
+        updateDebug(built.url, built.page, built.scale);
+      }
+
+      // Listen for nav clicks from inside the Apps Script Header.html
+      window.addEventListener("message", (ev) => {
+        const d = ev && ev.data;
+        if (!d || d.type !== "FA_NAV") return;
+
+        const page = normalizePage(d.page);
+        // Keep hash in sync (so back button works)
+        if (normalizePage((location.hash || "").slice(1)) !== page) {
+          location.hash = "#" + page;
+        } else {
+          navigate(page, true);
+        }
+      });
+
+      window.addEventListener("hashchange", () => navigate(getTargetPage(), false));
+      window.addEventListener("resize", () => {
+        setVhVar();
+        // If breakpoint changes, refresh so iframe gets new viewport scale
+        navigate(currentPage || getTargetPage(), false);
+      });
+
+      // Debug UI toggle: ?debug=1
+      if (qs("debug") === "1") {
+        debugEl.style.display = "block";
+        document.getElementById("btnCopy").onclick = async () => {
+          try { await navigator.clipboard.writeText(iframe.src); } catch (e) {}
+        };
+        document.getElementById("btnReload").onclick = () => navigate(currentPage || getTargetPage(), true);
+      }
+
+      // Boot
+      setVhVar();
+      if (!location.hash && !qs("p")) location.hash = "#" + DEFAULT_PAGE;
+      navigate(getTargetPage(), true);
+    })();
+  </script>
 </body>
 </html>
