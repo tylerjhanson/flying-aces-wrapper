@@ -71,6 +71,10 @@
     const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
     const WRAPPER_VER = "transform-v1";
 
+    let lastContentHeight = 0;
+    let currentScale = 1;
+
+
     function normalizePage(p) {
       p = String(p || "").toLowerCase().replace(/^#/, "");
       if (!allowed.has(p)) p = DEFAULT_PAGE;
@@ -113,14 +117,26 @@
 
     const scaled = document.getElementById("scaled");
     const iframe = document.getElementById("app");
-    function applyScale() {
-      const s = pickScale();
-      // expand layout box, then scale down/up so visible area matches viewport
-      scaled.style.width = (100 / s) + "vw";
-      scaled.style.height = (100 / s) + "vh";
-      scaled.style.transform = "scale(" + s + ")";
-      return s;
-    }
+    function updateScaledHeight(){
+  const minH = (window.innerHeight || 600) / (currentScale || 1);
+  const h = Math.max(minH, lastContentHeight || 0);
+  scaled.style.height = h + "px";
+  iframe.style.height = h + "px";
+}
+
+function applyScale() {
+  const s = pickScale();
+  currentScale = s;
+
+  // expand layout box, then scale down/up so visible area matches viewport
+  scaled.style.width = (100 / s) + "vw";
+  scaled.style.transform = "scale(" + s + ")";
+
+  // Height is driven by the *page content* (reported from the iframe)
+  // so long lists (e.g., Confirmed Matches) never get clipped.
+  updateScaledHeight();
+  return s;
+}
 
     function buildSrc(page) {
       const p = normalizePage(page);
@@ -137,23 +153,48 @@
     }
 
     function loadFromHash() {
-      // Allow hashes like #matchups?sf=0.72 (we ignore the ? part for routing)
-      const raw = location.hash.slice(1);
-      const page = normalizePage(raw.split("?")[0]);
-      iframe.src = buildSrc(page);
-    }
+  // Allow hashes like #matchups?sf=0.72 (we ignore the ? part for routing)
+  const raw = location.hash.slice(1);
+  const page = normalizePage(raw.split("?")[0]);
+
+  // Reset height until the new page reports it
+  lastContentHeight = 0;
+  updateScaledHeight();
+
+  iframe.src = buildSrc(page);
+}
 
     window.addEventListener("message", (ev) => {
-      const d = ev && ev.data;
-      if (!d || d.type !== "FA_NAV") return;
+  const d = ev && ev.data;
+  if (!d || !d.type) return;
 
-      const page = normalizePage(d.page);
-      const curRaw = location.hash.slice(1);
-      const cur = normalizePage(curRaw.split("?")[0]);
+  // Only accept messages from our iframe
+  try { if (ev.source !== iframe.contentWindow) return; } catch(e) {}
 
-      if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page);
-    });
+  if (d.type === "FA_HEIGHT") {
+    const h = Number(d.height || 0);
+    if (isFinite(h) && h > 0) {
+      lastContentHeight = h;
+      updateScaledHeight();
+    }
+    return;
+  }
+
+  if (d.type !== "FA_NAV") return;
+
+  const page = normalizePage(d.page);
+  const curRaw = location.hash.slice(1);
+  const cur = normalizePage(curRaw.split("?")[0]);
+
+  if (page !== cur) {
+    location.hash = "#" + page;
+  } else {
+    // Same page "refresh"
+    lastContentHeight = 0;
+    updateScaledHeight();
+    iframe.src = buildSrc(page);
+  }
+});
 
     window.addEventListener("hashchange", () => {
       applyScale();
