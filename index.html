@@ -2,349 +2,338 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Flying Aces</title>
 
+  <!-- Favicons (keep your existing icon) -->
   <link rel="icon" type="image/png" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
   <style>
-    :root { --s: 1; }
-    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; }
-
-    /* ===== ANDROID/DESKTOP MODE (native iframe scroll, but wrapper-scaled) ===== */
-    #nativeWrap{
-      position:fixed;
-      inset:0;
-      overflow:hidden;           /* page itself does not scroll */
-      background:#fff;
-      display:none;              /* toggled by JS */
-      overscroll-behavior:contain;
-    }
-    #nativeScaled{
-      position:absolute;
-      top:0; left:0;
-      transform-origin:0 0;
-      will-change:transform;
-      width:  calc(100vw  / var(--s));
-      height: calc(100dvh / var(--s));
-      height: calc(100vh  / var(--s)); /* fallback */
-      transform: scale(var(--s));
-    }
-    #nativeFrame{
-      width:100%;
-      height:100%;
-      border:0;
-      display:block;
-      background:#fff;
+    :root {
+      /* JS sets this to window.innerHeight * 0.01 */
+      --vh: 1vh;
+      --dbg-bg: rgba(0,0,0,.72);
     }
 
-    /* ===== iOS MODE (wrapper scroll + scaled content + height sync) ===== */
-    #frameWrap{
-      position:fixed;
-      inset:0;
-      overflow-y:auto;
-      overflow-x:hidden;
-      -webkit-overflow-scrolling:touch;
-      overscroll-behavior:contain;
-      touch-action:pan-y;
-      background:#fff;
-      display:none; /* toggled by JS */
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden; /* page itself should not scroll */
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
-    #scrollArea{ position:relative; width:100%; }
-    #spacer{ width:100%; height:1200px; }
-    #scaled{
-      position:absolute;
-      top:0; left:0;
-      transform-origin:0 0;
-      will-change:transform;
-      width: calc(100vw / var(--s));
-      transform: scale(var(--s)); /* NO zoom */
+
+    /* Fullscreen iframe. Scrolling happens INSIDE the iframe. */
+    #app {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: calc(var(--vh) * 100);
+      border: 0;
+      display: block;
+      background: #fff;
     }
-    #iosFrame{
-      width:100%;
-      border:0;
-      display:block;
-      background:#fff;
-      height:1200px; /* JS overwrites from FA_HEIGHT */
+
+    /* Optional debug overlay (?debug=1) */
+    #dbg {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      z-index: 999999;
+      background: var(--dbg-bg);
+      color: #fff;
+      font: 12px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
+    #dbg .row { margin: 4px 0; }
+    #dbg .label { opacity: .85; margin-right: 6px; }
+    #dbg code {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: rgba(255,255,255,.12);
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+    #dbg .btns { display:flex; gap:8px; margin-top: 10px; }
+    #dbg button {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 800;
+      background: rgba(255,255,255,.16);
+      color: #fff;
+      cursor: pointer;
+    }
+    #dbg button.primary { background: #2d6cff; }
+    #dbg button:active { transform: scale(.99); }
   </style>
 </head>
 
 <body>
-  <!-- Android/desktop: native scroll INSIDE the iframe, but visually scaled by wrapper -->
-  <div id="nativeWrap">
-    <div id="nativeScaled">
-      <iframe id="nativeFrame" title="Flying Aces"></iframe>
-    </div>
-  </div>
+  <iframe id="app" title="Flying Aces" allow="clipboard-read; clipboard-write" referrerpolicy="no-referrer"></iframe>
 
-  <!-- iOS: outer scroller + scaled content + height sync -->
-  <div id="frameWrap">
-    <div id="scrollArea">
-      <div id="spacer"></div>
-      <div id="scaled">
-        <iframe id="iosFrame" title="Flying Aces"></iframe>
-      </div>
+  <div id="dbg" hidden>
+    <div class="row"><span class="label">FA DEBUG</span><span id="dbgMode"></span></div>
+    <div class="row"><span class="label">Scale</span><span id="dbgScale"></span></div>
+    <div class="row"><span class="label">Page</span><span id="dbgPage"></span></div>
+    <div class="row"><span class="label">Iframe</span><code id="dbgUrl"></code></div>
+    <div class="btns">
+      <button class="primary" id="btnCopy">Copy iframe URL</button>
+      <button id="btnReload">Reload</button>
+      <button id="btnSmaller">-</button>
+      <button id="btnBigger">+</button>
     </div>
   </div>
 
 <script>
 (() => {
+  // ======= CONFIG =======
   const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
   const DEFAULT_PAGE = "matchups";
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+  const WRAPPER_VER = "native-iframe-scroll-v1";
 
-  // iOS mode needs a little bottom guard because the in-page bottom button bar can cover last rows.
-  const PAD_VISIBLE = 260;   // try 220–320 if you ever need to tune
-  const MIN_H = 900;
-  const MAX_H = 65000;
+  // ======= DOM =======
+  const iframe = document.getElementById("app");
+  const dbg = document.getElementById("dbg");
+  const dbgMode = document.getElementById("dbgMode");
+  const dbgScale = document.getElementById("dbgScale");
+  const dbgPage = document.getElementById("dbgPage");
+  const dbgUrl = document.getElementById("dbgUrl");
 
-  const nativeWrap  = document.getElementById("nativeWrap");
-  const nativeFrame = document.getElementById("nativeFrame");
+  // ======= HELPERS =======
+  function qs() {
+    try { return new URLSearchParams(location.search || ""); }
+    catch (_) { return new URLSearchParams(""); }
+  }
 
-  const frameWrap   = document.getElementById("frameWrap");
-  const spacer      = document.getElementById("spacer");
-  const iosFrame    = document.getElementById("iosFrame");
-
-  const root = document.documentElement;
-
-  let isIOS = false;
-  try {
-    const ua = navigator.userAgent || "";
-    const iOS = /iPad|iPhone|iPod/.test(ua);
-    const iPadOS = (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    isIOS = iOS || iPadOS;
-  } catch(e){}
-
-  function normalizePage(p){
-    p = String(p || "").toLowerCase().replace(/^#/, "").trim();
+  function normalizePage(p) {
+    p = String(p || "").toLowerCase().replace(/^#/, "");
     if (!allowed.has(p)) p = DEFAULT_PAGE;
     if (p === "doubles") p = "rosters";
     return p;
   }
 
-  function pickScale(){
-    // Optional manual override for testing: ?sf=0.66
-    const qs = new URLSearchParams(location.search || "");
-    const manual = parseFloat(qs.get("sf"));
-    if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual;
+  function pageFromUrl() {
+    // Prefer hash (#matchups). Fallback: ?p=matchups.
+    const h = String(location.hash || "").replace(/^#/, "");
+    if (h) return normalizePage(h);
+    const p = (qs().get("p") || "");
+    return normalizePage(p);
+  }
 
-    const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
-    if (w <= 430) return 0.66;
-    if (w <= 520) return 0.72;
+  function clamp(n, lo, hi) {
+    n = Number(n);
+    if (!isFinite(n)) return NaN;
+    return Math.min(hi, Math.max(lo, n));
+  }
+
+  function getScaleOverride() {
+    const q = qs();
+    // Support: ?sf=0.60 OR ?scale=0.60 OR ?s=0.60
+    const raw = q.get("sf") ?? q.get("scale") ?? q.get("s");
+    const n = clamp(parseFloat(raw), 0.45, 1.0);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function pickScale() {
+    const manual = getScaleOverride();
+    if (isFinite(manual)) return manual;
+
+    const w = Math.min(
+      window.innerWidth || 400,
+      (window.screen && window.screen.width) || 400
+    );
+
+    // Defaults (tuned for phones):
+    // - Small phones: 0.60
+    // - Large phones/small tablets: 0.66
+    // - Desktop: 1.00
+    if (w <= 430) return 0.60;
+    if (w <= 520) return 0.66;
     return 1.00;
   }
 
-  function buildSrc(page){
+  function buildSrc(page, scale) {
     const p = normalizePage(page);
+    const s = clamp(scale, 0.45, 1.0);
+
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
     u.searchParams.set("embed", "1");
-    // IMPORTANT: keep Apps Script scale=1 (we scale in wrapper on ALL devices now)
-    u.searchParams.set("scale", "1");
+    // IMPORTANT: scale the Apps Script page via viewport meta (doGet), not via wrapper CSS transforms.
+    u.searchParams.set("scale", String(s));
+
+    // Cache-bust to avoid Google HTML caching
     u.searchParams.set("v", Date.now().toString(36));
+
     return u.toString();
   }
 
-  // ===== iOS height sync state =====
-  let lastContentH = 0;
-  let raf = 0;
+  function setVh() {
+    // Stabilize full-height sizing across mobile address-bar changes.
+    const vh = (window.innerHeight || 1) * 0.01;
+    document.documentElement.style.setProperty("--vh", vh + "px");
+  }
 
-  function applyIOSLayout(force){
+  function isDebug() {
+    const d = (qs().get("debug") || "").toLowerCase();
+    return d === "1" || d === "true" || d === "yes";
+  }
+
+  function updateDebug(mode, page, scale, url) {
+    if (!dbg || dbg.hidden) return;
+    dbgMode.textContent = mode;
+    dbgPage.textContent = page;
+    dbgScale.textContent = String(scale);
+    dbgUrl.textContent = url;
+  }
+
+  function modeLabel() {
+    const ua = navigator.userAgent || "";
+    const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+    return (isiOS ? "iOS" : "ANDROID/DESKTOP") + " native iframe scroll (no wrapper transform)";
+  }
+
+  const MODE_LABEL = modeLabel();
+  let lastPage = "";
+  function load(page) {
+    const p = normalizePage(page);
     const s = pickScale();
-    root.style.setProperty("--s", String(s));
+    const url = buildSrc(p, s);
 
-    const baseH = Math.max(MIN_H, Math.min(MAX_H, lastContentH || Math.max(1800, (window.innerHeight||800) * 2.5)));
-    const padUnscaled = Math.ceil(PAD_VISIBLE / s);
-    const iframeH = baseH + padUnscaled;
-
-    const spacerH = Math.ceil(iframeH * s);
-
-    if (force || iosFrame.style.height !== (iframeH + "px")) iosFrame.style.height = iframeH + "px";
-    if (force || spacer.style.height !== (spacerH + "px")) spacer.style.height = spacerH + "px";
+    lastPage = p;
+    iframe.src = url;
+    updateDebug(MODE_LABEL, p, s, url);
   }
 
-  function scheduleIOS(force){
-    if (raf) return;
-    raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
-      raf = 0;
-      applyIOSLayout(!!force);
-    });
+  // ======= ROUTING =======
+  function ensureHash() {
+    // If someone loads /?p=matchups, normalize into #matchups for consistent navigation.
+    const want = pageFromUrl();
+    if (!location.hash) {
+      try { location.replace(location.pathname + location.search + "#" + want); }
+      catch (_) { location.hash = "#" + want; }
+    }
   }
 
-  function requestHeightReports(){
-    try { iosFrame.contentWindow.postMessage({ type:"FA_HEIGHT_REQ", on:true }, "*"); } catch(e){}
+  function onHashChange() {
+    const p = pageFromUrl();
+    load(p);
   }
 
-  function okOrigin(origin){
-    return /^https:\/\/script\.google\.com$/.test(origin) ||
-           /^https:\/\/script\.googleusercontent\.com$/.test(origin) ||
-           /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
-  }
-
+  // ======= POSTMESSAGE FROM IFRAME (Header.html tabs) =======
   window.addEventListener("message", (ev) => {
     const d = ev && ev.data;
     if (!d || typeof d !== "object") return;
-    if (!okOrigin(ev.origin)) return;
 
-    // Header nav
-    if (d.type === "FA_NAV") {
-      const page = normalizePage(d.page);
-      const cur = normalizePage(location.hash.slice(1).split("?")[0]);
-      if (page !== cur) location.hash = "#" + page;
-      else {
-        // refresh current
-        if (isIOS) iosFrame.src = buildSrc(page);
-        else nativeFrame.src = buildSrc(page);
+    // Navigation event from the embedded Apps Script header.
+    if (d.type === "FA_NAV" && d.page) {
+      const p = normalizePage(d.page);
+      if (p === lastPage) {
+        // Force reload of same page (retap active tab)
+        load(p);
+        return;
       }
+      location.hash = "#" + p;
       return;
     }
 
-    // Height reports only used in iOS mode
-    if (isIOS && d.type === "FA_HEIGHT") {
-      const hRaw = (d.height != null) ? d.height : d.h;
-      const h = parseInt(hRaw, 10);
-      if (!isFinite(h) || h <= 0) return;
-      const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
-      if (Math.abs(clamped - lastContentH) < 10) return;
-      lastContentH = clamped;
-      scheduleIOS(false);
-    }
+    // If you ever re-enable wrapper scrolling in the future, you can handle FA_HEIGHT here.
   });
 
-  function loadFromHash(){
-    const raw = location.hash.slice(1);
-    const page = normalizePage(raw.split("?")[0]);
-
-    // Always compute and apply scale in wrapper
-    root.style.setProperty("--s", String(pickScale()));
-
-    if (isIOS) {
-      nativeWrap.style.display = "none";
-      frameWrap.style.display = "block";
-
-      lastContentH = 0;
-      scheduleIOS(true);
-
-      iosFrame.src = buildSrc(page);
-
-      try { frameWrap.scrollTop = 0; } catch(e){}
-
-      const once = () => { requestHeightReports(); iosFrame.removeEventListener("load", once); };
-      iosFrame.addEventListener("load", once);
-    } else {
-      frameWrap.style.display = "none";
-      nativeWrap.style.display = "block";
-
-      nativeFrame.src = buildSrc(page);
-    }
+  // ======= DEBUG BUTTONS =======
+  function setScaleInUrl(newScale) {
+    const s = clamp(newScale, 0.45, 1.0);
+    const u = new URL(location.href);
+    u.searchParams.set("sf", String(s));
+    // Keep other params (debug, etc). Reload.
+    location.href = u.toString();
   }
 
-  window.addEventListener("hashchange", loadFromHash);
+  function wireDebugButtons() {
+    if (!dbg || dbg.hidden) return;
 
-  // IMPORTANT: on Android Chrome, resize fires a lot (address bar).
-  // We only update scale; we do NOT reload the iframe.
-  window.addEventListener("resize", () => {
-    root.style.setProperty("--s", String(pickScale()));
-    if (isIOS) scheduleIOS(true);
-  });
+    const btnCopy = document.getElementById("btnCopy");
+    const btnReload = document.getElementById("btnReload");
+    const btnSmaller = document.getElementById("btnSmaller");
+    const btnBigger = document.getElementById("btnBigger");
 
-  if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
-  loadFromHash();
-})();
-</script>
-
-<script>
-/* ===== DEBUG PANEL (no DevTools needed) =====
-   Add ?debug=1 to the Cloudflare URL, e.g.:
-   https://flyingaces.lufberydiscgolf.com/?debug=1#matchups
-*/
-(function(){
-  try{
-    var qs = new URLSearchParams(location.search || "");
-    if (!qs.has("debug")) return;
-
-    function el(tag, css, txt){
-      var n = document.createElement(tag);
-      if (css) n.style.cssText = css;
-      if (txt != null) n.textContent = txt;
-      return n;
-    }
-
-    var panel = el("div",
-      "position:fixed;left:10px;right:10px;bottom:10px;z-index:2147483647;" +
-      "background:rgba(0,0,0,.82);color:#fff;border-radius:12px;" +
-      "padding:10px 12px;font:12px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;" +
-      "box-shadow:0 6px 24px rgba(0,0,0,.35);"
-    );
-
-    var title = el("div","font-weight:700;margin-bottom:6px;","FA DEBUG");
-    panel.appendChild(title);
-
-    function getMode(){
-      var nw = document.getElementById("nativeWrap");
-      var iw = document.getElementById("frameWrap");
-      if (nw && nw.style.display !== "none") return "ANDROID/DESKTOP native iframe scroll (wrapper scaled)";
-      if (iw && iw.style.display !== "none") return "iOS wrapper scroll";
-      return "unknown";
-    }
-
-    function getScale(){
-      var s = getComputedStyle(document.documentElement).getPropertyValue("--s").trim();
-      return s || "(n/a)";
-    }
-
-    function getIframeSrc(){
-      var nf = document.getElementById("nativeFrame");
-      var ios = document.getElementById("iosFrame");
-      if (nf && nf.src) return nf.src;
-      if (ios && ios.src) return ios.src;
-      var any = document.querySelector("iframe");
-      return any ? (any.src || "(empty)") : "(no iframe found)";
-    }
-
-    var row1 = el("div","margin:2px 0;","Mode: " + getMode());
-    var row2 = el("div","margin:2px 0;","Scale (--s): " + getScale());
-    var row3 = el("div","margin:6px 0 0;word-break:break-all;","Iframe: " + getIframeSrc());
-    panel.appendChild(row1); panel.appendChild(row2); panel.appendChild(row3);
-
-    var btnRow = el("div","margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;");
-    var copyBtn = el("button",
-      "appearance:none;border:0;border-radius:10px;padding:8px 10px;" +
-      "background:#2e7dff;color:#fff;font-weight:700;cursor:pointer;",
-      "Copy iframe URL"
-    );
-    var refreshBtn = el("button",
-      "appearance:none;border:0;border-radius:10px;padding:8px 10px;" +
-      "background:#444;color:#fff;font-weight:700;cursor:pointer;",
-      "Refresh values"
-    );
-    btnRow.appendChild(copyBtn);
-    btnRow.appendChild(refreshBtn);
-    panel.appendChild(btnRow);
-
-    copyBtn.onclick = async function(){
-      var v = getIframeSrc();
-      try{
-        await navigator.clipboard.writeText(v);
-        copyBtn.textContent = "Copied!";
-        setTimeout(function(){ copyBtn.textContent = "Copy iframe URL"; }, 900);
-      }catch(e){
-        window.prompt("Copy iframe URL:", v);
+    btnCopy.addEventListener("click", async () => {
+      const text = String(dbgUrl.textContent || "");
+      try {
+        await navigator.clipboard.writeText(text);
+        btnCopy.textContent = "Copied!";
+        setTimeout(() => (btnCopy.textContent = "Copy iframe URL"), 900);
+      } catch (_) {
+        // fallback
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          btnCopy.textContent = "Copied!";
+          setTimeout(() => (btnCopy.textContent = "Copy iframe URL"), 900);
+        } catch (e) {
+          alert("Copy failed. Long-press the URL to select it.");
+        }
       }
-    };
+    });
 
-    refreshBtn.onclick = function(){
-      row1.textContent = "Mode: " + getMode();
-      row2.textContent = "Scale (--s): " + getScale();
-      row3.textContent = "Iframe: " + getIframeSrc();
-    };
+    btnReload.addEventListener("click", () => load(pageFromUrl()));
 
-    document.body.appendChild(panel);
-  }catch(e){}
+    btnSmaller.addEventListener("click", () => {
+      const cur = pickScale();
+      setScaleInUrl((cur - 0.02));
+    });
+
+    btnBigger.addEventListener("click", () => {
+      const cur = pickScale();
+      setScaleInUrl((cur + 0.02));
+    });
+  }
+
+  // ======= INIT =======
+  setVh();
+  let lastW = window.innerWidth;
+  window.addEventListener("resize", () => {
+    setVh();
+    // Mobile browsers frequently fire resize while scrolling (address bar show/hide).
+    // Reload ONLY when width changes meaningfully (orientation / breakpoint change).
+    const w = window.innerWidth;
+    if (Math.abs(w - lastW) >= 120 && !document.hidden) {
+      lastW = w;
+      load(pageFromUrl());
+    }
+  }, { passive: true });
+
+  if (isDebug()) {
+    dbg.hidden = false;
+    updateDebug("(boot)", pageFromUrl(), pickScale(), "");
+    wireDebugButtons();
+  }
+
+  ensureHash();
+  onHashChange();
+  window.addEventListener("hashchange", onHashChange);
+
+  // Small sanity marker (helps confirm deploy)
+  console.log("FA wrapper", WRAPPER_VER);
 })();
 </script>
-
 </body>
 </html>
