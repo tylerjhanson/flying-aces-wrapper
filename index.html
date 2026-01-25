@@ -11,85 +11,176 @@
   <style>
     html, body {
       margin: 0;
-      padding: 0;
+      width: 100%;
       height: 100%;
-      overflow: hidden; /* iframe handles scrolling */
-      background: #f7f8fa;
+      overflow: hidden;   /* outer scroll container handles scrolling */
+      background: #fff;
     }
 
-    iframe {
+    #frameWrap {
       position: fixed;
       inset: 0;
-      width: 100vw;
-      height: 100vh;   /* fallback */
-      height: 100dvh;  /* modern mobile browsers */
+      overflow: auto;     /* ✅ allow scrolling */
+      -webkit-overflow-scrolling: touch;
+      background: #fff;
+    }
+
+    /* Hide scrollbars (keeps scrolling) */
+    #frameWrap::-webkit-scrollbar { width: 0; height: 0; }
+    #frameWrap { scrollbar-width: none; }
+
+    #scaled {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    #app {
+      width: 100%;
       border: 0;
       display: block;
-      background: #f7f8fa;
+      background: #fff;
     }
   </style>
 </head>
 
 <body>
-  <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
+  <div id="frameWrap">
+    <div id="scaled">
+      <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
+    </div>
+  </div>
 
-  <script>
-  (() => {
-    // ✅ Your published Apps Script /exec URL (from your earlier working index.html)
-    const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+<script>
+(() => {
+  const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
+  const DEFAULT_PAGE = "matchups";
+  const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-    const DEFAULT_PAGE = "matchups";
-    const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
+  // ✅ Your preferred scale
+  const DEFAULT_SCALE = 0.66;
 
-    function normalizePage(p) {
-      p = String(p || "").toLowerCase().replace(/^#/, "").trim();
-      if (!allowed.has(p)) p = DEFAULT_PAGE;
-      if (p === "doubles") p = "rosters";
-      return p;
+  // ✅ Big enough to always reach Confirmed matches (even if height pings fail)
+  const PLACEHOLDER_IFRAME_H = 18000; // px
+  const PAD = 900;                    // extra px below content
+
+  const scaled = document.getElementById("scaled");
+  const iframe = document.getElementById("app");
+
+  let lastContentH = 0;
+
+  function normalizePage(p) {
+    p = String(p || "").toLowerCase().replace(/^#/, "");
+    if (!allowed.has(p)) p = DEFAULT_PAGE;
+    if (p === "doubles") p = "rosters";
+    return p;
+  }
+
+  function getSfFromUrl() {
+    const qs = new URLSearchParams(location.search || "");
+    const v = parseFloat(qs.get("sf"));
+    if (isFinite(v)) return v;
+    const h = String(location.hash || "");
+    const idx = h.indexOf("?");
+    if (idx !== -1) {
+      const hqs = new URLSearchParams(h.slice(idx + 1));
+      const v2 = parseFloat(hqs.get("sf"));
+      if (isFinite(v2)) return v2;
+    }
+    return NaN;
+  }
+
+  const supportsZoom = (typeof CSS !== "undefined" && CSS.supports) ? CSS.supports("zoom: 1") : false;
+
+  function pickScale() {
+    const manual = getSfFromUrl();
+    if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
+    return DEFAULT_SCALE;
+  }
+
+  function buildSrc(page) {
+    const p = normalizePage(page);
+    const u = new URL(EXEC);
+    u.searchParams.set("p", p);
+    u.searchParams.set("scale", "1");
+    u.searchParams.set("embed", "1");
+    u.searchParams.set("v", Date.now().toString(36)); // cache-bust
+    return u.toString();
+  }
+
+  function applyScaleAndHeights() {
+    const s = pickScale();
+
+    // Use zoom where supported (Chrome/Android + desktop Chrome) to avoid transform scroll quirks.
+    if (supportsZoom) {
+      scaled.style.zoom = String(s);
+      scaled.style.transform = "";
+    } else {
+      scaled.style.zoom = "";
+      scaled.style.transform = "scale(" + s + ")";
     }
 
-    function buildSrc(page) {
-      const p = normalizePage(page);
-      const u = new URL(EXEC);
-      u.searchParams.set("p", p);
-      u.searchParams.set("embed", "1");
-      // cache-bust so you always see latest GAS HTML
-      u.searchParams.set("v", Date.now().toString(36));
-      return u.toString();
+    // Ensure the scaled canvas still fills the viewport width
+    scaled.style.width = (100 / s) + "vw";
+
+    // Give iframe a height that is always scrollable.
+    const desiredH = Math.max(PLACEHOLDER_IFRAME_H, (lastContentH ? (lastContentH + PAD) : 0));
+
+    // ✅ Critical: iframe must be tall, since internal scrolling is unreliable when scaled
+    iframe.style.height = desiredH + "px";
+
+    // ✅ Also give the wrapper something tall to scroll (extra is fine)
+    // For zoom we compensate a bit to make sure scroll area is never short.
+    const layoutH = supportsZoom ? Math.ceil(desiredH / s) : desiredH;
+    scaled.style.height = layoutH + "px";
+  }
+
+  function loadFromHash() {
+    const raw = location.hash.slice(1);
+    const page = normalizePage(raw.split("?")[0]);
+    lastContentH = 0;            // reset; placeholder will cover until we get FA_HEIGHT
+    applyScaleAndHeights();
+    iframe.src = buildSrc(page);
+  }
+
+  function okOrigin(origin) {
+    return /^https:\/\/script\.google\.com$/.test(origin) ||
+           /^https:\/\/script\.googleusercontent\.com$/.test(origin) ||
+           /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
+  }
+
+  window.addEventListener("message", (ev) => {
+    const d = ev && ev.data;
+    if (!d) return;
+    if (!okOrigin(ev.origin)) return;
+
+    // Height messages (if your Header/Matchups sends them)
+    if (d.type === "FA_HEIGHT" && typeof d.h === "number") {
+      // clamp to avoid insane values if something goes wrong
+      lastContentH = Math.max(0, Math.min(60000, Math.floor(d.h)));
+      applyScaleAndHeights();
+      return;
     }
 
-    const iframe = document.getElementById("app");
-
-    function loadFromHash() {
-      const raw = location.hash.slice(1);
-      const page = normalizePage(raw.split("?")[0]);
-      iframe.src = buildSrc(page);
-    }
-
-    // Accept navigation messages from Apps Script pages (Header.html sends FA_NAV)
-    function okOrigin(origin) {
-      return /^https:\/\/script\.google\.com$/.test(origin) ||
-             /^https:\/\/script\.googleusercontent\.com$/.test(origin) ||
-             /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
-    }
-
-    window.addEventListener("message", (ev) => {
-      const d = ev && ev.data;
-      if (!d || d.type !== "FA_NAV") return;
-      if (!okOrigin(ev.origin)) return;
-
+    // Navigation messages from header
+    if (d.type === "FA_NAV") {
       const page = normalizePage(d.page);
-      const cur = normalizePage(location.hash.slice(1).split("?")[0]);
+      const curRaw = location.hash.slice(1);
+      const cur = normalizePage(curRaw.split("?")[0]);
 
       if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page); // same tab → refresh
-    });
+      else iframe.src = buildSrc(page);
+    }
+  });
 
-    window.addEventListener("hashchange", loadFromHash);
+  window.addEventListener("hashchange", loadFromHash);
+  window.addEventListener("resize", applyScaleAndHeights);
 
-    if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
-    loadFromHash();
-  })();
-  </script>
+  if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
+  loadFromHash();
+})();
+</script>
 </body>
 </html>
