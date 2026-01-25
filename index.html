@@ -237,5 +237,102 @@
   loadFromHash();
 })();
 </script>
+
+<script>
+/* ===== DEBUG PANEL (no DevTools needed) =====
+   Add ?debug=1 to the Cloudflare URL, e.g.:
+   https://flyingaces.lufberydiscgolf.com/?debug=1#matchups
+   Shows mode, computed scale, and the live iframe URL so we can confirm embed/scale params.
+*/
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search || "");
+    if (!qs.has("debug")) return;
+
+    function el(tag, css, txt){
+      var n = document.createElement(tag);
+      if (css) n.style.cssText = css;
+      if (txt != null) n.textContent = txt;
+      return n;
+    }
+
+    var panel = el("div",
+      "position:fixed;left:10px;right:10px;bottom:10px;z-index:2147483647;" +
+      "background:rgba(0,0,0,.82);color:#fff;border-radius:12px;" +
+      "padding:10px 12px;font:12px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial;" +
+      "box-shadow:0 6px 24px rgba(0,0,0,.35);"
+    );
+
+    var title = el("div","font-weight:700;margin-bottom:6px;","FA DEBUG");
+    panel.appendChild(title);
+
+    function getMode(){
+      var nf = document.getElementById("nativeFrame");
+      var iw = document.getElementById("frameWrap");
+      if (nf && nf.style.display !== "none") return "ANDROID/DESKTOP native iframe scroll";
+      if (iw && iw.style.display !== "none") return "iOS wrapper scroll";
+      // Fallback
+      return "unknown";
+    }
+
+    function getScale(){
+      var s = getComputedStyle(document.documentElement).getPropertyValue("--s").trim();
+      return s || "(n/a)";
+    }
+
+    function getIframeSrc(){
+      var nf = document.getElementById("nativeFrame");
+      var ios = document.getElementById("iosFrame");
+      if (nf && nf.src) return nf.src;
+      if (ios && ios.src) return ios.src;
+      var any = document.querySelector("iframe");
+      return any ? (any.src || "(empty)") : "(no iframe found)";
+    }
+
+    var row1 = el("div","margin:2px 0;","Mode: " + getMode());
+    var row2 = el("div","margin:2px 0;","Scale (--s): " + getScale());
+    var row3 = el("div","margin:6px 0 0;word-break:break-all;","Iframe: " + getIframeSrc());
+    panel.appendChild(row1); panel.appendChild(row2); panel.appendChild(row3);
+
+    var btnRow = el("div","margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;");
+    var copyBtn = el("button",
+      "appearance:none;border:0;border-radius:10px;padding:8px 10px;" +
+      "background:#2e7dff;color:#fff;font-weight:700;cursor:pointer;",
+      "Copy iframe URL"
+    );
+    var refreshBtn = el("button",
+      "appearance:none;border:0;border-radius:10px;padding:8px 10px;" +
+      "background:#444;color:#fff;font-weight:700;cursor:pointer;",
+      "Refresh values"
+    );
+    var note = el("span","opacity:.85;","(open iframe URL directly to test Apps Script scale)");
+    btnRow.appendChild(copyBtn);
+    btnRow.appendChild(refreshBtn);
+    btnRow.appendChild(note);
+    panel.appendChild(btnRow);
+
+    copyBtn.onclick = async function(){
+      var v = getIframeSrc();
+      try{
+        await navigator.clipboard.writeText(v);
+        copyBtn.textContent = "Copied!";
+        setTimeout(function(){ copyBtn.textContent = "Copy iframe URL"; }, 900);
+      }catch(e){
+        // Fallback prompt
+        window.prompt("Copy iframe URL:", v);
+      }
+    };
+
+    refreshBtn.onclick = function(){
+      row1.textContent = "Mode: " + getMode();
+      row2.textContent = "Scale (--s): " + getScale();
+      row3.textContent = "Iframe: " + getIframeSrc();
+    };
+
+    document.body.appendChild(panel);
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>
