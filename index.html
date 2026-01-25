@@ -21,11 +21,25 @@
     #frameWrap {
       position: fixed;
       inset: 0;
-      overflow: hidden;
+
+      /* ✅ Allow scrolling when the scaled iframe canvas is taller than the viewport
+         (prevents the "confirmed matches" section from becoming unreachable). */
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+
       background: #fff;
+
+      /* Hide scrollbars but keep scroll behavior */
+      scrollbar-width: none; /* Firefox */
+    }
+    #frameWrap::-webkit-scrollbar { /* Chrome/Safari */
+      width: 0;
+      height: 0;
     }
 
-    /* We scale THIS wrapper (more reliable than scaling the iframe directly on iOS) */
+/* We scale THIS wrapper (more reliable than scaling the iframe directly on iOS) */
     #scaled {
       position: absolute;
       top: 0;
@@ -47,7 +61,7 @@
 <body>
   <div id="frameWrap">
     <div id="scaled">
-      <iframe id="app" title="Flying Aces"></iframe>
+      <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
     </div>
   </div>
 <script>
