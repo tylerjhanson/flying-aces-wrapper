@@ -10,69 +10,60 @@
 
   <style>
     :root { --s: 1; }
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; }
 
-    html, body { margin:0; width:100%; height:100%; background:#fff; overflow:hidden; }
-
-    /* ===== Mode A (Zoom browsers): native iframe scroll, scaled with zoom ===== */
-    #modeZoom { position:fixed; inset:0; display:none; overflow:hidden; background:#fff; }
-    #zoomWrap{
-      position:absolute; top:0; left:0;
-      width: calc(100vw / var(--s));
-      height: calc(100dvh / var(--s));
-      height: calc(100vh / var(--s));
-      overflow:hidden;
-    }
-    #zoomWrap.zoomOn{ zoom: var(--s); }
-
-    #appZoom{
-      width:100%;
-      height:100%;
+    /* ===== ANDROID/DESKTOP MODE (native iframe scroll) ===== */
+    #nativeFrame{
+      width:100vw;
+      height:100dvh;
+      height:100vh;
       border:0;
-      display:block;
+      display:none; /* toggled by JS */
       background:#fff;
     }
 
-    /* ===== Mode B (No-zoom browsers like iOS Safari): outer scroll + transform scale ===== */
-    #modeScroll { position:fixed; inset:0; display:none; background:#fff; }
-
+    /* ===== iOS MODE (wrapper scroll + scaled content) ===== */
     #frameWrap{
-      position:absolute; inset:0;
-      overflow-y:auto; overflow-x:hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
+      position:fixed;
+      inset:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      touch-action:pan-y;
       background:#fff;
+      display:none; /* toggled by JS */
     }
     #scrollArea{ position:relative; width:100%; }
-    #spacer{ width:100%; height:1600px; } /* JS overwrites */
+    #spacer{ width:100%; height:1200px; }
     #scaled{
-      position:absolute; top:0; left:0;
-      transform-origin: 0 0;
-      will-change: transform;
+      position:absolute;
+      top:0; left:0;
+      transform-origin:0 0;
+      will-change:transform;
       width: calc(100vw / var(--s));
+      transform: scale(var(--s)); /* NO zoom */
     }
-    #appTall{
+    #iosFrame{
       width:100%;
       border:0;
       display:block;
       background:#fff;
-      height:1600px; /* JS overwrites */
+      height:1200px; /* JS overwrites from FA_HEIGHT */
     }
   </style>
 </head>
 
 <body>
-  <!-- Mode A -->
-  <div id="modeZoom">
-    <div id="zoomWrap"><iframe id="appZoom" title="Flying Aces"></iframe></div>
-  </div>
+  <!-- Android/desktop: simple iframe, native scroll -->
+  <iframe id="nativeFrame" title="Flying Aces"></iframe>
 
-  <!-- Mode B -->
-  <div id="modeScroll">
-    <div id="frameWrap">
-      <div id="scrollArea">
-        <div id="spacer"></div>
-        <div id="scaled"><iframe id="appTall" title="Flying Aces"></iframe></div>
+  <!-- iOS: outer scroller + scaled content + height sync -->
+  <div id="frameWrap">
+    <div id="scrollArea">
+      <div id="spacer"></div>
+      <div id="scaled">
+        <iframe id="iosFrame" title="Flying Aces"></iframe>
       </div>
     </div>
   </div>
@@ -83,28 +74,26 @@
   const DEFAULT_PAGE = "matchups";
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-  // Bottom pad to guarantee the last few confirmed matches are reachable in Mode B.
-  const PAD = 210;
+  // iOS mode needs a little bottom guard because the in-page bottom button bar can cover last rows.
+  // This is in *screen pixels* (visible), so you’ll actually notice changes.
+  const PAD_VISIBLE = 260;   // try 220–320 if you ever need to tune
   const MIN_H = 900;
   const MAX_H = 65000;
 
-  const CAN_ZOOM = (() => {
-    try { return !!(window.CSS && CSS.supports && CSS.supports("zoom: 1")); }
-    catch(e){ return false; }
-  })();
+  const nativeFrame = document.getElementById("nativeFrame");
+  const frameWrap   = document.getElementById("frameWrap");
+  const spacer      = document.getElementById("spacer");
+  const iosFrame    = document.getElementById("iosFrame");
 
-  const modeZoom   = document.getElementById("modeZoom");
-  const modeScroll = document.getElementById("modeScroll");
-  const zoomWrap   = document.getElementById("zoomWrap");
-  const appZoom    = document.getElementById("appZoom");
+  const scaled = document.documentElement; // we store --s on :root
 
-  const frameWrap  = document.getElementById("frameWrap");
-  const spacer     = document.getElementById("spacer");
-  const scaled     = document.getElementById("scaled");
-  const appTall    = document.getElementById("appTall");
-
-  let lastContentH = 0;
-  let raf = 0;
+  let isIOS = false;
+  try {
+    const ua = navigator.userAgent || "";
+    const iOS = /iPad|iPhone|iPod/.test(ua);
+    const iPadOS = (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    isIOS = iOS || iPadOS;
+  } catch(e){}
 
   function normalizePage(p){
     p = String(p || "").toLowerCase().replace(/^#/, "").trim();
@@ -114,7 +103,7 @@
   }
 
   function pickScale(){
-    // Manual override: ?sf=0.66
+    // Optional manual override for testing: ?sf=0.66
     const qs = new URLSearchParams(location.search || "");
     const manual = parseFloat(qs.get("sf"));
     if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual;
@@ -125,90 +114,47 @@
     return 1.00;
   }
 
-  function setScaleVar(){
-    const s = pickScale();
-    document.documentElement.style.setProperty("--s", String(s));
-    // Mode B uses transform, so apply it here
-    scaled.style.transform = "scale(" + s + ")";
-    return s;
-  }
-
-  function buildSrc(page){
+  function buildSrc(page, scaleParam){
     const p = normalizePage(page);
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
     u.searchParams.set("embed", "1");
-    // Keep GAS at scale=1 to avoid double-scaling. Wrapper handles it.
-    u.searchParams.set("scale", "1");
+    u.searchParams.set("scale", String(scaleParam)); // used by Code.gs viewport
     u.searchParams.set("v", Date.now().toString(36));
     return u.toString();
   }
 
-  function showMode(){
-    if (CAN_ZOOM){
-      modeZoom.style.display = "block";
-      modeScroll.style.display = "none";
-      zoomWrap.classList.add("zoomOn");
-    } else {
-      modeZoom.style.display = "none";
-      modeScroll.style.display = "block";
-    }
-  }
+  // ===== iOS height sync state =====
+  let lastContentH = 0;
+  let raf = 0;
 
-  function applyTallHeights(force){
-    if (CAN_ZOOM) return;
+  function applyIOSLayout(force){
     const s = pickScale();
+    scaled.style.setProperty("--s", String(s));
 
-    const baseH = Math.max(MIN_H, Math.min(MAX_H, (lastContentH || 2200)));
-    const iframeH = baseH + PAD;
+    const baseH = Math.max(MIN_H, Math.min(MAX_H, lastContentH || Math.max(1800, (window.innerHeight||800) * 2.5)));
+    // Convert visible pad into unscaled pixels so visible pad stays constant after scaling.
+    const padUnscaled = Math.ceil(PAD_VISIBLE / s);
+    const iframeH = baseH + padUnscaled;
+
     const spacerH = Math.ceil(iframeH * s);
 
-    // Only mutate DOM if something changed
-    if (force || (parseInt(appTall.style.height||"0",10) !== iframeH)) {
-      appTall.style.height = iframeH + "px";
-      spacer.style.height = spacerH + "px";
-      scaled.style.width = (100 / s) + "vw";
-      scaled.style.transform = "scale(" + s + ")";
-    }
+    // Update only if changed
+    if (force || iosFrame.style.height !== (iframeH + "px")) iosFrame.style.height = iframeH + "px";
+    if (force || spacer.style.height !== (spacerH + "px")) spacer.style.height = spacerH + "px";
   }
 
-  function scheduleApply(force){
+  function scheduleIOS(force){
     if (raf) return;
     raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
       raf = 0;
-      applyTallHeights(!!force);
+      applyIOSLayout(!!force);
     });
   }
 
-  function requestHeightReporting(){
-    if (CAN_ZOOM) return;
-    try{
-      appTall.contentWindow && appTall.contentWindow.postMessage({ type: "FA_NEED_HEIGHT", on: true }, "*");
-      // Ask once more after a beat (some browsers need the doc to be ready)
-      setTimeout(() => {
-        try{ appTall.contentWindow && appTall.contentWindow.postMessage({ type: "FA_PING_HEIGHT" }, "*"); }catch(e){}
-      }, 500);
-    }catch(e){}
-  }
-
-  function loadFromHash(){
-    const raw = location.hash.slice(1);
-    const page = normalizePage(raw.split("?")[0]);
-
-    showMode();
-    setScaleVar();
-
-    const src = buildSrc(page);
-    if (CAN_ZOOM){
-      appZoom.src = src;
-    } else {
-      lastContentH = 0;
-      appTall.src = src;
-      applyTallHeights(true);
-      try { frameWrap.scrollTop = 0; } catch(e){}
-      // Start height reporting once the iframe begins loading
-      requestHeightReporting();
-    }
+  function requestHeightReports(){
+    // Ask the embedded page to start reporting height (Header.html listens for this)
+    try { iosFrame.contentWindow.postMessage({ type:"FA_HEIGHT_REQ", on:true }, "*"); } catch(e){}
   }
 
   function okOrigin(origin){
@@ -222,35 +168,69 @@
     if (!d || typeof d !== "object") return;
     if (!okOrigin(ev.origin)) return;
 
+    // Header nav
     if (d.type === "FA_NAV") {
       const page = normalizePage(d.page);
       const cur = normalizePage(location.hash.slice(1).split("?")[0]);
       if (page !== cur) location.hash = "#" + page;
-      else loadFromHash();
+      else {
+        // refresh current
+        if (isIOS) iosFrame.src = buildSrc(page, 1);
+        else nativeFrame.src = buildSrc(page, pickScale());
+      }
       return;
     }
 
-    if (!CAN_ZOOM && d.type === "FA_HEIGHT") {
+    // Height reports only used in iOS mode
+    if (isIOS && d.type === "FA_HEIGHT") {
       const hRaw = (d.height != null) ? d.height : d.h;
       const h = parseInt(hRaw, 10);
       if (!isFinite(h) || h <= 0) return;
       const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
-      if (Math.abs(clamped - lastContentH) < 12) return;
+      if (Math.abs(clamped - lastContentH) < 10) return;
       lastContentH = clamped;
-      scheduleApply(false);
-      return;
+      scheduleIOS(false);
     }
   });
 
+  function loadFromHash(){
+    const raw = location.hash.slice(1);
+    const page = normalizePage(raw.split("?")[0]);
+
+    if (isIOS) {
+      // iOS: wrapper scroll + transform scaling + height sync
+      nativeFrame.style.display = "none";
+      frameWrap.style.display = "block";
+
+      lastContentH = 0;
+      scheduleIOS(true);
+
+      // IMPORTANT: keep Apps Script scale=1 to avoid double scaling (we scale in wrapper)
+      iosFrame.src = buildSrc(page, 1);
+
+      // Reset wrapper scroll
+      try { frameWrap.scrollTop = 0; } catch(e){}
+
+      // After load, request height reporting
+      const once = () => { requestHeightReports(); iosFrame.removeEventListener("load", once); };
+      iosFrame.addEventListener("load", once);
+    } else {
+      // Android/desktop: native iframe scroll; use Apps Script viewport scale
+      frameWrap.style.display = "none";
+      nativeFrame.style.display = "block";
+
+      nativeFrame.src = buildSrc(page, pickScale());
+    }
+  }
+
   window.addEventListener("hashchange", loadFromHash);
   window.addEventListener("resize", () => {
-    // Re-apply scale; only reload in zoom mode because iframe size depends on scale.
-    setScaleVar();
-    if (CAN_ZOOM){
-      // No reload needed; zoom + CSS vars update layout.
-      return;
+    if (isIOS) scheduleIOS(true);
+    else {
+      // reload if the breakpoint scale changes (rotate)
+      const page = normalizePage(location.hash.slice(1).split("?")[0]);
+      nativeFrame.src = buildSrc(page, pickScale());
     }
-    scheduleApply(true);
   });
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
