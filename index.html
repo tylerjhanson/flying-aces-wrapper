@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -75,6 +76,9 @@
     let lastContentHeight = 0;
     let currentScale = 1;
 
+    // Prefer `zoom` when supported: it scales layout metrics (unlike transforms) and avoids "scroll ceiling" on Android/Chrome.
+    const supportsZoom = (typeof CSS !== "undefined" && CSS.supports) ? CSS.supports("zoom", "1") : ("zoom" in document.documentElement.style);
+
 
     function normalizePage(p) {
       p = String(p || "").toLowerCase().replace(/^#/, "");
@@ -120,18 +124,20 @@
     const iframe = document.getElementById("app");
     function updateScaledHeight(){
   const s = (currentScale || 1);
+
   // Minimum layout height so at least one viewport is always visible (in unscaled CSS px)
   const minLayoutH = (window.innerHeight || 600) / s;
 
-  // `lastContentHeight` is measured inside the iframe in its own CSS px (unscaled).
-  // To make the OUTER scroller long enough even when transforms affect scroll metrics,
-  // expand the layout height by 1/s.
   const contentH = (lastContentHeight || 0);
 
   // Extra padding so bottom content never sits under browser UI / shadows.
-  const pad = 180;
+  const pad = 240;
 
-  const layoutH = Math.max(minLayoutH, (contentH ? (contentH / s) : 0) + pad);
+  // If we're using `zoom`, the element's scroll metrics scale correctly, so we DON'T divide by s.
+  // If we're using transform-scale fallback, we must expand the layout height by 1/s.
+  const layoutH = supportsZoom
+    ? Math.max(minLayoutH, (contentH ? contentH : 0) + pad)
+    : Math.max(minLayoutH, (contentH ? (contentH / s) : 0) + pad);
 
   scaled.style.height = layoutH + "px";
   iframe.style.height = layoutH + "px";
@@ -141,12 +147,20 @@ function applyScale() {
   const s = pickScale();
   currentScale = s;
 
-  // expand layout box, then scale down/up so visible area matches viewport
+  // Expand layout box, then scale down/up so visible area matches viewport.
+  // ✅ Prefer CSS `zoom` when available (fixes Android/Chrome scroll-ceiling issues caused by transforms).
   scaled.style.width = (100 / s) + "vw";
-  scaled.style.transform = "scale(" + s + ")";
+
+  if (supportsZoom) {
+    scaled.style.zoom = String(s);
+    scaled.style.transform = "none";
+  } else {
+    // Fallback (Safari/iOS): transform scale
+    scaled.style.zoom = "";
+    scaled.style.transform = "scale(" + s + ")";
+  }
 
   // Height is driven by the *page content* (reported from the iframe)
-  // so long lists (e.g., Confirmed Matches) never get clipped.
   updateScaledHeight();
   return s;
 }
