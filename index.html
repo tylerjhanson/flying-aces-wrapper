@@ -21,6 +21,7 @@
     #frameWrap {
       position: fixed;
       inset: 0;
+      height: 100dvh;
 
       /* ✅ Allow scrolling when the scaled iframe canvas is taller than the viewport
          (prevents the "confirmed matches" section from becoming unreachable). */
@@ -118,10 +119,22 @@
     const scaled = document.getElementById("scaled");
     const iframe = document.getElementById("app");
     function updateScaledHeight(){
-  const minH = (window.innerHeight || 600) / (currentScale || 1);
-  const h = Math.max(minH, lastContentHeight || 0);
-  scaled.style.height = h + "px";
-  iframe.style.height = h + "px";
+  const s = (currentScale || 1);
+  // Minimum layout height so at least one viewport is always visible (in unscaled CSS px)
+  const minLayoutH = (window.innerHeight || 600) / s;
+
+  // `lastContentHeight` is measured inside the iframe in its own CSS px (unscaled).
+  // To make the OUTER scroller long enough even when transforms affect scroll metrics,
+  // expand the layout height by 1/s.
+  const contentH = (lastContentHeight || 0);
+
+  // Extra padding so bottom content never sits under browser UI / shadows.
+  const pad = 180;
+
+  const layoutH = Math.max(minLayoutH, (contentH ? (contentH / s) : 0) + pad);
+
+  scaled.style.height = layoutH + "px";
+  iframe.style.height = layoutH + "px";
 }
 
 function applyScale() {
