@@ -9,53 +9,36 @@
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
   <style>
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden; /* scroll happens in frameWrap */
-      background: #fff;
-    }
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#fff; }
 
-    /* ✅ This is the ONLY scroller */
+    /* ✅ Single scroller */
     #frameWrap{
-      position: fixed;
-      inset: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
-      background: #fff;
+      position:fixed; inset:0;
+      overflow-y:auto; overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      touch-action:pan-y;
+      background:#fff;
     }
 
-    /* Holds the spacer + scaled content */
-    #scrollArea{
-      position: relative;
-      width: 100%;
-    }
+    #scrollArea{ position:relative; width:100%; }
 
-    /* Layout height is provided by the spacer (accurate, no “too far”) */
-    #spacer{
-      width: 100%;
-      height: 1400px; /* JS overwrites */
-    }
+    /* Spacer defines the scroll height precisely */
+    #spacer{ width:100%; height:1200px; }
 
-    /* Scaled content is absolutely positioned on top of spacer */
+    /* Scaled content sits on top of the spacer */
     #scaled{
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: 0 0;
-      will-change: transform;
+      position:absolute; top:0; left:0;
+      transform-origin:0 0;
+      will-change:transform;
     }
 
     #app{
-      width: 100%;
-      border: 0;
-      display: block;
-      background: #fff;
-      /* height set in JS */
+      width:100%;
+      border:0;
+      display:block;
+      background:#fff;
+      height:1200px; /* JS overwrites */
     }
   </style>
 </head>
@@ -76,16 +59,15 @@
   const DEFAULT_PAGE = "matchups";
   const allowed = new Set(["matchups","rankings","rosters","scoring","doubles"]);
 
-  // ✅ Add a little bottom room so the last couple confirmed matches never get clipped.
-  // Keep this modest so you don't get a giant blank tail.
-  const PAD = 180;         // px
-  const MIN_H = 900;       // px
-  const MAX_H = 65000;     // px
+  // Small bottom pad so the last couple rows are always reachable, without huge extra scroll.
+  // If you still clip by ~1-2 rows, bump to 200.
+  const PAD = 160;      // px
+  const MIN_H = 900;    // px safety
+  const MAX_H = 65000;  // px safety
 
-  // Prefer zoom on Chrome/Android/desktop for smoother scrolling; fall back to transform for Safari.
   const CAN_ZOOM = (() => {
     try { return !!(window.CSS && CSS.supports && CSS.supports("zoom: 1")); }
-    catch (e) { return false; }
+    catch(e){ return false; }
   })();
 
   const frameWrap = document.getElementById("frameWrap");
@@ -94,7 +76,8 @@
   const iframe    = document.getElementById("app");
 
   let lastContentH = 0;
-  let lastScale = 1;
+  let lastScale = 0;
+  let lastW = 0;
   let raf = 0;
 
   function normalizePage(p){
@@ -104,7 +87,6 @@
     return p;
   }
 
-  // Supports ?sf=0.72#matchups and #matchups?sf=0.72
   function getSfFromUrl(){
     const qs = new URLSearchParams(location.search || "");
     const v1 = parseFloat(qs.get("sf"));
@@ -120,47 +102,59 @@
     return NaN;
   }
 
-  function pickScale(){
+  function pickScale(w){
     const manual = getSfFromUrl();
     if (isFinite(manual) && manual >= 0.20 && manual <= 1.50) return manual;
 
-    const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
     if (w <= 430) return 0.66;
     if (w <= 520) return 0.72;
     return 1.00;
   }
 
   function fallbackHeight(){
-    // Enough to be usable before FA_HEIGHT arrives (tables render, etc.)
+    // conservative, but not huge; will be replaced quickly by FA_HEIGHT
     const vh = window.innerHeight || 800;
     return Math.round(Math.max(1800, vh * 2.6));
   }
 
-  function applyScaleAndHeights(){
-    const s = pickScale();
-    lastScale = s;
+  function applyLayout(force){
+    const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
+    const s = pickScale(w);
 
-    // Width: expand unscaled box so after scaling it fills the viewport
-    scaled.style.width = (100 / s) + "vw";
-
-    // Height: prefer reported content height; otherwise fallback
     const baseH = Math.max(MIN_H, Math.min(MAX_H, (lastContentH || fallbackHeight())));
     const iframeH = baseH + PAD;
+    const spacerH = Math.ceil(iframeH * s);
 
-    // Make iframe tall so it never needs to scroll internally
-    iframe.style.height = iframeH + "px";
+    // Only touch DOM if something actually changed (reduces lag)
+    const scaleChanged = (Math.abs(s - lastScale) > 0.001) || force;
+    const sizeChanged  = (w !== lastW) || force;
+    const heightChanged = (spacerH !== parseInt(spacer.style.height || "0", 10)) || force;
 
-    // Apply scale
-    if (CAN_ZOOM) {
-      scaled.style.zoom = String(s);
-      scaled.style.transform = "none";
-    } else {
-      scaled.style.zoom = "";
-      scaled.style.transform = "scale(" + s + ")";
+    if (scaleChanged || sizeChanged) {
+      scaled.style.width = (100 / s) + "vw";
+      if (CAN_ZOOM) {
+        scaled.style.zoom = String(s);
+        scaled.style.transform = "none";
+      } else {
+        scaled.style.zoom = "";
+        scaled.style.transform = "scale(" + s + ")";
+      }
+      lastScale = s;
+      lastW = w;
     }
 
-    // ✅ Accurate scroll height (visible height = iframeH * s)
-    spacer.style.height = Math.ceil(iframeH * s) + "px";
+    if (heightChanged) {
+      iframe.style.height = iframeH + "px";
+      spacer.style.height = spacerH + "px";
+    }
+  }
+
+  function scheduleApply(force){
+    if (raf) return;
+    raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
+      raf = 0;
+      applyLayout(!!force);
+    });
   }
 
   function buildSrc(page){
@@ -177,13 +171,11 @@
     const raw = location.hash.slice(1);
     const page = normalizePage(raw.split("?")[0]);
 
-    // Reset until FA_HEIGHT arrives for the new page
-    lastContentH = 0;
-    applyScaleAndHeights();
+    lastContentH = 0;          // wait for FA_HEIGHT from the new page
+    scheduleApply(true);
 
     iframe.src = buildSrc(page);
 
-    // Keep scrolling predictable when switching tabs/pages
     try { frameWrap.scrollTop = 0; } catch(e){}
   }
 
@@ -193,20 +185,11 @@
            /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin);
   }
 
-  function scheduleApply(){
-    if (raf) return;
-    raf = (window.requestAnimationFrame || function(fn){ return setTimeout(fn, 16); })(() => {
-      raf = 0;
-      applyScaleAndHeights();
-    });
-  }
-
   window.addEventListener("message", (ev) => {
     const d = ev && ev.data;
     if (!d || typeof d !== "object") return;
     if (!okOrigin(ev.origin)) return;
 
-    // Navigation messages from Header.html
     if (d.type === "FA_NAV") {
       const page = normalizePage(d.page);
       const cur = normalizePage(location.hash.slice(1).split("?")[0]);
@@ -215,29 +198,37 @@
       return;
     }
 
-    // Height messages from Header.html
     if (d.type === "FA_HEIGHT") {
       const hRaw = (d.height != null) ? d.height : d.h;
       const h = parseInt(hRaw, 10);
       if (!isFinite(h) || h <= 0) return;
 
       const clamped = Math.max(MIN_H, Math.min(MAX_H, h));
-      // Ignore tiny jitter
-      if (Math.abs(clamped - lastContentH) < 6) return;
+      if (Math.abs(clamped - lastContentH) < 8) return;
 
       lastContentH = clamped;
-      scheduleApply();
+      // Delay slightly so bursts of changes collapse into one update
+      setTimeout(() => scheduleApply(false), 60);
       return;
     }
   });
 
-  window.addEventListener("hashchange", () => loadFromHash());
-  window.addEventListener("resize", () => scheduleApply());
+  // IMPORTANT: ignore resize events that are only address-bar height jitter
+  // Only re-apply when width changes meaningfully.
+  let lastResizeW = window.innerWidth || 0;
+  window.addEventListener("resize", () => {
+    const w = window.innerWidth || 0;
+    if (Math.abs(w - lastResizeW) < 18) return; // ignore small height-only jitter
+    lastResizeW = w;
+    scheduleApply(true);
+  });
+
+  window.addEventListener("hashchange", loadFromHash);
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
 
-  // First paint
-  applyScaleAndHeights();
+  // initial
+  scheduleApply(true);
   loadFromHash();
 })();
 </script>
