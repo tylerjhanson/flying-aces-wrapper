@@ -9,21 +9,39 @@
   <link rel="apple-touch-icon" href="https://lufberydiscgolf.wordpress.com/wp-content/uploads/2025/05/cropped-lufberyflyingace_logo_500x500-1.png?v=2">
 
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; }
-    /* Let the iframe page handle scrolling natively (fast + no extra blank scroll). */
+    :root { --s: 1; }
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#fff; }
+
+    /* The page itself does NOT scroll; the iframe does (native, smooth, accurate). */
+    #viewport{
+      position:fixed;
+      inset:0;
+      overflow:hidden;
+      background:#fff;
+      touch-action: pan-y;
+    }
+
     #app{
-      width:100vw;
-      height:100dvh;      /* modern mobile */
-      height:100vh;       /* fallback */
+      position:absolute;
+      top:0; left:0;
       border:0;
       display:block;
       background:#fff;
+
+      /* Scale the iframe visually, but expand its layout box so it still fills the screen */
+      width: calc(100vw / var(--s));
+      height: calc(100dvh / var(--s));
+      height: calc(100vh / var(--s)); /* fallback */
+      transform-origin: 0 0;
+      transform: scale(var(--s));
     }
   </style>
 </head>
 
 <body>
-  <iframe id="app" title="Flying Aces"></iframe>
+  <div id="viewport">
+    <iframe id="app" title="Flying Aces"></iframe>
+  </div>
 
 <script>
 (() => {
@@ -40,17 +58,21 @@
     return p;
   }
 
-  // We pass scale to Apps Script, which already sets the page's meta viewport initial-scale.
-  // This avoids parent zoom/transform (which caused extra scroll + clunkiness).
   function pickScale(){
+    // Optional manual override: ?sf=0.66
     const qs = new URLSearchParams(location.search || "");
-    const manual = parseFloat(qs.get("scale"));
-    if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual.toString();
+    const manual = parseFloat(qs.get("sf"));
+    if (isFinite(manual) && manual >= 0.45 && manual <= 1.0) return manual;
 
     const w = Math.min(window.innerWidth || 400, (window.screen && window.screen.width) || 400);
-    if (w <= 430) return "0.66";
-    if (w <= 520) return "0.72";
-    return "1";
+    if (w <= 430) return 0.66;   // phone
+    if (w <= 520) return 0.66;   // large phone / small tablet
+    return 1.00;                 // desktop
+  }
+
+  function applyScale(){
+    const s = pickScale();
+    document.documentElement.style.setProperty("--s", String(s));
   }
 
   function buildSrc(page){
@@ -58,14 +80,19 @@
     const u = new URL(EXEC);
     u.searchParams.set("p", p);
     u.searchParams.set("embed", "1");
-    u.searchParams.set("scale", pickScale());
-    u.searchParams.set("v", Date.now().toString(36)); // cache-bust
+
+    // IMPORTANT: let the wrapper do scaling; keep GAS at scale=1 to avoid double-scaling.
+    u.searchParams.set("scale", "1");
+
+    // cache-bust
+    u.searchParams.set("v", Date.now().toString(36));
     return u.toString();
   }
 
   function loadFromHash(){
     const raw = location.hash.slice(1);
     const page = normalizePage(raw.split("?")[0]);
+    applyScale();
     iframe.src = buildSrc(page);
   }
 
@@ -83,17 +110,17 @@
     if (d.type === "FA_NAV") {
       const page = normalizePage(d.page);
       const cur = normalizePage(location.hash.slice(1).split("?")[0]);
+
       if (page !== cur) location.hash = "#" + page;
-      else iframe.src = buildSrc(page); // refresh current
+      else iframe.src = buildSrc(page);
       return;
     }
-    // Ignore FA_HEIGHT if present (we're using native iframe scrolling now).
   });
 
   window.addEventListener("hashchange", loadFromHash);
   window.addEventListener("resize", () => {
-    // If the scale breakpoint changes (phone rotate), reload with new scale.
-    iframe.src = buildSrc(normalizePage(location.hash.slice(1)));
+    // Re-apply scale without reloading the page
+    applyScale();
   });
 
   if (!location.hash) location.hash = "#" + DEFAULT_PAGE;
