@@ -1,309 +1,218 @@
-<style>
-.fa-header{
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #f7f8fa;
-  border-bottom: none;
-  padding: 0 !important;
-  box-sizing: border-box;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flying Aces</title>
+  <style>
+    :root { --vh: 1vh; }
 
-.fa-header .fa-tabs{
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px !important;
-  padding: 8px 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-}
-
-.fa-header .fa-tabs button{
-  appearance: none;
-  -webkit-appearance: none;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100%;
-  box-sizing: border-box !important;
-
-  font-family: "Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight: 900 !important;
-  font-size: clamp(12px, 3.6vw, 16px) !important;
-  letter-spacing: 0.2px !important;
-  line-height: 1 !important;
-
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 6px !important;
-
-  border-radius: 8px !important;
-  border: none !important;
-
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
-
-  color: #222 !important;
-  cursor: pointer;
-
-  /* ✅ keep transitions so the "re-add active" looks like normal selection */
-  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
-.fa-header .fa-tabs button:not(.active):hover{
-  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
-}
-
-.fa-header .fa-tabs button.active{
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-  filter: brightness(1.06);
-}
-
-.fa-header .fa-tabs button:active{
-  transform: scale(0.99);
-}
-
-@media (max-width: 420px){
-  .fa-header .fa-tabs{ padding: 6px 0 !important; }
-  .fa-header .fa-tabs button{
-    height: 36px !important;
-    min-height: 36px !important;
-    font-size: 13px !important;
-    padding: 0 6px !important;
-  }
-}
-</style>
-
-<div class="fa-header">
-  <nav class="fa-tabs">
-    <button id="nav-rankings" type="button" data-page="rankings">RANKINGS</button>
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-  </nav>
-</div>
-
-<script>
-(function(){
-  function qs() {
-    try { return new URLSearchParams(window.location.search || ""); }
-    catch (e) { return new URLSearchParams(""); }
-  }
-
-  function isEmbedded(){
-    try { if (window.top !== window) return true; } catch(e){ return true; }
-    var embed = (qs().get("embed") || "").toLowerCase();
-    return (embed === "1" || embed === "true" || embed === "yes");
-  }
-
-  function setActiveKey(key){
-    key = String(key || "").toLowerCase();
-    if (key === "doubles") key = "rosters";
-    document.querySelectorAll(".fa-tabs button").forEach(function(b){
-      b.classList.toggle("active", (b.dataset.page === key));
-    });
-  }
-
-  function detectActive(){
-    try {
-      var p = (qs().get("p") || "").toLowerCase();
-      if (p === "doubles") p = "rosters";
-      if (["rankings","scoring","rosters","matchups"].indexOf(p) !== -1) { setActiveKey(p); return; }
-
-      // DOM heuristics (works even if p is missing)
-      if (document.getElementById("table-body")) { setActiveKey("rankings"); return; }
-      if (document.getElementById("b1") || document.getElementById("b2") || document.getElementById("b9")) { setActiveKey("scoring"); return; }
-      if (document.getElementById("panel-CURRENT")) { setActiveKey("rosters"); return; }
-      if (document.getElementById("team1Table") || document.getElementById("team2Table")) { setActiveKey("matchups"); return; }
-
-      // title fallback
-      var t = (document.title || "").toLowerCase();
-      if (t.indexOf("ranking") !== -1) { setActiveKey("rankings"); return; }
-      if (t.indexOf("scor") !== -1) { setActiveKey("scoring"); return; }
-      if (t.indexOf("roster") !== -1 || t.indexOf("double") !== -1) { setActiveKey("rosters"); return; }
-
-      setActiveKey("matchups");
-    } catch(e) {
-      setActiveKey("matchups");
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden; /* wrapper never scrolls; iframe does */
+      background: #0b0c10;
     }
-  }
 
-  function extraQS(){
-    var s = qs();
-    var parts = [];
-    parts.push("embed=1");
-    var scale = s.get("scale");
-    var v = s.get("v");
-    if (scale) parts.push("scale=" + encodeURIComponent(scale));
-    if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.length ? ("&" + parts.join("&")) : "";
-  }
-
-  function buildHref(page){
-    return "?p=" + page + extraQS();
-  }
-
-  function sendToWrapper(page){
-    var msg = { type: "FA_NAV", page: page };
-    var sent = false;
-
-    try { window.top.postMessage(msg, "*"); sent = true; } catch(e){}
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage(msg, "*");
-        sent = true;
-      }
-    } catch(e){}
-
-    return sent;
-  }
-
-  // ✅ added opts.skipActive so active retap can replay the same transition
-  function navigate(page, opts){
-    opts = opts || {};
-    var embedded = isEmbedded();
-
-    if (!opts.skipActive) setActiveKey(page);
-
-    var href = buildHref(page);
-
-    if (embedded) {
-      var ok = sendToWrapper(page);
-      if (!ok) window.location.href = href;
-    } else {
-      window.location.href = href;
+    /* Fullscreen iframe */
+    #app {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: calc(var(--vh) * 100);
+      border: 0;
+      background: #ffffff;
     }
-  }
 
-  document.querySelectorAll(".fa-tabs button").forEach(function(btn){
-    btn.addEventListener("click", function(){
-      var page = btn.dataset.page;
-      var wasActive = btn.classList.contains("active");
+    @supports (height: 100dvh) {
+      #app { height: 100dvh; }
+    }
 
-      if (wasActive) {
-        // ✅ Replay the same "inactive -> active" transition you see when switching tabs
-        btn.classList.remove("active");
-        void btn.offsetWidth; // force reflow so the transition definitely triggers
+    /* Optional debug overlay */
+    #debug {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.25;
+      z-index: 999999;
+      display: none;
+    }
+    #debug .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    #debug code { color: #b7ffb7; word-break: break-all; }
+    #debug button {
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
 
-        setTimeout(function(){
-          btn.classList.add("active");
-        }, 35);
+  <div id="debug">
+    <div class="row" style="justify-content:space-between">
+      <div><b>FA DEBUG</b> — native iframe scroll + iframe viewport scaling</div>
+      <div id="dbgScale"></div>
+    </div>
+    <div style="margin-top:6px">
+      <div><b>Page:</b> <span id="dbgPage"></span></div>
+      <div><b>Iframe:</b> <code id="dbgSrc"></code></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="btnCopy">Copy iframe URL</button>
+      <button id="btnReload">Reload</button>
+    </div>
+  </div>
 
-        // Give the visual a moment, then "refresh" (navigate to same page)
-        setTimeout(function(){
-          navigate(page, { skipActive: true });
-        }, 140);
+  <script>
+    (function () {
+      // ✅ Your Apps Script web app exec URL:
+      const EXEC = "https://script.google.com/macros/s/AKfycbyD8Of8Rq69CMvLVSeTRmCtcj8WGwC-HsdIsYSEZ0b4ylA8TvihUztv9H2wGh4vDSpDaw/exec";
 
-        return;
+      const ALLOWED = new Set(["rankings", "scoring", "rosters", "matchups"]);
+      const DEFAULT_PAGE = "matchups";
+
+      const iframe = document.getElementById("app");
+      const debugEl = document.getElementById("debug");
+      const dbgScale = document.getElementById("dbgScale");
+      const dbgPage = document.getElementById("dbgPage");
+      const dbgSrc  = document.getElementById("dbgSrc");
+
+      let currentPage = null;
+      let currentScale = null;
+
+      function qs(name) {
+        return new URLSearchParams(location.search).get(name);
       }
 
-      // Normal: switch tabs immediately
-      navigate(page);
-    }, true);
-  });
+      function normalizePage(p) {
+        p = String(p || "").trim().toLowerCase();
+        if (!p) return DEFAULT_PAGE;
+        // allow "#matchups?x=1" etc
+        p = p.split("?")[0].split("&")[0].replace(/^#/, "");
+        return ALLOWED.has(p) ? p : DEFAULT_PAGE;
+      }
 
-  document.addEventListener("DOMContentLoaded", detectActive);
-  window.addEventListener("load", function(){ setTimeout(detectActive, 0); });
-})();
-</script>
-<script>
-/* ===== Lazy height reporting (only when wrapper requests it) ===== */
-(function(){
-  var embedded = false;
-  try { embedded = (window.top !== window); } catch(e){ embedded = true; }
-  if (!embedded) return;
+      function setVhVar() {
+        // keeps height stable with mobile address bar changes
+        document.documentElement.style.setProperty("--vh", (window.innerHeight * 0.01) + "px");
+      }
 
-  var enabled = false;
-  var lastH = 0;
-  var timer = null;
+      // Source of truth: iframe viewport scale (NOT wrapper transform)
+      function pickScale() {
+        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
+        const overrideRaw = qs("s") || qs("sf") || qs("scale");
+        if (overrideRaw != null) {
+          const v = Number(overrideRaw);
+          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
+        }
 
-  function measure(){
-    try {
-      var de = document.documentElement;
-      var b = document.body;
-      var h = Math.max(
-        de ? de.scrollHeight : 0,
-        de ? de.offsetHeight : 0,
-        b ? b.scrollHeight : 0,
-        b ? b.offsetHeight : 0
-      );
-      return h || 0;
-    } catch(e){
-      return 0;
-    }
-  }
+        // Auto scale by viewport width (CSS pixels)
+        const w = Math.min(
+          window.innerWidth || 9999,
+          document.documentElement.clientWidth || 9999,
+          screen.width || 9999
+        );
 
-  function post(h){
-    var msg = { type:"FA_HEIGHT", height:h, h:h };
-    try { window.top.postMessage(msg, "*"); } catch(e){}
-    try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*"); } catch(e){}
-  }
+        // Phones
+        if (w <= 430) return 0.53;   // Pixel 7a / iPhone mini-ish
+        if (w <= 520) return 0.59;   // larger phones
+        if (w <= 820) return 0.70;   // small tablets / narrow desktop
+        return 1.00;                // wide screens
+      }
 
-  function flush(){
-    timer = null;
-    if (!enabled) return;
-    var h = measure();
-    if (!h) return;
-    if (Math.abs(h - lastH) < 10) return;
-    lastH = h;
-    post(h);
-  }
+      function buildSrc(page) {
+        const p = normalizePage(page);
+        const s = pickScale();
 
-  function schedule(){
-    if (!enabled) return;
-    if (timer) return;
-    timer = setTimeout(flush, 120);
-  }
+        const u = new URL(EXEC);
+        u.searchParams.set("p", p);
+        u.searchParams.set("embed", "1");
+        u.searchParams.set("scale", String(s));
 
-  function start(){
-    if (enabled) return;
-    enabled = true;
+        // Cache-bust only if not provided
+        u.searchParams.set("v", qs("v") || String(Date.now()));
 
-    // Initial burst (covers dynamic render)
-    schedule();
-    window.addEventListener("load", schedule);
-    setTimeout(schedule, 250);
-    setTimeout(schedule, 900);
+        return { url: u.toString(), page: p, scale: s };
+      }
 
-    if ("ResizeObserver" in window) {
-      try {
-        var ro = new ResizeObserver(function(){ schedule(); });
-        ro.observe(document.documentElement);
-        if (document.body) ro.observe(document.body);
-      } catch(e){}
-    }
+      function getTargetPage() {
+        // Prefer hash routing for the wrapper
+        const fromHash = normalizePage((location.hash || "").slice(1));
+        // Also accept ?p= for deep links
+        const fromQuery = normalizePage(qs("p"));
+        return (location.hash && location.hash.length > 1) ? fromHash : fromQuery || DEFAULT_PAGE;
+      }
 
-    ["click","change","input"].forEach(function(evt){
-      document.addEventListener(evt, function(){ schedule(); }, true);
-    });
-    window.addEventListener("transitionend", schedule, true);
-    window.addEventListener("animationend", schedule, true);
-  }
+      function updateDebug(url, page, scale) {
+        if (debugEl.style.display !== "block") return;
+        dbgScale.textContent = "Scale: " + scale;
+        dbgPage.textContent = page;
+        dbgSrc.textContent = url;
+      }
 
-  function okOrigin(origin){
-    // Allow anything; this is just a one-way height report. (Wrapper validates origins on receive.)
-    return true;
-  }
+      function navigate(page, forceReload) {
+        const built = buildSrc(page);
 
-  window.addEventListener("message", function(ev){
-    var d = ev && ev.data;
-    if (!d || typeof d !== "object") return;
-    if (!okOrigin(ev.origin)) return;
+        // Track + reload only when needed
+        const scaleChanged = (currentScale == null) || (Math.abs(built.scale - currentScale) > 0.0005);
+        const pageChanged  = (currentPage == null) || (built.page !== currentPage);
 
-    if (d.type === "FA_HEIGHT_REQ" && d.on) {
-      start();
-      schedule();
-    }
-  });
-})();
-</script>
+        currentPage = built.page;
+        currentScale = built.scale;
+
+        if (forceReload || pageChanged || scaleChanged || iframe.src !== built.url) {
+          iframe.src = built.url;
+        }
+
+        updateDebug(built.url, built.page, built.scale);
+      }
+
+      // Listen for nav clicks from inside the Apps Script Header.html
+      window.addEventListener("message", (ev) => {
+        const d = ev && ev.data;
+        if (!d || d.type !== "FA_NAV") return;
+
+        const page = normalizePage(d.page);
+        // Keep hash in sync (so back button works)
+        if (normalizePage((location.hash || "").slice(1)) !== page) {
+          location.hash = "#" + page;
+        } else {
+          navigate(page, true);
+        }
+      });
+
+      window.addEventListener("hashchange", () => navigate(getTargetPage(), false));
+      window.addEventListener("resize", () => {
+        setVhVar();
+        // If breakpoint changes, refresh so iframe gets new viewport scale
+        navigate(currentPage || getTargetPage(), false);
+      });
+
+      // Debug UI toggle: ?debug=1
+      if (qs("debug") === "1") {
+        debugEl.style.display = "block";
+        document.getElementById("btnCopy").onclick = async () => {
+          try { await navigator.clipboard.writeText(iframe.src); } catch (e) {}
+        };
+        document.getElementById("btnReload").onclick = () => navigate(currentPage || getTargetPage(), true);
+      }
+
+      // Boot
+      setVhVar();
+      if (!location.hash && !qs("p")) location.hash = "#" + DEFAULT_PAGE;
+      navigate(getTargetPage(), true);
+    })();
+  </script>
+</body>
+</html>
