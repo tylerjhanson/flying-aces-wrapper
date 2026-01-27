@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- ✅ Disable pinch/zoom -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Flying Aces</title>
+
   <style>
     :root { --vh: 1vh; }
 
@@ -13,6 +15,32 @@
       height: 100%;
       overflow: hidden; /* wrapper never scrolls; iframe does */
       background: #0b0c10;
+
+      /* Helps prevent browser gesture surprises */
+      touch-action: pan-x pan-y;
+    }
+
+    /* ✅ Simple top loading bar (replaces "native" browser loading feedback) */
+    #faLoadBar{
+      position: fixed;
+      top: env(safe-area-inset-top, 0);
+      left: 0;
+      height: 3px;
+      width: 0%;
+      opacity: 0;
+      background: #0d6efd;
+      z-index: 999999;
+      pointer-events: none;
+      transition: opacity .12s ease, width .35s ease;
+    }
+    #faLoadBar.on{
+      opacity: 1;
+      width: 70%;
+    }
+    #faLoadBar.done{
+      opacity: 1;
+      width: 100%;
+      transition: width .12s linear, opacity .25s ease .10s;
     }
 
     /* Fullscreen iframe */
@@ -57,6 +85,9 @@
   </style>
 </head>
 <body>
+  <!-- ✅ Loading bar -->
+  <div id="faLoadBar" aria-hidden="true"></div>
+
   <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
 
   <div id="debug">
@@ -76,6 +107,51 @@
 
   <script>
     (function () {
+
+      /* ============================
+         ✅ Pinch/zoom blocking (wrapper)
+         ============================ */
+      // iOS Safari fallback: prevent gesture-based zoom
+      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
+        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
+      });
+
+      // Optional: reduce double-tap zoom on some browsers
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive:false });
+
+
+      /* ============================
+         ✅ Loading bar helpers
+         ============================ */
+      const loadBar = document.getElementById("faLoadBar");
+      let loadBarTimer = null;
+
+      function showLoadBar(){
+        if (!loadBar) return;
+        loadBar.classList.remove("done");
+        loadBar.classList.add("on");
+        clearTimeout(loadBarTimer);
+        // safety hide in case load never fires
+        loadBarTimer = setTimeout(hideLoadBar, 8000);
+      }
+
+      function hideLoadBar(){
+        if (!loadBar) return;
+        loadBar.classList.add("done");
+        clearTimeout(loadBarTimer);
+        loadBarTimer = setTimeout(() => {
+          loadBar.classList.remove("on");
+          loadBar.classList.remove("done");
+          loadBar.style.width = "";
+        }, 350);
+      }
+
+
       // ✅ Your Apps Script web app exec URL:
       const EXEC = "https://script.google.com/macros/s/AKfycbzGtllq8LxWn8iTZ5JpYXeeJcoNldkZYYI2V5udAfQv3Lw22Xhrted49zvUDvdnc7Qm/exec";
 
@@ -90,6 +166,9 @@
 
       let currentPage = null;
       let currentScale = null;
+
+      // Hide the loading bar when the iframe finishes loading
+      iframe.addEventListener("load", hideLoadBar);
 
       function qs(name) {
         return new URLSearchParams(location.search).get(name);
@@ -113,38 +192,37 @@
 
       // Source of truth: iframe viewport scale (NOT wrapper transform)
       function pickScale() {
-  // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
-  const overrideRaw = qs("s") || qs("sf") || qs("scale");
-  if (overrideRaw != null) {
-    const v = Number(overrideRaw);
-    if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
-  }
+        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
+        const overrideRaw = qs("s") || qs("sf") || qs("scale");
+        if (overrideRaw != null) {
+          const v = Number(overrideRaw);
+          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
+        }
 
-  const ua = navigator.userAgent || "";
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
-  const isAndroid = /Android/i.test(ua);
+        const ua = navigator.userAgent || "";
+        const isIOS = /iPhone|iPad|iPod/i.test(ua);
+        const isAndroid = /Android/i.test(ua);
 
-  // Auto scale by viewport width (CSS pixels)
-  const w = Math.min(
-    window.innerWidth || 9999,
-    document.documentElement.clientWidth || 9999,
-    screen.width || 9999
-  );
+        // Auto scale by viewport width (CSS pixels)
+        const w = Math.min(
+          window.innerWidth || 9999,
+          document.documentElement.clientWidth || 9999,
+          screen.width || 9999
+        );
 
-  // ✅ Phones: make Android slightly larger, iOS slightly smaller
-  // This also removes the "some phones get 0.53 and some get 0.59" gap.
-  if (w <= 520) {
-    if (isIOS) return 0.55;      // slightly smaller on iOS
-    if (isAndroid) return 0.57;  // slightly larger on Android
-    return 0.56;                 // fallback
-  }
+        // ✅ Phones: make Android slightly larger, iOS slightly smaller
+        if (w <= 520) {
+          if (isIOS) return 0.55;      // slightly smaller on iOS
+          if (isAndroid) return 0.57;  // slightly larger on Android
+          return 0.56;                 // fallback
+        }
 
-  // Tablets / narrow desktop
-  if (w <= 820) return 0.70;
+        // Tablets / narrow desktop
+        if (w <= 820) return 0.70;
 
-  // Wide screens
-  return 1.00;
-}
+        // Wide screens
+        return 1.00;
+      }
 
       function buildSrc(page, reloadNonce) {
         const p = normalizePage(page);
@@ -158,11 +236,10 @@
         // Stable cache-bust value (prevents iOS scroll/resize from reloading the iframe)
         u.searchParams.set("v", STABLE_V);
 
-        // ✅ On forced reload: add a one-time nonce so the iframe truly reloads (even if content/data didn't change)
+        // ✅ On forced reload: add a one-time nonce so the iframe truly reloads
         if (reloadNonce) {
           u.searchParams.set("r", String(reloadNonce));
-          // Optional signal for app code (safe if unused)
-          u.searchParams.set("fresh", "1");
+          u.searchParams.set("fresh", "1"); // safe if unused
         }
 
         return { url: u.toString(), page: p, scale: s };
@@ -195,6 +272,7 @@
 
         // ✅ Only reload iframe when something actually changed OR a forceReload was requested
         if (forceReload || pageChanged || scaleChanged) {
+          showLoadBar();            // ✅ show "tap happened" feedback
           iframe.src = built.url;
         }
 
@@ -209,6 +287,8 @@
         // Pull-to-refresh request from inside the iframe
         if (d.type === "FA_REFRESH") {
           const nonce = d.nonce || Date.now();
+          // show bar even if same page
+          showLoadBar();
           navigate(currentPage || getTargetPage(), true, nonce);
           return;
         }
@@ -216,6 +296,10 @@
         // Navigate to a page
         if (d.type === "FA_NAV") {
           const page = normalizePage(d.page);
+
+          // Immediate feedback on tap:
+          showLoadBar();
+
           // Keep hash in sync (so back button works)
           if (normalizePage((location.hash || "").slice(1)) !== page) {
             location.hash = "#" + page;
@@ -245,6 +329,7 @@
       // Boot
       setVhVar();
       if (!location.hash && !qs("p")) location.hash = "#" + DEFAULT_PAGE;
+      showLoadBar();
       navigate(getTargetPage(), true, Date.now());
     })();
   </script>
