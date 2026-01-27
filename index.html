@@ -95,6 +95,9 @@
         return new URLSearchParams(location.search).get(name);
       }
 
+      // Stable cache-bust value for this session (prevents iOS scroll/resize from reloading the iframe)
+      const STABLE_V = qs("v") || String(Date.now());
+
       function normalizePage(p) {
         p = String(p || "").trim().toLowerCase();
         if (!p) return DEFAULT_PAGE;
@@ -140,8 +143,8 @@
         u.searchParams.set("embed", "1");
         u.searchParams.set("scale", String(s));
 
-        // Cache-bust only if not provided
-        u.searchParams.set("v", qs("v") || String(Date.now()));
+        // Stable cache-bust value (prevents iOS scroll/resize from reloading the iframe)
+        u.searchParams.set("v", STABLE_V);
 
         return { url: u.toString(), page: p, scale: s };
       }
@@ -171,7 +174,7 @@
         currentPage = built.page;
         currentScale = built.scale;
 
-        if (forceReload || pageChanged || scaleChanged || iframe.src !== built.url) {
+        if (forceReload || pageChanged || scaleChanged) {
           iframe.src = built.url;
         }
 
