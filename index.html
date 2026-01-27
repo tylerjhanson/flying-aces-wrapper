@@ -167,6 +167,16 @@
       function navigate(page, forceReload) {
         const built = buildSrc(page);
 
+        // Build URL. On forced reload, add a one-time nonce so the iframe truly reloads.
+        let url = built.url;
+        if (forceReload) {
+          try {
+            const u = new URL(url);
+            u.searchParams.set("r", String(Date.now()));
+            url = u.toString();
+          } catch (e) {}
+        }
+
         // Track + reload only when needed
         const scaleChanged = (currentScale == null) || (Math.abs(built.scale - currentScale) > 0.0005);
         const pageChanged  = (currentPage == null) || (built.page !== currentPage);
@@ -175,23 +185,33 @@
         currentScale = built.scale;
 
         if (forceReload || pageChanged || scaleChanged) {
-          iframe.src = built.url;
+          iframe.src = url;
         }
 
-        updateDebug(built.url, built.page, built.scale);
+        updateDebug(url, built.page, built.scale);
       }
 
-      // Listen for nav clicks from inside the Apps Script Header.html
+      // Listen for messages from inside the Apps Script app (Header.html)
       window.addEventListener("message", (ev) => {
         const d = ev && ev.data;
-        if (!d || d.type !== "FA_NAV") return;
+        if (!d || typeof d !== "object") return;
 
-        const page = normalizePage(d.page);
-        // Keep hash in sync (so back button works)
-        if (normalizePage((location.hash || "").slice(1)) !== page) {
-          location.hash = "#" + page;
-        } else {
-          navigate(page, true);
+        // Navigate to a page
+        if (d.type === "FA_NAV") {
+          const page = normalizePage(d.page);
+          // Keep hash in sync (so back button works)
+          if (normalizePage((location.hash || "").slice(1)) !== page) {
+            location.hash = "#" + page;
+          } else {
+            navigate(page, true);
+          }
+          return;
+        }
+
+        // Pull-to-refresh request from inside the iframe
+        if (d.type === "FA_REFRESH") {
+          navigate(currentPage || getTargetPage(), true);
+          return;
         }
       });
 
