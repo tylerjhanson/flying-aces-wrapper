@@ -113,26 +113,38 @@
 
       // Source of truth: iframe viewport scale (NOT wrapper transform)
       function pickScale() {
-        // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
-        const overrideRaw = qs("s") || qs("sf") || qs("scale");
-        if (overrideRaw != null) {
-          const v = Number(overrideRaw);
-          if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
-        }
+  // Allow manual override: ?scale=0.62 or ?s=0.62 or ?sf=0.62
+  const overrideRaw = qs("s") || qs("sf") || qs("scale");
+  if (overrideRaw != null) {
+    const v = Number(overrideRaw);
+    if (Number.isFinite(v) && v >= 0.4 && v <= 1.2) return +v.toFixed(3);
+  }
 
-        // Auto scale by viewport width (CSS pixels)
-        const w = Math.min(
-          window.innerWidth || 9999,
-          document.documentElement.clientWidth || 9999,
-          screen.width || 9999
-        );
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
 
-        // Phones
-        if (w <= 430) return 0.53;   // Pixel 7a / iPhone mini-ish
-        if (w <= 520) return 0.59;   // larger phones
-        if (w <= 820) return 0.70;   // small tablets / narrow desktop
-        return 1.00;                // wide screens
-      }
+  // Auto scale by viewport width (CSS pixels)
+  const w = Math.min(
+    window.innerWidth || 9999,
+    document.documentElement.clientWidth || 9999,
+    screen.width || 9999
+  );
+
+  // ✅ Phones: make Android slightly larger, iOS slightly smaller
+  // This also removes the "some phones get 0.53 and some get 0.59" gap.
+  if (w <= 520) {
+    if (isIOS) return 0.55;      // slightly smaller on iOS
+    if (isAndroid) return 0.57;  // slightly larger on Android
+    return 0.56;                 // fallback
+  }
+
+  // Tablets / narrow desktop
+  if (w <= 820) return 0.70;
+
+  // Wide screens
+  return 1.00;
+}
 
       function buildSrc(page, reloadNonce) {
         const p = normalizePage(page);
