@@ -134,7 +134,7 @@
         return 1.00;                // wide screens
       }
 
-      function buildSrc(page) {
+      function buildSrc(page, reloadNonce) {
         const p = normalizePage(page);
         const s = pickScale();
 
@@ -145,6 +145,13 @@
 
         // Stable cache-bust value (prevents iOS scroll/resize from reloading the iframe)
         u.searchParams.set("v", STABLE_V);
+
+        // ✅ On forced reload: add a one-time nonce so the iframe truly reloads (even if content/data didn't change)
+        if (reloadNonce) {
+          u.searchParams.set("r", String(reloadNonce));
+          // Optional signal for app code (safe if unused)
+          u.searchParams.set("fresh", "1");
+        }
 
         return { url: u.toString(), page: p, scale: s };
       }
@@ -164,18 +171,8 @@
         dbgSrc.textContent = url;
       }
 
-      function navigate(page, forceReload) {
-        const built = buildSrc(page);
-
-        // Build URL. On forced reload, add a one-time nonce so the iframe truly reloads.
-        let url = built.url;
-        if (forceReload) {
-          try {
-            const u = new URL(url);
-            u.searchParams.set("r", String(Date.now()));
-            url = u.toString();
-          } catch (e) {}
-        }
+      function navigate(page, forceReload, reloadNonce) {
+        const built = buildSrc(page, forceReload ? (reloadNonce || Date.now()) : null);
 
         // Track + reload only when needed
         const scaleChanged = (currentScale == null) || (Math.abs(built.scale - currentScale) > 0.0005);
@@ -184,17 +181,25 @@
         currentPage = built.page;
         currentScale = built.scale;
 
+        // ✅ Only reload iframe when something actually changed OR a forceReload was requested
         if (forceReload || pageChanged || scaleChanged) {
-          iframe.src = url;
+          iframe.src = built.url;
         }
 
-        updateDebug(url, built.page, built.scale);
+        updateDebug(built.url, built.page, built.scale);
       }
 
       // Listen for messages from inside the Apps Script app (Header.html)
       window.addEventListener("message", (ev) => {
         const d = ev && ev.data;
         if (!d || typeof d !== "object") return;
+
+        // Pull-to-refresh request from inside the iframe
+        if (d.type === "FA_REFRESH") {
+          const nonce = d.nonce || Date.now();
+          navigate(currentPage || getTargetPage(), true, nonce);
+          return;
+        }
 
         // Navigate to a page
         if (d.type === "FA_NAV") {
@@ -203,15 +208,9 @@
           if (normalizePage((location.hash || "").slice(1)) !== page) {
             location.hash = "#" + page;
           } else {
-            navigate(page, true);
+            // same page retap = real reload
+            navigate(page, true, Date.now());
           }
-          return;
-        }
-
-        // Pull-to-refresh request from inside the iframe
-        if (d.type === "FA_REFRESH") {
-          navigate(currentPage || getTargetPage(), true);
-          return;
         }
       });
 
@@ -228,13 +227,13 @@
         document.getElementById("btnCopy").onclick = async () => {
           try { await navigator.clipboard.writeText(iframe.src); } catch (e) {}
         };
-        document.getElementById("btnReload").onclick = () => navigate(currentPage || getTargetPage(), true);
+        document.getElementById("btnReload").onclick = () => navigate(currentPage || getTargetPage(), true, Date.now());
       }
 
       // Boot
       setVhVar();
       if (!location.hash && !qs("p")) location.hash = "#" + DEFAULT_PAGE;
-      navigate(getTargetPage(), true);
+      navigate(getTargetPage(), true, Date.now());
     })();
   </script>
 </body>
