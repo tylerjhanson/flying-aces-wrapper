@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Flying Aces</title>
   <style>
+html, body { touch-action: pan-x pan-y; }
+
     :root { --vh: 1vh; }
 
     html, body {
@@ -55,6 +57,14 @@
       cursor: pointer;
     }
   </style>
+
+  <script>
+    // iOS Safari pinch-zoom fallback (best-effort; viewport meta is primary)
+    ["gesturestart","gesturechange","gestureend"].forEach((evt) => {
+      document.addEventListener(evt, (e) => e.preventDefault(), { passive:false });
+    });
+  </script>
+
 </head>
 <body>
   <iframe id="app" title="Flying Aces" scrolling="yes"></iframe>
@@ -201,7 +211,48 @@
         updateDebug(built.url, built.page, built.scale);
       }
 
-      // Listen for messages from inside the Apps Script app (Header.html)
+      
+      // Try a "soft refresh" (no iframe reload). Works best on Matchups.
+      function softRefreshCurrent(nonce){
+        return new Promise((resolve) => {
+          try{
+            const win = iframe && iframe.contentWindow;
+            if (!win) return resolve(false);
+
+            let done = false;
+            const tAck  = setTimeout(() => cleanup(false), 250);
+            const tDone = setTimeout(() => cleanup(false), 2000);
+
+            function cleanup(ok){
+              if (done) return;
+              done = true;
+              clearTimeout(tAck);
+              clearTimeout(tDone);
+              window.removeEventListener("message", onMsg);
+              resolve(ok);
+            }
+
+            function onMsg(ev){
+              const d = ev && ev.data;
+              if (!d || typeof d !== "object") return;
+              if (d.nonce !== nonce) return;
+
+              if (d.type === "FA_SOFT_REFRESH_UNSUPPORTED") return cleanup(false);
+              if (d.type === "FA_SOFT_REFRESH_DONE") return cleanup(true);
+              if (d.type === "FA_SOFT_REFRESH_ACK") {
+                clearTimeout(tAck); // supported; now wait for DONE
+              }
+            }
+
+            window.addEventListener("message", onMsg);
+            win.postMessage({ type: "FA_SOFT_REFRESH", nonce }, "*");
+          } catch(e){
+            resolve(false);
+          }
+        });
+      }
+
+// Listen for messages from inside the Apps Script app (Header.html)
       window.addEventListener("message", (ev) => {
         const d = ev && ev.data;
         if (!d || typeof d !== "object") return;
@@ -209,7 +260,9 @@
         // Pull-to-refresh request from inside the iframe
         if (d.type === "FA_REFRESH") {
           const nonce = d.nonce || Date.now();
-          navigate(currentPage || getTargetPage(), true, nonce);
+          softRefreshCurrent(nonce).then((ok) => {
+            if (!ok) navigate(currentPage || getTargetPage(), true, nonce);
+          });
           return;
         }
 
@@ -220,8 +273,11 @@
           if (normalizePage((location.hash || "").slice(1)) !== page) {
             location.hash = "#" + page;
           } else {
-            // same page retap = real reload
-            navigate(page, true, Date.now());
+            // same page retap: try soft refresh first, then hard reload
+            const nonce = Date.now();
+            softRefreshCurrent(nonce).then((ok) => {
+              if (!ok) navigate(page, true, nonce);
+            });
           }
         }
       });
