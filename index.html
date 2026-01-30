@@ -109,26 +109,23 @@
     (function () {
 
       /* ============================
-   ✅ Pinch/zoom blocking (wrapper) — iOS only
-   ============================ */
-(function(){
-  const ua = navigator.userAgent || "";
-  const isIOS = /iPad|iPhone|iPod/i.test(ua) || (ua.includes("Mac") && ("ontouchend" in document));
-  if (!isIOS) return;
+         ✅ Pinch/zoom blocking (wrapper)
+         ============================ */
+      // iOS Safari fallback: prevent gesture-based zoom
+      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
+        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
+      });
 
-  ['gesturestart','gesturechange','gestureend'].forEach(evt => {
-    document.addEventListener(evt, e => e.preventDefault(), { passive:false });
-  });
+      // Optional: reduce double-tap zoom on some browsers
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive:false });
 
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', e => {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive:false });
-})();
 
-/* ============================
+      /* ============================
          ✅ Loading bar helpers
          ============================ */
       const loadBar = document.getElementById("faLoadBar");
