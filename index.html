@@ -109,23 +109,26 @@
     (function () {
 
       /* ============================
-         ✅ Pinch/zoom blocking (wrapper)
-         ============================ */
-      // iOS Safari fallback: prevent gesture-based zoom
-      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
-        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
-      });
+   ✅ Pinch/zoom blocking (wrapper) — iOS ONLY
+   ============================ */
+(function(){
+  var ua = navigator.userAgent || "";
+  var isIOS = /iPad|iPhone|iPod/i.test(ua) || (ua.indexOf("Mac") !== -1 && ("ontouchend" in document));
+  if (!isIOS) return;
 
-      // Optional: reduce double-tap zoom on some browsers
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', e => {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) e.preventDefault();
-        lastTouchEnd = now;
-      }, { passive:false });
+  ['gesturestart','gesturechange','gestureend'].forEach(function(evt){
+    document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
+  });
 
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+})();
 
-      /* ============================
+/* ============================
          ✅ Loading bar helpers
          ============================ */
       const loadBar = document.getElementById("faLoadBar");
