@@ -178,12 +178,20 @@
       const STABLE_V = qs("v") || String(Date.now());
 
       function normalizePage(p) {
-        p = String(p || "").trim().toLowerCase();
-        if (!p) return DEFAULT_PAGE;
-        // allow "#matchups?x=1" etc
-        p = p.split("?")[0].split("&")[0].replace(/^#/, "");
-        return ALLOWED.has(p) ? p : DEFAULT_PAGE;
-      }
+  p = String(p || "").trim().toLowerCase();
+  if (!p) return DEFAULT_PAGE;
+
+  // tolerate "#/standings", "standings/", "/standings", etc
+  p = p.replace(/^#/, "");
+  p = p.replace(/^\/+/, "");     // remove leading slash(es)
+  p = p.replace(/\/+$/, "");     // remove trailing slash(es)
+
+  // allow "#matchups?x=1" etc
+  p = p.split("?")[0].split("&")[0];
+
+  return ALLOWED.has(p) ? p : DEFAULT_PAGE;
+}
+
 
       function setVhVar() {
         // keeps height stable with mobile address bar changes
@@ -294,20 +302,20 @@
         }
 
         // Navigate to a page
-        if (d.type === "FA_NAV") {
-          const page = normalizePage(d.page);
+       if (d.type === "FA_NAV") {
+  const page = normalizePage(d.page);
 
-          // Immediate feedback on tap:
-          showLoadBar();
+  showLoadBar();
 
-          // Keep hash in sync (so back button works)
-          if (normalizePage((location.hash || "").slice(1)) !== page) {
-            location.hash = "#" + page;
-          } else {
-            // same page retap = real reload
-            navigate(page, true, Date.now());
-          }
-        }
+  // Keep hash in sync (so back button works)
+  if (normalizePage((location.hash || "").slice(1)) !== page) {
+    location.hash = "#" + page;
+  }
+
+  // ✅ Always navigate immediately (don’t rely on hashchange timing)
+  navigate(page, true, Date.now());
+}
+
       });
 
       window.addEventListener("hashchange", () => navigate(getTargetPage(), false));
