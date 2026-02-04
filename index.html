@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <!-- ✅ Disable pinch/zoom -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Flying Aces</title>
 
   <style>
@@ -16,9 +16,8 @@
       overflow: hidden; /* wrapper never scrolls; iframe does */
       background: #0b0c10;
 
-      /* Let browser manage gestures; avoid interfering with iframe scrolling */
-      touch-action: auto;
-      overscroll-behavior: none;
+      /* Helps prevent browser gesture surprises */
+      touch-action: pan-x pan-y;
     }
 
     /* ✅ Simple top loading bar (replaces "native" browser loading feedback) */
@@ -46,7 +45,7 @@
 
     /* Fullscreen iframe */
     #app {
-      position: absolute;
+      position: fixed;
       inset: 0;
       width: 100%;
       height: calc(var(--vh) * 100);
@@ -108,12 +107,25 @@
 
   <script>
     (function () {
-      /* (removed) wrapper-level gesture blockers */
-// iOS Safari fallback: prevent gesture-based zoom
-});
+
+      /* ============================
+         ✅ Pinch/zoom blocking (wrapper)
+         ============================ */
+      // iOS Safari fallback: prevent gesture-based zoom
+      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
+        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
+      });
 
       // Optional: reduce double-tap zoom on some browsers
-/* ============================
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive:false });
+
+
+      /* ============================
          ✅ Loading bar helpers
          ============================ */
       const loadBar = document.getElementById("faLoadBar");
