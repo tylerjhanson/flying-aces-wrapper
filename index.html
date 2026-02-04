@@ -46,6 +46,8 @@
     /* Fullscreen iframe */
     #app {
       position: fixed;
+      touch-action: auto;
+      overscroll-behavior: contain;
       inset: 0;
       width: 100%;
       height: calc(var(--vh) * 100);
@@ -111,19 +113,17 @@
       /* ============================
          ✅ Pinch/zoom blocking (wrapper)
          ============================ */
-      // iOS Safari fallback: prevent gesture-based zoom
-      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
-        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
-      });
-
-      // Optional: reduce double-tap zoom on some browsers
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', e => {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) e.preventDefault();
-        lastTouchEnd = now;
-      }, { passive:false });
-
+      // iOS only: prevent gesture-based zoom on the wrapper.
+      // IMPORTANT: Do NOT block touchend/double-tap here, as it can break iframe scrolling on Android/iOS.
+      (function(){
+        var ua = navigator.userAgent || "";
+        var plat = navigator.platform || "";
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (plat === "MacIntel" && (navigator.maxTouchPoints||0) > 1);
+        if (!isIOS) return;
+        ['gesturestart','gesturechange','gestureend'].forEach(function(evt){
+          document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
+        });
+      })();
 
       /* ============================
          ✅ Loading bar helpers
