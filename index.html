@@ -46,8 +46,6 @@
     /* Fullscreen iframe */
     #app {
       position: fixed;
-      touch-action: auto;
-      overscroll-behavior: contain;
       inset: 0;
       width: 100%;
       height: calc(var(--vh) * 100);
@@ -110,20 +108,30 @@
   <script>
     (function () {
 
+      // ✅ Mobile browsers can be flaky scrolling inside cross-origin iframes.
+      // If on iOS/Android and not forced, open the Apps Script app directly (no iframe).
+      const UA = navigator.userAgent || "";
+      const IS_IOS = /iPad|iPhone|iPod/i.test(UA) || (navigator.platform==="MacIntel" && (navigator.maxTouchPoints||0)>1);
+      const IS_ANDROID = /Android/i.test(UA);
+      const IS_MOBILE = IS_IOS || IS_ANDROID;
+
+
       /* ============================
          ✅ Pinch/zoom blocking (wrapper)
          ============================ */
-      // iOS only: prevent gesture-based zoom on the wrapper.
-      // IMPORTANT: Do NOT block touchend/double-tap here, as it can break iframe scrolling on Android/iOS.
-      (function(){
-        var ua = navigator.userAgent || "";
-        var plat = navigator.platform || "";
-        var isIOS = /iPad|iPhone|iPod/.test(ua) || (plat === "MacIntel" && (navigator.maxTouchPoints||0) > 1);
-        if (!isIOS) return;
-        ['gesturestart','gesturechange','gestureend'].forEach(function(evt){
-          document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
-        });
-      })();
+      // iOS Safari fallback: prevent gesture-based zoom
+      ['gesturestart','gesturechange','gestureend'].forEach(evt => {
+        document.addEventListener(evt, e => e.preventDefault(), { passive:false });
+      });
+
+      // Optional: reduce double-tap zoom on some browsers
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) e.preventDefault();
+        lastTouchEnd = now;
+      }, { passive:false });
+
 
       /* ============================
          ✅ Loading bar helpers
@@ -173,6 +181,9 @@
       function qs(name) {
         return new URLSearchParams(location.search).get(name);
       }
+
+      const FORCE_EMBED = (qs("embed")==="1" || qs("iframe")==="1");
+
 
       // Stable cache-bust value for this session (prevents iOS scroll/resize from reloading the iframe)
       const STABLE_V = qs("v") || String(Date.now());
@@ -262,6 +273,15 @@
 
       function navigate(page, forceReload, reloadNonce) {
         const built = buildSrc(page, forceReload ? (reloadNonce || Date.now()) : null);
+
+         // On mobile, prefer opening directly (avoids intermittent scroll/gesture issues in iframes)
+         if (IS_MOBILE && !FORCE_EMBED){
+           // Keep hash for history/back button before leaving the wrapper
+           try { if (location.hash !== ("#" + page)) location.hash = "#" + page; } catch(_){ }
+           location.replace(built.url);
+           return;
+         }
+
 
         // Track + reload only when needed
         const scaleChanged = (currentScale == null) || (Math.abs(built.scale - currentScale) > 0.0005);
