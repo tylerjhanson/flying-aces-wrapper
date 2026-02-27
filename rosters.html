@@ -1460,6 +1460,8 @@ function applySortRules(){
 const FA_ROSTERS_BOOT_CACHE_KEY = "FA_ROSTERS_BOOT_CACHE_V1";
 
 window.onload = function(){
+  // Hide any previous bootstrap error banner
+  try{ var bd=document.getElementById('bootDebug'); if(bd) bd.style.display='none'; var det=document.getElementById('bootDebugDetail'); if(det) det.textContent=''; }catch(_){ }
   // Instant paint from cache (stale-while-revalidate)
   try{
     const cached = localStorage.getItem(FA_ROSTERS_BOOT_CACHE_KEY);
@@ -1501,6 +1503,8 @@ window.onload = function(){
 
 
 function applyBootstrap(boot, opt){
+  // Clear bootstrap error banner on success
+  try{ var bd=document.getElementById('bootDebug'); if(bd) bd.style.display='none'; var det=document.getElementById('bootDebugDetail'); if(det) det.textContent=''; }catch(_){ }
   boot = boot || {};
 
   opt = opt || {};
@@ -1590,7 +1594,7 @@ function applyBootstrap(boot, opt){
   (window.requestAnimationFrame || function(fn){ setTimeout(fn, 0); })(function(){
     setTimeout(function(){ wireDnDOnce(); wireTouchDnDOnce(); }, 0);
   });
-  startBootstrapSync && startBootstrapSync();
+  if (typeof startBootstrapSync === 'function') startBootstrapSync();
 
   setStatus("Loaded " + STATE.masterAces.length + " players from PlayersDB");
 }
