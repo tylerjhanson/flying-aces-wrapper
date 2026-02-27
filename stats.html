@@ -4325,17 +4325,17 @@ function tryApplyStatsBootstrapFromCache(){
 
     // Initial team render (uses cached stats if version matches)
     try{
-      if (typeof setStatsTeam === "function") // pick initial team (restore last selection if present)
-          var savedTeam = "";
-          try{ savedTeam = localStorage.getItem("FA_STATS_LAST_TEAM") || ""; }catch(e){}
-          var initialTeam = window.FA_ACES_TEAM;
-          try{
-            if (savedTeam && (window.FA_LEAGUE_TEAMS || []).some(t => _key(t) === _key(savedTeam))){
-              initialTeam = savedTeam;
-            }
-          }catch(e){}
-          setStatsTeam(initialTeam);
-      else {
+      if (typeof setStatsTeam === "function"){ // pick initial team (restore last selection if present)
+        var savedTeam = "";
+        try{ savedTeam = localStorage.getItem("FA_STATS_LAST_TEAM") || ""; }catch(e){}
+        var initialTeam = window.FA_ACES_TEAM;
+        try{
+          if (savedTeam && (window.FA_LEAGUE_TEAMS || []).some(t => _key(t) === _key(savedTeam))){
+            initialTeam = savedTeam;
+          }
+        }catch(e){}
+        setStatsTeam(initialTeam);
+      } else {
         window.FA_STATS_TEAM = window.FA_ACES_TEAM;
         if ($("statsTeamPick")) $("statsTeamPick").value = window.FA_ACES_TEAM;
         try{ fillSelectSimple("playerPick", data.aces || [], "Select player…"); }catch(_){}
