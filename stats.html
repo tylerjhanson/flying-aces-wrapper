@@ -2166,6 +2166,7 @@ function refreshLeague(){
     .withSuccessHandler(data => {
       try{
         if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
         if (!data) throw new Error("No data");
         if (data.ok === false) throw new Error(data.error || "League stats failed");
         renderLeague(data);
@@ -2242,6 +2243,7 @@ function refreshScout(){
     .withSuccessHandler(data => {
       try{
         if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
         if (!data) throw new Error("No data");
         if (data.ok === false) throw new Error(data.error || "Scout failed");
         renderScout(data);
@@ -2363,6 +2365,7 @@ function submitLeagueMatch(){
 
       // Parse safe-return payload
       if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
       if (!data) { toast("Save failed (no response)", 2200); return; }
       if (data.ok === false) { toast(String(data.error || "Save failed"), 2600); return; }
 
@@ -3628,6 +3631,23 @@ function renderPlayerStats(data){
   renderMatchCards("playerCards", data.recent || [], false);
 }
 
+
+// --------- helpers for doPost-wrapped results (avoid double-wrapping) ---------
+function _unwrapResult_(d){
+  try{
+    if (!d) return d;
+    if (typeof d === "string"){
+      try{ d = JSON.parse(d); }catch(_){ return d; }
+    }
+    // If the server function also returns {ok:true,result:...}, unwrap one more level
+    if (d && typeof d === "object" && d.ok === true && d.result != null &&
+        (d.leagueTeams == null && d.oppTeams == null && d.acesTeam == null && d.statsVersion == null) &&
+        (d.teamId == null && d.version == null && d.men == null && d.women == null && d.singles == null && d.doubles == null)){
+      return d.result;
+    }
+  }catch(_){}
+  return d;
+}
 /* ---------- server calls (direct v2) ---------- */
 function bootstrap(){
   if (!google.script || !google.script.run){
@@ -3639,6 +3659,7 @@ function bootstrap(){
     .withSuccessHandler(data => {
       try{
         if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
         if (!data) throw new Error("No data returned from server.");
         try{ localStorage.setItem(FA_STATS_BOOT_CACHE_KEY, JSON.stringify(data)); }catch(_){}
         if (data.ok === false) throw new Error(data.error || "Bootstrap failed.");
@@ -3745,6 +3766,7 @@ function refreshStats(teamOverride){
         return;
       }
       if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
       if (!data) throw new Error("No data returned from server.");
       if (data.ok === false) throw new Error(data.error || "Stats load failed.");
 
@@ -3821,6 +3843,7 @@ function loadOppPlayers(){
   google.script.run
     .withSuccessHandler(list => {
       if (typeof list === "string") { try{ list = JSON.parse(list); }catch(_){ } }
+      list = _unwrapResult_(list);
       fillSelectSimple("o1", list || [], "Select…");
       fillSelectSimple("o2", list || [], "Select…");
     })
@@ -3950,6 +3973,7 @@ function loadPlayerStats(){
     .withSuccessHandler(data => {
       try{
         if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        data = _unwrapResult_(data);
         if (!data) throw new Error("No data returned from server.");
         if (data.ok === false) throw new Error(data.error || "Player stats failed.");
         renderPlayerStats(data);
@@ -4297,6 +4321,7 @@ function tryApplyStatsBootstrapFromCache(){
     if (!json) return false;
     let data = JSON.parse(json);
     if (typeof data === "string"){ try{ data = JSON.parse(data); }catch(_){ } }
+    data = _unwrapResult_(data);
     if (!data || data.ok === false) return false;
 
     // Existing dropdown fills
@@ -4351,52 +4376,4 @@ function tryApplyStatsBootstrapFromCache(){
 window.addEventListener("load", () => {
   try{
     wireOnce();
-    tryApplyStatsBootstrapFromCache();
-    bootstrap();
-  }catch(e){
-    console.error(e);
-    setDiag("Startup error: " + (e && e.message ? e.message : e));
-  }
-});
-
-</script>
-
-
-<!-- Boot overlay (Strategy 2 preload) -->
-<div class="modal show" id="bootOverlay" aria-hidden="true" style="display:none;">
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bootOverlayMsg" style="max-width:420px;">
-    <div class="modal-head">
-      <div class="title" id="bootOverlayMsg">Loading…</div>
-    </div>
-    <div style="padding:16px; display:flex; align-items:center; justify-content:center; gap:12px;">
-      <div class="faSpinner" aria-hidden="true"></div>
-      <div class="muted" style="font-weight:900;">Please wait…</div>
-    </div>
-  </div>
-</div>
-
-<!-- Player popup modal -->
-<div class="modal" id="playerModal" aria-hidden="true">
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
-    <div class="modal-head">
-      <div class="title" id="pmTitle">PLAYER</div>
-      <button class="icon-btn" id="pmCloseBtn" type="button" aria-label="Close"><span>×</span></button>
-    </div>
-    <div class="form-grid" style="grid-template-columns:1fr;">
-      <div class="field" style="margin:0;">
-        <div class="small" id="pmMeta"></div>
-      </div>
-    </div>
-    <div class="modal-body" id="pmBody" style="max-height:60vh; overflow:auto; -webkit-overflow-scrolling:touch; padding:12px 14px;">
-      <div class="muted" style="font-weight:900;">Loading…</div>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-<div id="toast" aria-live="polite"></div>
-</body>
-</html>
+    tryApplyStatsBootstr
