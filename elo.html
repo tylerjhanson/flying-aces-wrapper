@@ -208,6 +208,32 @@ details > summary::-webkit-details-marker{ display:none; }
   font-weight:inherit;
 }
 
+
+.mc-person{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin:4px 0;
+  min-width:0;
+}
+.mc-person-name{
+  font-weight:900;
+  line-height:1.12;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+.mc-person-pills{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
 .mc-name{ line-height:1.12; }
 
 .mc-mid{
@@ -217,6 +243,18 @@ details > summary::-webkit-details-marker{ display:none; }
   justify-content:center;
   gap:4px;
   font-weight:700; /* center block a bit stronger */
+}
+
+.mc-date{
+  font-size:11px;
+  font-weight:900;
+  color:#667085;
+  line-height:1;
+}
+.mc-delta{
+  font-variant-numeric:tabular-nums;
+  font-weight:950;
+  line-height:1;
 }
 
 .mc-mid-team{
@@ -1839,8 +1877,9 @@ function nameLineForId(pid, pillLeft, highlight){
   const rb = rankBubble(p.baseRank);
   const eno = Math.round(Number(p.elo));
   const eloMini = (isFinite(eno) && eno > 0) ? `<span class="eloMini">${eno}</span>` : "";
-  const nmHtml = `<span class="nm"${highlight ? ' style="font-weight:1000;"' : ''}>${esc(nm)}${eloMini}</span>`;
-  return `<div class="mc-name">${pillLeft ? (rb + nmHtml) : (nmHtml + rb)}</div>`;
+  const nameHtml = `<div class="mc-person-name"${highlight ? ' style="font-weight:1000;"' : ''}>${esc(nm)}</div>`;
+  const pillsHtml = `<div class="mc-person-pills">${rb}${eloMini}</div>`;
+  return `<div class="mc-person">${nameHtml}${pillsHtml}</div>`;
 }
 function buildEloMatchCard(m, playerId){
   const isA = (m.aIds||[]).includes(playerId);
@@ -1851,23 +1890,14 @@ function buildEloMatchCard(m, playerId){
   const leftTeam = teamForSide(myIds);
   const rightTeam = teamForSide(oppIds);
 
+  // result class from the clicked player's perspective (controls border + score color)
   const res = (isA ? m.result : (m.result==="W"?"L":m.result==="L"?"W":"T"));
-  const resCls = res==="W"?"w":res==="L"?"l":"t";
   const cls = res==="W"?"score-win":res==="L"?"score-loss":"score-tie";
 
   const delta = isA ? m.delta : -m.delta;
   const deltaHtml = (Math.abs(Number(delta||0))>0.05) ? fmtDelta(delta) : "";
 
   const date = m.date ? esc(m.date) : "";
-  const mode = String(m.mode||"").toUpperCase();
-  const scoreMode = m.scoreMode ? String(m.scoreMode).toUpperCase() : "";
-  const rightMeta = [mode, scoreMode].filter(Boolean).join(" • ");
-
-  const meta = `<div class="mc-meta">
-    <span class="mc-meta-left">${date}</span>
-    <span class="mc-meta-mid"><span class="res ${resCls}">${res}</span>${deltaHtml}</span>
-    <span class="mc-meta-right">${esc(rightMeta)}</span>
-  </div>`;
 
   const leftHtml =
     `${leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : ""}` +
@@ -1896,10 +1926,13 @@ function buildEloMatchCard(m, playerId){
     scoreHtml = `<div class="mc-score mc-score-mp ${cls}">${esc(scoreStr || "—")}</div>`;
   }
 
-  const midHtml = `${scoreHtml}`;
+  const midHtml = `
+    ${date ? `<div class="mc-date">${date}</div>` : ``}
+    ${scoreHtml}
+    ${deltaHtml ? `<div class="mc-delta">${deltaHtml}</div>` : ``}
+  `;
 
   return `<div class="match-card ${cls}">
-    ${meta}
     <div class="mc-left">${leftHtml}</div>
     <div class="mc-mid">${midHtml}</div>
     <div class="mc-right">${rightHtml}</div>
