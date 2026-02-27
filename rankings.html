@@ -1451,7 +1451,7 @@ let currentSortKey = 'total';
 let __rankingsLastInteractionMs = 0;
 
 const CACHE_KEY = 'fa_rankings_pack_v2';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (SWR: cache is used even if stale)
 // Cross-device sync (Rankings)
 let __rankingsV = String(localStorage.getItem('fa_rankings_v') || '');
 let __rankingsAutoSyncTimer = null;
@@ -1471,13 +1471,12 @@ let __rankingsSyncBusy = false;
 // ✅ Robust init: don't rely on window.onload (Header include can overwrite it)
 let __rankingsInited = false;
 function initRankingsPage(){
-  // Load tier thresholds from server so colors + rerank stay in sync.
-  fetchRankTiers_();
   if (__rankingsInited) return;
   __rankingsInited = true;
 
   try { populateDropdownsFast(); } catch(e){ console.error(e); }
 
+  // 1) Instant paint from cache (SWR)
   try {
     const pack = loadCachedPack();
     if (pack && pack.v) {
@@ -1485,14 +1484,22 @@ function initRankingsPage(){
       try { localStorage.setItem('fa_rankings_v', __rankingsV); } catch(_){}
     }
     const cached = pack && Array.isArray(pack.rows) ? pack.rows : null;
-    if (cached && cached.length) initData(cached, true);
+    if (cached && cached.length){
+      // Let the header/UI paint first, then render cached table.
+      requestAnimationFrame(() => {
+        try { initData(cached, true); } catch(e){ console.error(e); }
+      });
+    }
   } catch(e){ console.error(e); }
 
   // Start auto-sync immediately (it will no-op until __rankingsV is known)
   try { startAutoSyncRankings(); } catch(e){ console.error(e); }
 
-  // Always try to fetch live data last
-  try { fetchLatestRankingsAndRefresh(); } catch(e){ console.error(e); }
+  // 2) Revalidate in background (tiers + live rows)
+  setTimeout(() => {
+    try { fetchRankTiers_(); } catch(e){ console.error(e); }
+    try { fetchLatestRankingsAndRefresh(); } catch(e){ console.error(e); }
+  }, 0);
 }
 
 // Run on whichever fires first (safe even if Header assigns window.onload)
@@ -1520,8 +1527,7 @@ function loadCachedPack(){
     if (!obj || !Array.isArray(obj.rows)) return null;
 
     const ts = Number(obj.ts || 0);
-    if (ts && (Date.now() - ts) > CACHE_TTL_MS) return null;
-
+    // SWR: even if stale, we still render instantly and revalidate in background.
     return {
       v: (obj.v != null) ? String(obj.v) : '',
       ts: ts || 0,
