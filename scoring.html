@@ -3,144 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow"> <title>Scoring</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Scoring</title>
 
 <style>
 /* =========================================================
-   HEADER STYLES (Restored from your header.html)
+   HEADER STYLES (Integrated)
    ========================================================= */
-:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
-.fa-header{
-  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
-  padding: 0 !important; box-sizing: border-box;
-}
-.fa-header .fa-tabs{
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important;
-}
-.fa-header .fa-tabs button, .fa-header .fa-submenu button{
-  -webkit-appearance:none !important; display:flex !important; align-items:center !important;
-  justify-content:center !important; width:100% !important; font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
-  height: 40px !important; border-radius: 8px !important; border: 0 !important;
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important; cursor: pointer !important;
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; --red1: #ff3b3b; --red2: #e40000; }
+.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; padding: 0 !important; }
+.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; }
+.fa-header .fa-tabs button{
+  -webkit-appearance:none; display:flex; align-items:center; justify-content:center; width:100%;
+  font-family:"Segoe UI", Roboto, Arial, sans-serif; font-weight:900; font-size: clamp(12px, 3.6vw, 16px);
+  height: 40px; border-radius: 8px; border: 0; outline: none;
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%);
+  box-shadow: 0 1px 4px rgba(0,0,0,.10); color: #222; cursor: pointer;
 }
 .fa-header .fa-tabs button.active{
-  background: linear-gradient(var(--btn-angle),#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  background: linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%) !important;
+  color: #fff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
 }
 
 /* =========================================================
-   SCORING STYLES (Restored from your scoring.html)
+   SCORING UI STYLES (MATCHES SCREENSHOTS)
    ========================================================= */
 html, body {
-  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; 
-  font-family: "Segoe UI", Roboto, Arial, sans-serif; 
-  background: #f7f8fa; margin: 0; padding: 4px; color: #222; 
-  touch-action: manipulation;
+  margin: 0; padding: 10px; font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f7f8fa; color: #222; -webkit-text-size-adjust: 100%;
 }
 
-.teams {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* ✅ Your original 4-column setup */
-  gap: 6px;                 
-  max-width: 1600px;
-  margin: 0 auto;
-  align-items: start;
+.teams { display: grid; grid-template-columns: 1fr 2.6fr; gap: 10px; align-items: start; }
+
+/* Left Panels */
+.side-panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 10px; overflow: hidden; }
+.side-header { background: #000; color: #fff; text-align: center; padding: 6px; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.side-body { padding: 10px; display: flex; justify-content: center; }
+
+select {
+  width: 100%; border: none; background: transparent; font-size: 1.5rem; font-weight: 900;
+  text-align: center; color: #222; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;
 }
 
-.team { 
-  background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); 
-  padding: 10px; box-sizing: border-box;
-}
+/* Right Panel Summary Cards */
+.main-panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 6px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.sum-card { border: 1px solid #eee; border-radius: 8px; text-align: center; padding: 6px 2px; }
+.sum-label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: #555; }
+.sum-val { font-size: 1.3rem; font-weight: 900; }
 
-.team-left {
-  grid-column: span 1; /* ✅ Calculator takes 1/4 width */
-  border-top: 5px solid #111;
-}
+.card-red { background: var(--red2); color: #fff; border: none; }
+.card-black { background: #111; color: #fff; border: none; }
 
-.team-right {
-  grid-column: span 3; /* ✅ Results table takes 3/4 width */
-  border-top: 5px solid #ff3b3b;
-}
-
-.calc-box {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.calc-controls { display: flex; align-items: center; gap: 10px; }
-
-.calc-btn {
-  width: 32px; height: 32px; border-radius: 6px; border: 1px solid #ddd;
-  background: #f9f9f9; font-weight: 900; font-size: 1.2em; cursor: pointer;
-}
-
-.score-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 0.95em; }
-.score-table th { background: #eee; padding: 6px; text-align: center; font-weight: 800; }
-.score-table td { padding: 6px; text-align: center; border-bottom: 1px solid #eee; font-weight: 700; }
+/* Result Table */
+.score-table { width: 100%; border-collapse: collapse; font-size: 1.1rem; }
+.score-table th { background: #f0f0f0; padding: 8px 4px; font-weight: 900; text-transform: uppercase; font-size: 0.8rem; color: #555; }
+.score-table td { padding: 8px 4px; text-align: center; font-weight: 700; border-bottom: 1px solid #f2f2f2; }
 
 .win { color: #28a745; }
-.lose { color: #dc3545; }
+.loss { color: #ff3b3b; }
 
 @media (max-width: 600px) {
   .teams { grid-template-columns: 1fr; }
-  .team-left, .team-right { grid-column: span 1; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="fa-header fa-submenu-wrap">
+<div class="fa-header">
   <nav class="fa-tabs">
-    <button id="nav-scoring" class="active" type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters" type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-    <button id="nav-menu" type="button" data-key="menu">
-      <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:18px;">
-      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <button class="active">SCORING</button>
+    <button onclick="location.href='rosters.html'">ROSTERS</button>
+    <button onclick="location.href='matchups.html'">MATCHUPS</button>
+    <button style="display:flex; gap:6px;">
+       <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:14px;">
+       <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
     </button>
   </nav>
 </div>
 
 <div class="teams">
-  <div class="team team-left">
-    <div class="calc-box">
-      <span style="font-weight:800;">SINGLES</span>
-      <div class="calc-controls">
-        <button class="calc-btn" onclick="updateVal('b1', -1)">-</button>
-        <span id="b1" style="font-weight:900; font-size:1.1em;">8</span>
-        <button class="calc-btn" onclick="updateVal('b1', 1)">+</button>
+  <div class="left-col">
+    <div class="side-panel">
+      <div class="side-header">ROUND 1</div>
+      <div class="side-body">
+        <select id="b1" onchange="calc()"></select>
       </div>
     </div>
-    <div class="calc-box">
-      <span style="font-weight:800;">DOUBLES</span>
-      <div class="calc-controls">
-        <button class="calc-btn" onclick="updateVal('b2', -1)">-</button>
-        <span id="b2" style="font-weight:900; font-size:1.1em;">8</span>
-        <button class="calc-btn" onclick="updateVal('b2', 1)">+</button>
+    <div class="side-panel">
+      <div class="side-header">ROUND 2</div>
+      <div class="side-body">
+        <select id="b2" onchange="calc()"></select>
       </div>
     </div>
-    <hr>
-    <div style="font-size:0.9em; font-weight:800; line-height:1.8; margin-top:10px;">
-      TOTAL PTS: <span id="b5">--</span><br>
-      TO WIN: <span id="b6">--</span><br>
-      ACES TO DATE: 
-      <div class="calc-controls" style="display:inline-flex; margin-left:8px;">
-        <button class="calc-btn" onclick="updateVal('b9', -0.5)">-</button>
-        <span id="b9" style="font-weight:900; margin: 0 4px;">0</span>
-        <button class="calc-btn" onclick="updateVal('b9', 0.5)">+</button>
+    <div style="border-top: 1px dashed #ccc; margin: 10px 0;"></div>
+    <div class="side-panel">
+      <div class="side-header">ACES SINGLES</div>
+      <div class="side-body">
+        <select id="b9" onchange="calc()"></select>
       </div>
     </div>
   </div>
 
-  <div class="team team-right">
+  <div class="main-panel">
+    <div class="summary-grid">
+      <div class="sum-card card-red">
+        <div class="sum-label" style="color:#fff;">ACES</div>
+        <div class="sum-val" id="disp-aces">--</div>
+      </div>
+      <div class="sum-card card-black">
+        <div class="sum-label" style="color:#fff;">OPP</div>
+        <div class="sum-val" id="disp-opp">--</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">TOTAL</div>
+        <div class="sum-val" id="disp-total">--</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">NEED</div>
+        <div class="sum-val" id="disp-need">--</div>
+      </div>
+    </div>
+
     <table class="score-table">
       <thead>
         <tr>
-          <th>D-WINS</th>
-          <th>S-WINS</th>
+          <th>DUBS</th>
+          <th>SINGLE</th>
           <th>ACES</th>
           <th>OPP</th>
           <th>RESULT</th>
@@ -152,71 +142,74 @@ html, body {
 </div>
 
 <script>
-const GAS_API_URL = "YOUR_WEB_APP_URL_HERE"; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
 
-/* --- API Polyfill (Functional Bridge) --- */
+// Populate Dropdowns 0-40
+function fillDropdowns() {
+  const ids = ['b1', 'b2', 'b9'];
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    for (let i = 0; i <= 40; i++) {
+      let opt = document.createElement('option');
+      opt.value = i; opt.innerHTML = i;
+      if (i === 22 && id !== 'b9') opt.selected = true;
+      if (i === 13 && id === 'b9') opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+// Polyfill
 window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
 function createProxy(s, f) {
   return new Proxy({}, {
     get: (t, prop) => {
       if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
       return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
+        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); });
     }
   });
 }
 
-/* --- Logic Restored from scoring.html --- */
 let _saveTimer = null;
-function updateVal(id, delta) {
-  const el = document.getElementById(id);
-  let val = parseFloat(el.innerText);
-  val = Math.max(0, val + delta);
-  el.innerText = val;
-  calc();
-}
-
 function calc() {
-  const b1 = parseFloat(document.getElementById('b1').innerText);
-  const b2 = parseFloat(document.getElementById('b2').innerText);
-  const b9 = parseFloat(document.getElementById('b9').innerText);
-  const b3 = 2; // pts/match
+  const b1 = parseInt(document.getElementById('b1').value);
+  const b2 = parseInt(document.getElementById('b2').value);
+  const b9 = parseInt(document.getElementById('b9').value);
+  const ptsPerMatch = 2;
 
-  const totalPts = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3);
-  const toWin = (totalPts / 2) + 0.5;
-  const oppToDate = b1 - b9;
+  const totalPts = b1 + b2;
+  const need = (totalPts / 2) + 0.5;
+  const currentOpp = b1 - b9;
 
-  document.getElementById('b5').innerText = totalPts;
-  document.getElementById('b6').innerText = toWin;
+  document.getElementById('disp-aces').innerText = b9;
+  document.getElementById('disp-opp').innerText = currentOpp;
+  document.getElementById('disp-total').innerText = totalPts;
+  document.getElementById('disp-need').innerText = need;
 
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
-    google.script.run.faSetScoringConfig({ b1, b2, b3, b9 });
+    google.script.run.faSetScoringConfig({ b1, b2, b9 });
   }, 1000);
 
   const tbody = document.getElementById('tableBody');
-  const numDubs = Math.floor(b2/2);
+  const numDubs = Math.floor(b2 / 2);
   const hasExtra = (b2 % 2 === 1);
   let html = "";
 
   for (let d = 0; d <= numDubs; d++) {
     const sOpts = hasExtra ? [0, 1] : [0];
     for (let s of sOpts) {
-      const aces = b9 + (d * 2) + (s * b3);
-      const opp = oppToDate + ((numDubs - d) * 2) + ((hasExtra ? 1 - s : 0) * b3);
-      const res = aces >= toWin ? "WIN" : (aces + opp < totalPts ? "???" : "LOSE");
+      const aces = b9 + (d * 2) + (s * ptsPerMatch);
+      const opp = currentOpp + ((numDubs - d) * 2) + ((hasExtra ? 1 - s : 0) * ptsPerMatch);
+      const res = aces >= need ? "WIN" : "LOSS";
       html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${res.toLowerCase()}">${res}</td></tr>`;
     }
   }
   tbody.innerHTML = html;
 }
 
-/* --- Navigation --- */
-document.querySelectorAll("[data-page]").forEach(btn => {
-  btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
-});
-
+fillDropdowns();
 document.addEventListener('DOMContentLoaded', calc);
 </script>
 </body>
