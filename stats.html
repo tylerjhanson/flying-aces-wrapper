@@ -374,6 +374,44 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   text-overflow:ellipsis;
 }
 
+/* Player blocks: name on top, rank+elo pills under (centered) */
+.mc-person{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin:4px 0;
+}
+.mc-person-name{
+  font-weight:700;
+  line-height:1.12;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-person-name a{ font-weight:700; }
+.mc-person-pills{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.eloMini{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid #e7edf5;
+  background:#f8fafc;
+  color:#475569;
+  font-size:11px;
+  font-weight:900;
+}
+
 .mc-left, .mc-right{
   min-width:0;
   font-weight: inherit; /* keep names non-bold */
@@ -2616,6 +2654,7 @@ function _rankPill_(rankVal, side){
 
 function _buildMatchCardHtml(r, withDelete, opts){
   opts = opts || {};
+
   const mode = String(r.mode||"").toLowerCase();
   const resRaw = String(r.result||"").trim().toUpperCase();
 
@@ -2625,11 +2664,11 @@ function _buildMatchCardHtml(r, withDelete, opts){
   const leftTeam  = dispTeamName(leftTeamRaw);
   const rightTeam = dispTeamName(rightTeamRaw);
 
-  const res = (resRaw === "WIN") ? "W" : (resRaw === "LOSS") ? "L" : (resRaw || "");
-  const cls = (res === "W") ? "score-win"
-            : (res === "L") ? "score-loss"
+  const cls = (resRaw === "W" || resRaw === "WIN") ? "score-win"
+            : (resRaw === "L" || resRaw === "LOSS") ? "score-loss"
             : "score-tie";
 
+  // players
   const aces = [
       { n:r.a1, rr:r.a1Rank, id:r.a1Id },
       { n:r.a2, rr:r.a2Rank, id:r.a2Id },
@@ -2642,40 +2681,44 @@ function _buildMatchCardHtml(r, withDelete, opts){
       { n:r.o3, rr:r.o3Rank, id:r.o3Id }
     ].filter(x => x.n);
 
-  function nameLine(name, rankVal, pillLeft, pid){
-  const rankPill = _rankPillNoSide_(rankVal);
-  const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
-  const linked = playerLinkHTML(name||"", teamRaw, pid);
+  function _eloFor(name, pid){
+    let eloNum = null;
+    try{
+      if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
+        const n = Math.round(Number(FA_ELO_BY_ID[pid]));
+        if (isFinite(n) && n > 0) eloNum = n;
+      }
+      if (eloNum == null){
+        const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
+        const raw = (er && (er.elo != null ? er.elo : (er.eloOverall != null ? er.eloOverall : null)));
+        const n2 = Math.round(Number(raw));
+        if (isFinite(n2) && n2 > 0) eloNum = n2;
+      }
+    }catch(e){}
+    return eloNum;
+  }
 
-  // Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
-  let eloNum = null;
-  try{
-    if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
-      const n = Math.round(Number(FA_ELO_BY_ID[pid]));
-      if (isFinite(n) && n > 0) eloNum = n;
-    }
-    if (eloNum == null){
-      const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
-      const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
-      const n2 = Math.round(Number(raw));
-      if (isFinite(n2) && n2 > 0) eloNum = n2;
-    }
-  }catch(e){}
-
-  const eloHtml = (eloNum == null) ? "" : `<span class="elo-pill">${eloNum}</span>`;
-  const pills = (rankPill || eloHtml) ? `<div class="mc-pills">${rankPill}${eloHtml}</div>` : "";
-  const nm = linked || esc(name||"");
-
-  return `<div class="mc-player">${pills}<div class="mc-player-name">${nm}</div></div>`;
-}
+  function personBlock(x, isLeft){
+    const teamRaw = isLeft ? leftTeamRaw : rightTeamRaw;
+    const linked = playerLinkHTML(x.n||"", teamRaw, x.id) || esc(x.n||"");
+    const eloNum = _eloFor(x.n||"", x.id);
+    const eloPill = (eloNum == null) ? "" : `<span class="eloMini">${eloNum}</span>`;
+    const rb = _rankPillNoSide_(x.rr);
+    return `
+      <div class="mc-person">
+        <div class="mc-person-name">${linked}</div>
+        <div class="mc-person-pills">${rb}${eloPill}</div>
+      </div>
+    `;
+  }
 
   const leftHtml  = (leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : "")
-                  + aces.map(x => nameLine(x.n, x.rr, true, x.id)).join("");
+                  + aces.map(x => personBlock(x, true)).join("");
 
   const rightHtml = (rightTeam ? `<div class="mc-side-team">${esc(rightTeam)}</div>` : "")
-                  + opp.map(x => nameLine(x.n, x.rr, false, x.id)).join("");
+                  + opp.map(x => personBlock(x, false)).join("");
 
-  // --- Scores ---
+  // --- Score ---
   const aScore = (r.acesScore==null ? "" : String(r.acesScore)).trim();
   const oScore = (r.oppScore==null  ? "" : String(r.oppScore)).trim();
 
@@ -2693,24 +2736,18 @@ function _buildMatchCardHtml(r, withDelete, opts){
          <span>${esc(oScore)}</span>
        </div>`
     : `<div class="mc-score mc-score-mp ${cls}">${esc(mp || "—")}</div>`;
-  // --- Center meta (date over score + optional Elo delta) ---
-  let dateHtml = "";
-  if (opts.showMeta){
-    const dateStr = prettyDate(r.ts || r.matchDate || r.date || "");
-    if (dateStr) dateHtml = `<div class="mc-date">${esc(dateStr)}</div>`;
-  }
 
-  let deltaHtml = "";
-  if (opts.includeEloDelta && opts.focalId){
-    const d = _tryGetEloDelta_(r, opts.focalId);
-    if (d != null) deltaHtml = fmtDelta(d);
-  } else if (r.eloDelta != null){
-    deltaHtml = fmtDelta(r.eloDelta);
-  } else if (r.delta != null){
-    deltaHtml = fmtDelta(r.delta);
-  }
+  // --- Center meta: Date (centered over score) + Elo delta ---
+  const dateStr = prettyDate(r.ts || r.matchDate || r.date || "");
+  const dateHtml = dateStr ? `<div class="mc-date">${esc(dateStr)}</div>` : "";
 
-  const deltaWrap = deltaHtml ? `<div class="mc-delta">${deltaHtml}</div>` : "";
+  let deltaWrap = "";
+  if (opts.includeEloDelta !== false){
+    const focalGuess = String(opts.focalId || r.focalId || r.a1Id || r.o1Id || "").trim();
+    const d = _tryGetEloDelta_(r, focalGuess);
+    const deltaHtml = (d != null) ? fmtDelta(d) : "";
+    if (deltaHtml) deltaWrap = `<div class="mc-delta">${deltaHtml}</div>`;
+  }
 
   return `
     <div class="match-card ${cls}">
@@ -2728,7 +2765,7 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
   opts = opts || {};
 
   // If Elo delta requested, render immediately (without delta if needed), then re-render once we have the Elo match index
-  if (opts.includeEloDelta && opts.focalId && !opts.__deltaReady){
+  if (opts.includeEloDelta !== false && !opts.__deltaReady){
     ensureEloMatchIndex(function(){
       try{
         renderMatchCards(containerId, list, withDelete, emptyText, Object.assign({}, opts, {__deltaReady:true}));
@@ -3182,19 +3219,26 @@ var FA_ELO_MATCH_SIG_MAP_NOSCORE = null;  // fallback signature (no score)
 var FA_ELO_MATCH_SIG_INFLIGHT = null;
 
 function _eloIndexPack_(pack){
+  // Pack shape (same as Elo page): { ok:true, players:[{id,name,elo,...}], matches:[...], teams:{...} }
   FA_ELO_BY_PLAYER = Object.create(null);
-  const rows = (pack && pack.overall) ? pack.overall : [];
-  rows.forEach(r => {
-    const k = _nameKey_(r && r.player);
-    if (!k) return;
-    FA_ELO_BY_PLAYER[k] = r;
+  FA_ELO_BY_ID = Object.create(null);
+
+  const players = (pack && Array.isArray(pack.players)) ? pack.players : [];
+  players.forEach(p => {
+    const nm = (p && (p.name || p.player)) ? String(p.name || p.player) : "";
+    const k = _nameKey_(nm);
+    if (k) FA_ELO_BY_PLAYER[k] = p;
+    if (p && p.id){
+      const n = Math.round(Number(p.elo));
+      if (isFinite(n) && n > 0) FA_ELO_BY_ID[String(p.id)] = n;
+    }
   });
 }
 
 function loadEloPack(cb, force){
   cb = cb || function(){};
   const now = Date.now();
-  const TTL = 15*1000; // short TTL to avoid spamming calls, still stays fresh
+  const TTL = 30*1000; // keep it responsive but avoid spamming
 
   if (!force && FA_ELO_PACK && (now - FA_ELO_LOADED_AT) < TTL){
     cb(FA_ELO_PACK);
@@ -3206,35 +3250,29 @@ function loadEloPack(cb, force){
       FA_ELO_PACK = pack || null;
       FA_ELO_LOADED_AT = Date.now();
       _eloIndexPack_(FA_ELO_PACK);
-      try{ if (typeof updateRostersForTeam === 'function') updateRostersForTeam(window.FA_STATS_TEAM || window.FA_ACES_TEAM); }catch(e){}
-
     }catch(e){
       console.error(e);
       FA_ELO_PACK = null;
       FA_ELO_BY_PLAYER = Object.create(null);
+      FA_ELO_BY_ID = Object.create(null);
     }
     cb(FA_ELO_PACK);
   };
 
-  const onFail = (err) => {
-    console.error(err);
-    // Fallback: compute using defaults if the server expects an explicit config object
-    google.script.run
-      .withSuccessHandler(onOk)
-      .withFailureHandler(err2 => {
-        console.error(err2);
-        FA_ELO_PACK = null;
-        FA_ELO_BY_PLAYER = Object.create(null);
-        cb(null);
-      })
-      .getLeagueEloV2Data(FA_ELO_DEFAULTS);
-  };
-
-  // Prefer server-side persisted ELO settings (sliders) when available.
-  google.script.run
-    .withSuccessHandler(onOk)
-    .withFailureHandler(onFail)
-    .getLeagueEloV2Data();
+  // Use the SAME server pack as the Elo page (supports matches[] with delta)
+  gsRun("getLeagueEloSimpleData", {})
+    .then(onOk)
+    .catch(err => {
+      console.error(err);
+      // last-ditch: try without args (some deployments ignore args signatures)
+      try{
+        gsRun("getLeagueEloSimpleData")
+          .then(onOk)
+          .catch(err2 => { console.error(err2); onOk(null); });
+      }catch(_){
+        onOk(null);
+      }
+    });
 }
 
 // ---------------- League Match Index (for instant player modals) ----------------
