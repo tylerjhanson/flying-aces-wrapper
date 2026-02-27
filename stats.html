@@ -316,6 +316,57 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   box-shadow: inset 6px 0 0 rgba(161,98,7,.18), inset -6px 0 0 rgba(161,98,7,.18);
 }
 
+/* meta row inside match-card (date + W/L/T + optional Elo delta + mode) */
+.mc-meta{
+  grid-column: 1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:8px;
+  margin-bottom:6px;
+  border-bottom:1px solid #eef2f7;
+  font-size:10px;
+  color:#667085;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.mc-meta-left{ white-space:nowrap; }
+.mc-meta-mid{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex:1;
+  min-width:0;
+}
+.mc-meta-right{ white-space:nowrap; }
+
+/* result badges + delta (mirrors ELO modal) */
+.res{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:2px 8px;
+  font-weight:950;
+  font-size:11px;
+  border:1px solid transparent;
+}
+.res.w{ background:#e8f7ee; border-color:#bbf7d0; color:#15803d; }
+.res.l{ background:#ffe6e6; border-color:#fecaca; color:#b91c1c; }
+.res.t{ background:#fff7dd; border-color:#fde68a; color:#a16207; }
+
+.delta{ font-variant-numeric:tabular-nums; font-weight:950; }
+.delta.pos{ color:#15803d; }
+.delta.neg{ color:#b91c1c; }
+
+/* Score pill gets subtle background like ELO page */
+.mc-score.score-win{ background:#ecfdf3; color:#15803d; border:1px solid #bbf7d0; }
+.mc-score.score-loss{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.mc-score.score-tie{ background:#f8fafc; color:#334155; border:1px solid #e2e8f0; }
+
 /* Elo number pill under player name (number only, no 'Elo' label) */
 .elo-pill{
   display:inline-flex;
@@ -2555,7 +2606,8 @@ function _rankPill_(rankVal, side){
   return `<span class="rank-pill ${cls} ${sideCls}">${esc(raw)}</span>`;
 }
 
-function _buildMatchCardHtml(r, withDelete){
+function _buildMatchCardHtml(r, withDelete, opts){
+  opts = opts || {};
   const mode = String(r.mode||"").toLowerCase();
   const resRaw = String(r.result||"").trim().toUpperCase();
 
@@ -2565,14 +2617,10 @@ function _buildMatchCardHtml(r, withDelete){
   const leftTeam  = dispTeamName(leftTeamRaw);
   const rightTeam = dispTeamName(rightTeamRaw);
 
-  const cls = (resRaw === "W" || resRaw === "WIN") ? "score-win"
-            : (resRaw === "L" || resRaw === "LOSS") ? "score-loss"
+  const res = (resRaw === "WIN") ? "W" : (resRaw === "LOSS") ? "L" : (resRaw || "");
+  const cls = (res === "W") ? "score-win"
+            : (res === "L") ? "score-loss"
             : "score-tie";
-
-  // winner label above the score
-  const winnerLabel = (resRaw === "W" || resRaw === "WIN") ? leftTeam
-                    : (resRaw === "L" || resRaw === "LOSS") ? rightTeam
-                    : "TIE";
 
   const aces = [
       { n:r.a1, rr:r.a1Rank, id:r.a1Id },
@@ -2587,33 +2635,32 @@ function _buildMatchCardHtml(r, withDelete){
     ].filter(x => x.n);
 
   function nameLine(name, rankVal, pillLeft, pid){
-const pill = _rankPill_(rankVal, pillLeft ? "left" : "right");
-const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
-const linked = playerLinkHTML(name||"", teamRaw, pid);
+    const pill = _rankPill_(rankVal, pillLeft ? "left" : "right");
+    const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
+    const linked = playerLinkHTML(name||"", teamRaw, pid);
 
-// Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
-let eloNum = null;
-try{
-  if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
-    const n = Math.round(Number(FA_ELO_BY_ID[pid]));
-    if (isFinite(n) && n > 0) eloNum = n;
-  }
-  if (eloNum == null){
-    const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
-    const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
-    const n2 = Math.round(Number(raw));
-    if (isFinite(n2) && n2 > 0) eloNum = n2;
-  }
-}catch(e){}
+    // Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
+    let eloNum = null;
+    try{
+      if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
+        const n = Math.round(Number(FA_ELO_BY_ID[pid]));
+        if (isFinite(n) && n > 0) eloNum = n;
+      }
+      if (eloNum == null){
+        const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
+        const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
+        const n2 = Math.round(Number(raw));
+        if (isFinite(n2) && n2 > 0) eloNum = n2;
+      }
+    }catch(e){}
 
-const nmSpan = `<span class="nm">${linked || esc(name||"")}</span>`;
-const eloHtml = (eloNum == null) ? "" : `<div class="elo-pill">${eloNum}</div>`;
+    const nmSpan = `<span class="nm">${linked || esc(name||"")}</span>`;
+    const eloHtml = (eloNum == null) ? "" : `<div class="elo-pill">${eloNum}</div>`;
 
-return `<div class="mc-name">`
-  + (pillLeft ? (pill + nmSpan)
-              : (nmSpan + pill))
-  + eloHtml
-  + `</div>`;
+    return `<div class="mc-name">`
+      + (pillLeft ? (pill + nmSpan) : (nmSpan + pill))
+      + eloHtml
+      + `</div>`;
   }
 
   const leftHtml  = (leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : "")
@@ -2627,7 +2674,7 @@ return `<div class="mc-name">`
   const oScore = (r.oppScore==null  ? "" : String(r.oppScore)).trim();
 
   const hasStrokePair = (aScore !== "" && oScore !== "");
-  const isStroke = (mode === "doubles")
+  const isStroke = (mode === "doubles") || (mode === "triples")
     || (String(r.scoreMode||"").toLowerCase() === "stroke")
     || hasStrokePair;
 
@@ -2639,14 +2686,40 @@ return `<div class="mc-name">`
          <span style="opacity:.5;">–</span>
          <span>${esc(oScore)}</span>
        </div>`
-    : `<div class="mc-score mc-score-mp ${cls}">${esc(mp)}</div>`;
+    : `<div class="mc-score mc-score-mp ${cls}">${esc(mp || "—")}</div>`;
 
-  const midHtml = scoreHtml;
+  // --- Meta (optional) ---
+  let metaHtml = "";
+  if (opts.showMeta){
+    const dateStr = prettyDate(r.ts || r.matchDate || r.date || "");
+    const resCls = (res === "W") ? "w" : (res === "L") ? "l" : "t";
+
+    let deltaHtml = "";
+    if (opts.includeEloDelta && opts.focalId){
+      const d = _tryGetEloDelta_(r, opts.focalId);
+      if (d != null) deltaHtml = fmtDelta(d);
+    } else if (r.eloDelta != null){
+      deltaHtml = fmtDelta(r.eloDelta);
+    } else if (r.delta != null){
+      deltaHtml = fmtDelta(r.delta);
+    }
+
+    const modeUp = mode ? mode.toUpperCase() : "";
+    const smUp = (String(r.scoreMode||"") ? String(r.scoreMode).toUpperCase() : (isStroke ? "STROKE" : "MATCH"));
+    const rightMeta = [modeUp, smUp].filter(Boolean).join(" • ");
+
+    metaHtml = `<div class="mc-meta">
+      <span class="mc-meta-left">${esc(dateStr)}</span>
+      <span class="mc-meta-mid"><span class="res ${resCls}">${esc(res || "T")}</span>${deltaHtml}</span>
+      <span class="mc-meta-right">${esc(rightMeta)}</span>
+    </div>`;
+  }
 
   return `
     <div class="match-card ${cls}">
+      ${metaHtml}
       <div class="mc-left">${leftHtml}</div>
-      <div class="mc-mid">${midHtml}</div>
+      <div class="mc-mid">${scoreHtml}</div>
       <div class="mc-right">${rightHtml}</div>
       ${withDelete ? `<button class="small-btn" data-row="${r.rowNum}">DELETE</button>` : ``}
     </div>
@@ -2658,6 +2731,15 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
   if (!wrap) return;
   opts = opts || {};
 
+  // If Elo delta requested, render immediately (without delta if needed), then re-render once we have the Elo match index
+  if (opts.includeEloDelta && opts.focalId && !opts.__deltaReady){
+    ensureEloMatchIndex(function(){
+      try{
+        renderMatchCards(containerId, list, withDelete, emptyText, Object.assign({}, opts, {__deltaReady:true}));
+      }catch(_){}
+    });
+  }
+
   const rows = (list||[]).map(r => {
     const rr = (opts.leftTeam || opts.rightTeam)
       ? Object.assign({}, r, {
@@ -2665,7 +2747,7 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
           rightTeam: r.rightTeam || opts.rightTeam
         })
       : r;
-    return _buildMatchCardHtml(rr, withDelete);
+    return _buildMatchCardHtml(rr, withDelete, opts);
   });
 
   wrap.innerHTML = rows.length
@@ -2678,7 +2760,6 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
     });
   }
 }
-
 
 /* ---------- opponent-filtered results table ---------- */
 function _fmtDateYMD(ts){
@@ -2753,6 +2834,212 @@ function prettyDateTime(ts){
   }
 }
 
+function prettyDate(ts){
+  if (!ts) return "";
+  try{
+    let d = null;
+    if (ts instanceof Date){
+      d = ts;
+    }else if (typeof ts === "number"){
+      d = new Date(ts);
+    }else if (typeof ts === "string"){
+      const s = ts.trim();
+      if (!s) return "";
+      // ISO -> Date; YYYY-MM-DD -> noon local; m/d/yyyy -> parse
+      if (s.includes("T")) d = new Date(s);
+      else if (s.length >= 10 && s.charAt(4) === "-" && s.charAt(7) === "-") d = new Date(s + "T12:00:00");
+      else {
+        const m = s.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+        if (m){
+          let yy = parseInt(m[3],10); if (yy < 100) yy += 2000;
+          d = new Date(yy, parseInt(m[1],10)-1, parseInt(m[2],10), 12, 0, 0);
+        } else {
+          d = new Date(s);
+        }
+      }
+    }else{
+      d = new Date(ts);
+    }
+    if (!d || isNaN(d.getTime())) return String(ts).slice(0,10);
+    return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+  }catch(_){
+    return String(ts||"").slice(0,10);
+  }
+}
+
+function _normScore(s){
+  s = String(s||"").trim();
+  if (!s) return "";
+  s = s.replace(/[–—]/g, "-");
+  s = s.replace(/\s*-\s*/g, "-");
+  s = s.replace(/\s*&\s*/g, "&");
+  s = s.replace(/\s+/g, " ");
+  return s;
+}
+
+function fmtDelta(delta){
+  const n = Number(delta);
+  if (!isFinite(n) || Math.abs(n) < 0.05) return "";
+  const s = (n > 0 ? "+" : "") + n.toFixed(1);
+  const cls = (n >= 0) ? "pos" : "neg";
+  return `<span class="delta ${cls}">${esc(s)}</span>`;
+}
+
+function _dateKeyFromAny_(ts){
+  // returns YYYY-MM-DD
+  const s = _fmtDateYMD(ts);
+  if (s && s.length >= 10) return s.slice(0,10);
+  // last resort: try parse
+  try{
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return _fmtDateYMD(d);
+  }catch(_){}
+  return "";
+}
+
+function _dateKeyFromEloMatch_(m){
+  if (!m) return "";
+  const dk = String(m.dateKey || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dk)) return dk;
+
+  const ds = String(m.date || "").trim();
+  if (ds){
+    const mm = ds.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*$/);
+    if (mm){
+      let yy = parseInt(mm[3],10); if (yy < 100) yy += 2000;
+      const mo = String(parseInt(mm[1],10)).padStart(2,"0");
+      const da = String(parseInt(mm[2],10)).padStart(2,"0");
+      return `${yy}-${mo}-${da}`;
+    }
+    if (ds.length >= 10 && ds.charAt(4) === "-" && ds.charAt(7) === "-") return ds.slice(0,10);
+  }
+
+  if (m.ts != null) return _dateKeyFromAny_(m.ts);
+  return "";
+}
+
+function _sigUnordered_(dateKey, modeLc, scoreKey, idsAll){
+  const ids = (idsAll||[]).map(x=>String(x||"").trim()).filter(Boolean).sort();
+  return `${dateKey}|${modeLc}|${scoreKey}|${ids.join(",")}`;
+}
+function _sigUnorderedNoScore_(dateKey, modeLc, idsAll){
+  const ids = (idsAll||[]).map(x=>String(x||"").trim()).filter(Boolean).sort();
+  return `${dateKey}|${modeLc}|${ids.join(",")}`;
+}
+
+function _buildEloMatchSigMaps_(pack){
+  const strict = Object.create(null);
+  const noscore = Object.create(null);
+  const arr = (pack && Array.isArray(pack.matches)) ? pack.matches : [];
+
+  for (let i=0; i<arr.length; i++){
+    const m = arr[i];
+    if (!m) continue;
+    const dateKey = _dateKeyFromEloMatch_(m);
+    const modeLc = String(m.mode||"").toLowerCase();
+    const scoreKey = _normScore(m.score||"");
+    const idsAll = (m.aIds||[]).concat(m.bIds||[]);
+    if (!dateKey || !idsAll.length) continue;
+
+    const k1 = _sigUnordered_(dateKey, modeLc, scoreKey, idsAll);
+    (strict[k1] = strict[k1] || []).push(m);
+
+    const k2 = _sigUnorderedNoScore_(dateKey, modeLc, idsAll);
+    (noscore[k2] = noscore[k2] || []).push(m);
+  }
+
+  FA_ELO_MATCH_SIG_MAP = strict;
+  FA_ELO_MATCH_SIG_MAP_NOSCORE = noscore;
+}
+
+function ensureEloMatchIndex(cb){
+  cb = cb || function(){};
+
+  // Already built
+  if (FA_ELO_MATCH_SIG_MAP && FA_ELO_MATCH_SIG_MAP_NOSCORE && FA_ELO_PACK && Array.isArray(FA_ELO_PACK.matches)){
+    cb();
+    return;
+  }
+
+  // In flight
+  if (FA_ELO_MATCH_SIG_INFLIGHT){
+    FA_ELO_MATCH_SIG_INFLIGHT.then(()=>cb()).catch(()=>cb());
+    return;
+  }
+
+  FA_ELO_MATCH_SIG_INFLIGHT = new Promise((resolve) => {
+    loadEloPack(function(pack){
+      try{ _buildEloMatchSigMaps_(pack); }catch(e){ console.error(e); }
+      resolve();
+    }, false);
+  });
+
+  FA_ELO_MATCH_SIG_INFLIGHT.then(()=>{ FA_ELO_MATCH_SIG_INFLIGHT = null; cb(); })
+    .catch(()=>{ FA_ELO_MATCH_SIG_INFLIGHT = null; cb(); });
+}
+
+function _tryGetEloDelta_(row, focalId){
+  focalId = String(focalId||"").trim();
+  if (!focalId || !row) return null;
+
+  // If the row already came from Elo pack
+  if (row.delta != null && row.aIds && row.bIds){
+    const isA = (row.aIds||[]).indexOf(focalId) >= 0;
+    const isB = (row.bIds||[]).indexOf(focalId) >= 0;
+    if (isA) return Number(row.delta);
+    if (isB) return -Number(row.delta);
+  }
+
+  if (!FA_ELO_MATCH_SIG_MAP && !FA_ELO_MATCH_SIG_MAP_NOSCORE) return null;
+
+  const dateKey = _dateKeyFromAny_(row.ts || row.matchDate || row.date || "");
+  const modeLc = String(row.mode||"").toLowerCase();
+
+  const idsAll = [row.a1Id,row.a2Id,row.a3Id,row.o1Id,row.o2Id,row.o3Id]
+    .map(x=>String(x||"").trim()).filter(Boolean);
+
+  if (!dateKey || !modeLc || !idsAll.length) return null;
+
+  // Build a score key that matches Elo pack normalization
+  const a = String(row.acesScore==null ? "" : row.acesScore).trim();
+  const o = String(row.oppScore==null  ? "" : row.oppScore ).trim();
+  const scoreKey = _normScore((a && o) ? (a + "-" + o) : (row.mpScore || ""));
+
+  // Strict match (with score)
+  const k1 = _sigUnordered_(dateKey, modeLc, scoreKey, idsAll);
+  let cand = (FA_ELO_MATCH_SIG_MAP && FA_ELO_MATCH_SIG_MAP[k1]) ? FA_ELO_MATCH_SIG_MAP[k1] : null;
+
+  // Fallback (no score) – helps if score formatting differs
+  if (!cand || !cand.length){
+    const k2 = _sigUnorderedNoScore_(dateKey, modeLc, idsAll);
+    cand = (FA_ELO_MATCH_SIG_MAP_NOSCORE && FA_ELO_MATCH_SIG_MAP_NOSCORE[k2]) ? FA_ELO_MATCH_SIG_MAP_NOSCORE[k2] : null;
+  }
+
+  if (!cand || !cand.length) return null;
+
+  // Pick the candidate that actually contains the focal id
+  let m = null;
+  for (let i=0; i<cand.length; i++){
+    const x = cand[i];
+    const aIds = (x && x.aIds) ? x.aIds : [];
+    const bIds = (x && x.bIds) ? x.bIds : [];
+    if (aIds.indexOf(focalId) >= 0 || bIds.indexOf(focalId) >= 0){
+      m = x; break;
+    }
+  }
+  if (!m) m = cand[0];
+
+  const aIds = (m.aIds||[]);
+  const bIds = (m.bIds||[]);
+  const d = Number(m.delta);
+  if (!isFinite(d)) return null;
+  if (aIds.indexOf(focalId) >= 0) return d;
+  if (bIds.indexOf(focalId) >= 0) return -d;
+  return null;
+}
+
+
+
 
 function _rowIsStroke(r){
   const mode = String(r && r.mode || "").toLowerCase();
@@ -2819,6 +3106,11 @@ let FA_ELO_PACK = null;
 let FA_ELO_BY_PLAYER = Object.create(null);
 let FA_ELO_LOADED_AT = 0;
 let FA_ELO_BY_ID = Object.create(null);
+
+/* --- Elo match lookup (for showing per-match +/- in Stats modals/cards) --- */
+var FA_ELO_MATCH_SIG_MAP = null;          // strict signature (includes score)
+var FA_ELO_MATCH_SIG_MAP_NOSCORE = null;  // fallback signature (no score)
+var FA_ELO_MATCH_SIG_INFLIGHT = null;
 
 function _eloIndexPack_(pack){
   FA_ELO_BY_PLAYER = Object.create(null);
@@ -3500,7 +3792,7 @@ function renderOpponentResults(){
   }
 
   if ($("oppResultsCards")){
-    renderMatchCards("oppResultsCards", sorted, false, "No matches for this opponent.");
+    renderMatchCards("oppResultsCards", sorted, false, "No matches for this opponent.", { showMeta:true });
   }
 
   // Meta line
@@ -3628,7 +3920,8 @@ function renderPlayerStats(data){
   `);
   $("playerPartnersBody").innerHTML = partners.length ? partners.join("") : `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">No doubles matches found.</td></tr>`;
 
-  renderMatchCards("playerCards", data.recent || [], false);
+    const focalId = getPlayerId(getStatsTeam(), data.player || "");
+  renderMatchCards("playerCards", data.recent || [], false, "No matches yet.", { showMeta:true, includeEloDelta:true, focalId: focalId });
 }
 
 /* ---------- server calls (direct v2) ---------- */
@@ -4248,7 +4541,7 @@ try{
 
   // Render using the same match-card UI as the Stats page
   try{
-    renderMatchCards("pmCards", adapted, false, "No matches found.");
+    renderMatchCards("pmCards", adapted, false, "No matches found.", { showMeta:true, includeEloDelta:true, focalId: pid });
   }catch(e){
     console.error(e);
     $("pmCards").innerHTML = '<div class="small text-muted" style="padding:10px;">Error rendering match cards.</div>';
