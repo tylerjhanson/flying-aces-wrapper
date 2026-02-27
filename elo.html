@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ELO</title>
+<style>
+:root{ font-size: 12.5px; --btn-angle:135deg; }
+html,body{ margin:0; padding:0; background:#f7f8fa; color:#222; font-family:"Segoe UI", Roboto, Arial, sans-serif; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body { padding: 10px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); overflow-x:hidden; }
+
+/* panels */
+.panel{ background:#fff; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.08); padding:14px; margin:12px 0; }
+.h2{ font-size:14px; font-weight:950; margin:0 0 10px; letter-spacing:.02em; }
+.small{ font-size:12px; color:#667085; }
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.field{ flex:1 1 240px; min-width:240px; }
+.label{ display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#475467; margin:0 0 6px; }
+.val{ font-variant-numeric: tabular-nums; color:#111; font-weight:900; }
+input[type="range"]{ width:100%; }
+select,input[type="text"]{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e4e7ec; background:#fff; font-size:13px; outline:none; }
+select:focus,input[type="text"]:focus{ border-color:#a3aee3; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+
+.btnrow{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:10px; }
+.btn{ border:0; cursor:pointer; border-radius:999px; padding:10px 16px; font-weight:950; letter-spacing:.02em; text-transform:uppercase; }
+.btn.primary{ color:#fff; background:linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%); }
+.btn.ghost{ background:#eef2f7; color:#111; }
+.btn.warn{ background:#ffd55a; color:#111; }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+.hr{ height:1px; background:#eef2f7; margin:12px 0; }
+
+/* checkbox */
+.chk{ display:flex; gap:10px; align-items:center; user-select:none; }
+.chk input{ width:18px; height:18px; }
+
+/* tables (allow horizontal scroll like Stats) */
+.tablewrap{
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #eef2f7;
+  border-radius:14px;
+}
+.tablewrap table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  min-width:640px; /* enables horizontal scroll on mobile */
+}
+
+/* ELO Men/Women: tighter columns + header alignment */
+.eloTable col.c-num{ width:28px; }
+.eloTable col.c-rank{ width:46px; }
+.eloTable col.c-player{ width:220px; } /* keeps TEAM/ELO visible sooner */
+.eloTable col.c-team{ width:66px; }
+.eloTable col.c-elo{ width:56px; }
+.eloTable col.c-rating{ width:58px; }
+.eloTable col.c-singles{ width:70px; }
+.eloTable col.c-doubles{ width:70px; }
+
+thead th.left{ text-align:left; }
+
+/* tighter padding for # + rank bubble */
+.eloTable th:nth-child(1),
+.eloTable th:nth-child(2),
+.eloTable td:nth-child(1),
+.eloTable td:nth-child(2){
+  padding-left:6px;
+  padding-right:6px;
+}
+
+@media (max-width:520px){
+  .eloTable col.c-player{ width:90px; }
+  .eloTable col.c-team{ width:40px; }
+}
+thead th{
+  font-size:11px;
+  letter-spacing:.06em;
+  color:#4b5563;
+  padding:10px 10px;
+  border-bottom:1px solid #eef2f7;
+  text-transform:uppercase;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  background:#fff;
+}
+tbody td{
+  padding:10px 10px;
+  border-bottom:1px solid #f1f5f9;
+  font-size:13px;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+tbody tr:last-child td{ border-bottom:0; }
+td.num{ font-variant-numeric: tabular-nums; }
+td.left{ text-align:left; }
+td.playerCell, td.teamCell{
+  text-align:left;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1.15;
+}
+a.playerLink{ color:#111; font-weight:900; text-decoration:none; }
+a.playerLink:hover{ text-decoration:underline; }
+
+/* tighter table on narrow screens */
+@media (max-width: 520px){
+  thead th{ padding:9px 8px; }
+  tbody td{ padding:9px 8px; font-size:12px; }
+}
+/* rank bubbles */
+.rank-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0px;
+  padding:1px 6px;
+  border-radius:900px;
+  font-weight:1000;
+  font-size:10px;
+  line-height:1.2;
+  border:1px solid transparent;
+}
+.rank-A, .rank-AF{ background:#e8f7ee; border-color:#bbf7d0; color:#15803d; }
+.rank-B, .rank-BF{ background:#e8f1ff; border-color:#bfdbfe; color:#1d4ed8; }
+.rank-C, .rank-CF{ background:#fff7dd; border-color:#fde68a; color:#a16207; }
+.rank-D{ background:#ffe6e6; border-color:#fecaca; color:#b91c1c; }
+
+/* result badges */
+.res{ display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:2px 8px; font-weight:950; font-size:11px; border:1px solid transparent; }
+.res.w{ background:#e8f7ee; border-color:#bbf7d0; color:#15803d; }
+.res.l{ background:#ffe6e6; border-color:#fecaca; color:#b91c1c; }
+.res.t{ background:#fff7dd; border-color:#fde68a; color:#a16207; }
+
+/* details */
+details > summary{ list-style:none; cursor:pointer; font-weight:950; text-transform:uppercase; letter-spacing:.02em; }
+details > summary::-webkit-details-marker{ display:none; }
+.summaryRow{ display:flex; align-items:center; justify-content:center; position:relative; padding:0 10px; }
+.summaryRow .chev{ position:absolute; right:0; font-size:18px; color:#667085; }
+
+/* modal */
+.modal{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:flex-end; justify-content:center; z-index:9999; }
+.modal.show{ display:flex; }
+.modalCard{ width:min(980px, calc(100% - 24px)); max-height:85vh; background:#fff; border-radius:18px 18px 0 0; box-shadow:0 20px 60px rgba(0,0,0,.25); overflow:auto; padding:14px; }
+.modalHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; position:sticky; top:0; background:#fff; padding:6px 0 10px; z-index:2; border-bottom:1px solid #eef2f7; }
+.iconBtn{ border:0; background:#eef2f7; border-radius:999px; padding:8px 10px; font-weight:950; cursor:pointer; }
+.pillRow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0 10px; }
+.matchList{ margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+.matchRow{ padding:10px 0; border-bottom:1px solid #eef2f7; }
+.matchTop{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.names{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.nameChip{ display:inline-flex; gap:6px; align-items:center; background:#f7f8fa; border:1px solid #eef2f7; border-radius:999px; padding:4px 8px; font-weight:900; }
+.delta{ font-variant-numeric:tabular-nums; font-weight:950; }
+.delta.pos{ color:#15803d; }
+.delta.neg{ color:#b91c1c; }
+
+
+/* --- Match card styling (shared with Stats) --- */
+.match-card{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  padding:8px 10px;
+  display:grid;
+  grid-template-columns: 1fr 86px 1fr;
+  gap:8px;
+  align-items:center;
+
+  font-weight:400; /* keep names non-bold overall */
+}
+
+/* outcome borders: left team vs right team */
+.match-card.score-win{
+  box-shadow: inset 6px 0 0 rgba(21,128,61,.22), inset -6px 0 0 rgba(185,28,28,.18);
+}
+.match-card.score-loss{
+  box-shadow: inset 6px 0 0 rgba(185,28,28,.18), inset -6px 0 0 rgba(21,128,61,.22);
+}
+.match-card.score-tie{
+  box-shadow: inset 6px 0 0 rgba(161,98,7,.18), inset -6px 0 0 rgba(161,98,7,.18);
+}
+
+
+.mc-side-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:4px;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.mc-left, .mc-right{
+  min-width:0;
+  text-align:center;
+  font-weight:inherit;
+}
+
+.mc-name{ line-height:1.12; }
+
+.mc-mid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  font-weight:700; /* center block a bit stronger */
+}
+
+.mc-mid-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:3px;
+  text-align:center;
+  max-width:92px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mc-score{
+  font-weight:900;
+  text-align:center;
+  border-radius:12px;
+  padding:4px 6px;
+  font-variant-numeric:tabular-nums;
+  min-width:72px;
+}
+
+.mc-score-stroke{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.mc-stroke{ min-width:18px; text-align:center; }
+.mc-stroke-dash{ opacity:.6; }
+
+.mc-score-mp{ letter-spacing:.02em; }
+
+.mc-score.score-win{ background:#ecfdf3; color:#15803d; border:1px solid #bbf7d0; }
+.mc-score.score-loss{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.mc-score.score-tie{ background:#f8fafc; color:#334155; border:1px solid #e2e8f0; }
+
+@media (max-width:520px){
+  .match-card{ grid-template-columns: 1fr 78px 1fr; }
+  .mc-score{ min-width:66px; }
+}
+
+
+/* ELO modal: optional meta row inside match-card */
+.mc-meta{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:8px;
+  margin-bottom:6px;
+  border-bottom:1px solid #eef2f7;
+  font-size:10px;
+  color:#667085;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.mc-meta-left{ white-space:nowrap; }
+.mc-meta-mid{ display:flex; align-items:center; justify-content:center; gap:8px; flex:1; min-width:0; }
+.mc-meta-right{ white-space:nowrap; }
+
+.eloMini{
+  margin-left:6px;
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  background:#f7f8fa;
+  border:1px solid #eef2f7;
+  border-radius:999px;
+  padding:2px 6px;
+  font-variant-numeric:tabular-nums;
+}
+/* Non-collapsible header that matches the collapsible <summary> look (RED like active pages) */
+.panel-titlebar{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  /* make it span edge-to-edge inside .panel (which has padding:14px) */
+  margin:-14px -14px 12px;
+
+  /* match Matchups/Stats header height */
+  height:32px;
+  padding:0 14px;
+  box-sizing:border-box;
+
+  text-transform:uppercase;
+  font-weight:950;
+  font-size:14px;
+  letter-spacing:.02em;
+  user-select:none;
+
+  background: linear-gradient(var(--btn-angle), #ff3b3b, #e40000);
+  color:#fff;
+  border-top-left-radius:18px;
+  border-top-right-radius:18px;
+}
+.collapBody{ padding-top:10px; }
+</style>
+</head>
+
+<body>
+<?!= include('Header'); ?>
+
+<div class="panel pageTitlePanel" style="margin-top:12px;">
+  <div class="panel-titlebar">ELO</div>
+</div>
+
+
+<details class="panel" id="menPanel">
+  <summary>
+    <div class="summaryRow"><span class="h2" style="margin:0;">MEN</span><span class="chev">▾</span></div>
+  </summary>
+
+  <div class="collapBody">
+
+  <div class="row">
+    <div class="field">
+      <div class="label"><span>Team</span></div>
+      <select id="menTeam"></select>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Search</span></div>
+      <input type="text" id="menSearch" placeholder="Player name">
+    </div>
+
+    <div class="field" style="min-width:220px; flex:0 0 220px;">
+      <div class="label"><span>&nbsp;</span></div>
+      <label class="chk"><input type="checkbox" id="menIncludeInactive"><span class="small" style="font-weight:900; letter-spacing:.02em;">Include inactive</span></label>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:10px;">
+    <table class="eloTable">
+      <colgroup>
+        <col class="c-num">
+        <col class="c-rank">
+        <col class="c-player">
+        <col class="c-team">
+        <col class="c-elo">
+        <col class="c-rating">
+        <col class="c-singles">
+        <col class="c-doubles">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Rank</th>
+          <th class="left">Player</th>
+          <th class="left">Team</th>
+          <th>Elo</th>
+          <th>Rating</th>
+          <th>Singles</th>
+          <th>Doubles</th>
+        </tr>
+      </thead>
+      <tbody id="menBody">
+        <tr><td colspan="8" class="small">Press Apply to calculate.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+</details>
+
+<details class="panel" id="womenPanel">
+  <summary>
+    <div class="summaryRow"><span class="h2" style="margin:0;">WOMEN</span><span class="chev">▾</span></div>
+  </summary>
+
+  <div class="collapBody">
+  <div class="row" style="margin-top:10px;">
+    <div class="field">
+      <div class="label"><span>Team</span></div>
+      <select id="womenTeam"></select>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Search</span></div>
+      <input type="text" id="womenSearch" placeholder="Player name">
+    </div>
+
+    <div class="field" style="min-width:220px; flex:0 0 220px;">
+      <div class="label"><span>&nbsp;</span></div>
+      <label class="chk"><input type="checkbox" id="womenIncludeInactive"><span class="small" style="font-weight:900; letter-spacing:.02em;">Include inactive</span></label>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:10px;">
+    <table class="eloTable">
+      <colgroup>
+        <col class="c-num">
+        <col class="c-rank">
+        <col class="c-player">
+        <col class="c-team">
+        <col class="c-elo">
+        <col class="c-rating">
+        <col class="c-singles">
+        <col class="c-doubles">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Rank</th>
+          <th class="left">Player</th>
+          <th class="left">Team</th>
+          <th>Elo</th>
+          <th>Rating</th>
+          <th>Singles</th>
+          <th>Doubles</th>
+        </tr>
+      </thead>
+      <tbody id="womenBody">
+        <tr><td colspan="8" class="small">Press Apply to calculate.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+</details>
+
+<details class="panel" id="teamsPanel">
+  <summary>
+    <div class="summaryRow"><span class="h2" style="margin:0;">TEAMS</span><span class="chev">▾</span></div>
+  </summary>
+
+  <div class="collapBody">
+    <div class="row" style="margin-top:10px;">
+      <div class="field">
+        <div class="label"><span>Division</span></div>
+        <select id="teamsGender">
+          <option value="ALL" selected>All players</option>
+          <option value="men">Men</option>
+          <option value="women">Women</option>
+        </select>
+      </div>
+
+      <div class="field" style="min-width:240px; flex:0 0 240px;">
+        <div class="label"><span>&nbsp;</span></div>
+        <label class="chk"><input type="checkbox" id="teamsIncludeInactive"><span class="small" style="font-weight:900; letter-spacing:.02em;">Include inactive</span></label>
+      </div>
+    </div>
+
+    <div class="tableWrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th class="num">ELO</th>
+          </tr>
+        </thead>
+        <tbody id="teamsBody">
+          <tr><td colspan="2" class="small">Press Apply to calculate.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel" id="settingsPanel">
+  <summary>
+    <div class="summaryRow"><span class="h2" style="margin:0;">SETTINGS</span><span class="chev">▾</span></div>
+  </summary>
+
+  <div class="collapBody">
+
+  <div class="row">
+    <div class="field">
+      <div class="label"><span>Base K</span><span class="val" id="kVal"></span></div>
+      <input id="k" type="range" min="1" max="80" step="1">
+      <div class="small">Higher = ratings move faster.</div>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Seeding strength</span><span class="val" id="seedVal"></span></div>
+      <input id="seed" type="range" min="0" max="1" step="0.01">
+      <div class="small">How much Rank/Rating affects starting Elo.</div>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Doubles weight</span><span class="val" id="dWVal"></span></div>
+      <input id="dW" type="range" min="0" max="1" step="0.01">
+      <div class="small">Lower = doubles moves Elo less than singles.</div>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Triples weight</span><span class="val" id="tWVal"></span></div>
+      <input id="tW" type="range" min="0" max="1" step="0.01">
+      <div class="small">Lower = triples moves Elo less than singles.</div>
+    </div>
+
+    <div class="field">
+      <div class="label"><span>Tie movement</span><span class="val" id="tieVal"></span></div>
+      <input id="tieMove" type="range" min="0" max="1" step="0.01">
+      <div class="small">Lower = ties move Elo less.</div>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button class="btn warn" id="applyBtn">Apply</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+      <span class="small" id="statusLine"></span>
+    </div>
+
+    <button class="btn warn" id="exportBtn">Export CSV</button>
+  </div>
+
+  <div class="small" style="margin-top:8px;" id="errLine"></div>
+  </div>
+</details>
+
+
+
+<!-- Player modal -->
+<div class="modal" id="modal">
+  <div class="modalCard">
+    <div class="modalHead">
+      <div>
+        <div style="font-weight:1000; font-size:14px;" id="mTitle">Player</div>
+        <div class="small" id="mSub"></div>
+      </div>
+      <button class="iconBtn" id="closeBtn">Close</button>
+    </div>
+
+    <div class="pillRow" id="mPills"></div>
+
+    <div class="matchList" id="mMatches"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function key(s){ return (s==null?"":String(s)).trim().toLowerCase(); }
+
+function rankKey(rankVal){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  const k = raw.replace(/[^A-Z]/g,"");
+  return k || "";
+}
+function rankBubble(rankVal){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  if (!raw) return "";
+  const cls = rankKey(raw) ? ("rank-" + rankKey(raw)) : "";
+  return `<span class="rank-pill ${cls}">${esc(raw)}</span>`;
+}
+
+const TEAM_ABBREV = {
+  "flying aces": "Aces",
+  "pelham": "Pel.",
+  "snowdiaks": "Snow",
+  "cranbury": "Cran",
+  "dragonfly": "Drag.",
+  "oakholm": "Oak."
+};
+function teamAbbrev(team){
+  const raw = String(team || "").trim();
+  const k = raw.toLowerCase();
+  return TEAM_ABBREV[k] || raw; // D2 / 401 stay as-is
+}
+
+function cleanScore(s){
+  // remove trailing hyphen artifacts like "4 & 3 -" or "5 & 4 -"
+  return String(s||"").replace(/\s*-\s*$/,"").trim();
+}
+function fmtDelta(x){
+  const n = Number(x);
+  if (!isFinite(n) || Math.abs(n) < 0.05) return "";
+  const s = (n>0?"+":"") + n.toFixed(1);
+  const cls = n>=0 ? "pos" : "neg";
+  return `<span class="delta ${cls}">${s}</span>`;
+}
+
+let lastPack = null;
+let playersById = {};
+let matches = [];
+
+const DEFAULT_ELO_SETTINGS = {
+  baseK: 20,
+  seedStrength: 0.75,
+  doublesWeight: 0.75,
+  triplesWeight: 0.55,
+  tieMove: 0.85
+};
+
+function clampNum(v, min, max, fallback){
+  v = Number(v);
+  if (!isFinite(v)) v = Number(fallback);
+  if (!isFinite(v)) v = min;
+  return Math.min(max, Math.max(min, v));
+}
+function clampInt(v, min, max, fallback){
+  v = parseInt(v, 10);
+  if (!isFinite(v)) v = parseInt(fallback, 10);
+  if (!isFinite(v)) v = min;
+  return Math.min(max, Math.max(min, v));
+}
+
+function readEloSettingsFromUI(){
+  return {
+    baseK: Number($("k").value),
+    seedStrength: Number($("seed").value),
+    doublesWeight: Number($("dW").value),
+    triplesWeight: Number($("tW").value),
+    tieMove: Number($("tieMove").value)
+  };
+}
+
+function applyEloSettingsToUI(s){
+  s = s || {};
+  $("k").value = clampInt(s.baseK, 1, 80, DEFAULT_ELO_SETTINGS.baseK);
+  $("seed").value = clampNum(s.seedStrength, 0, 1, DEFAULT_ELO_SETTINGS.seedStrength).toFixed(2);
+  $("dW").value = clampNum(s.doublesWeight, 0, 1, DEFAULT_ELO_SETTINGS.doublesWeight).toFixed(2);
+  $("tW").value = clampNum(s.triplesWeight, 0, 1, DEFAULT_ELO_SETTINGS.triplesWeight).toFixed(2);
+  $("tieMove").value = clampNum(s.tieMove, 0, 1, DEFAULT_ELO_SETTINGS.tieMove).toFixed(2);
+  syncVals();
+}
+
+function isGas(){
+  return (typeof google !== "undefined" && google.script && google.script.run);
+}
+
+/** Load shared league-wide settings from Apps Script (Script Properties). */
+function loadEloSettings(done){
+  if (!isGas()){
+    done && done(null);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(s => { done && done(s || null); })
+    .withFailureHandler(_ => { done && done(null); })
+    .getEloSettings();
+}
+
+/** Save shared league-wide settings for ALL users. */
+function saveEloSettings(settings){
+  if (!isGas()) return;
+  const s = settings || readEloSettingsFromUI();
+  google.script.run
+    .withFailureHandler(_ => {})
+    .saveEloSettings(s);
+}
+
+let _saveTimer = null;
+function scheduleSaveEloSettings(){
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{ _saveTimer = null; saveEloSettings(); }, 350);
+}
+
+function setDefaults(){
+  applyEloSettingsToUI(DEFAULT_ELO_SETTINGS);
+}
+
+/**
+ * Initialize sliders from shared league-wide settings (or defaults if not set).
+ * Calls `done()` after settings are applied to the UI.
+ */
+function initEloSettings(done){
+  loadEloSettings((saved)=>{
+    if (saved) applyEloSettingsToUI(saved);
+    else setDefaults();
+    done && done();
+  });
+}
+
+function syncVals(){
+  $("kVal").textContent = $("k").value;
+  $("seedVal").textContent = Number($("seed").value).toFixed(2);
+  $("dWVal").textContent = Number($("dW").value).toFixed(2);
+  $("tWVal").textContent = Number($("tW").value).toFixed(2);
+  $("tieVal").textContent = Number($("tieMove").value).toFixed(2);
+}
+
+["k","seed","dW","tW","tieMove"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{ syncVals(); scheduleSaveEloSettings(); });
+  $(id).addEventListener("change", ()=>{ syncVals(); saveEloSettings(); });
+});
+
+function opts(){
+  return {
+    baseK: Number($("k").value),
+    seedStrength: Number($("seed").value),
+    doublesWeight: Number($("dW").value),
+    triplesWeight: Number($("tW").value),
+    tieMove: Number($("tieMove").value),
+    persistToPlayersDB: true
+  };
+}
+
+function setBusy(on){
+  $("applyBtn").disabled = !!on;
+  $("resetBtn").disabled = !!on;
+  $("exportBtn").disabled = !!on;
+}
+
+function apply(){
+  $("errLine").textContent = "";
+  $("statusLine").textContent = "Calculating…";
+  saveEloSettings();
+  setBusy(true);
+
+  google.script.run
+    .withFailureHandler(err=>{
+      setBusy(false);
+      $("statusLine").textContent = "";
+      $("errLine").textContent = "Error loading Elo: " + (err && err.message ? err.message : err);
+    })
+    .withSuccessHandler(pack=>{
+      setBusy(false);
+      lastPack = pack || null;
+      if (!lastPack || !lastPack.ok){
+        $("statusLine").textContent = "";
+        $("errLine").textContent = "Error loading Elo.";
+        return;
+      }
+
+      // index players
+      playersById = {};
+      (lastPack.players||[]).forEach(p=>{ playersById[p.id]=p; });
+      matches = lastPack.matches || [];
+
+      // build team options
+      buildTeamSelect($("menTeam"), (lastPack.teams && lastPack.teams.men) || []);
+      buildTeamSelect($("womenTeam"), (lastPack.teams && lastPack.teams.women) || []);
+
+      // render
+      renderMen();
+      renderWomen();
+      renderTeams();
+
+      const upd = lastPack.persist && lastPack.persist.ok ? (lastPack.persist.updated||0) : null;
+      $("statusLine").textContent = upd==null ? "Done." : ("Done. Updated PlayersDB: " + upd);
+    })
+    .getLeagueEloSimpleData(opts());
+}
+
+function buildTeamSelect(sel, teams){
+  const v = sel.value || "ALL";
+  sel.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "ALL";
+  optAll.textContent = "All teams";
+  sel.appendChild(optAll);
+
+  teams.forEach(t=>{
+    const o = document.createElement("option");
+    o.value = t;
+    o.textContent = t;
+    sel.appendChild(o);
+  });
+
+  sel.value = v;
+}
+
+function filterList(gender){
+  if (!lastPack) return [];
+  const teamSel = gender==="men" ? $("menTeam").value : $("womenTeam").value;
+  const q = (gender==="men" ? $("menSearch").value : $("womenSearch").value).trim().toLowerCase();
+  const incInactive = gender==="men" ? $("menIncludeInactive").checked : $("womenIncludeInactive").checked;
+
+  return (lastPack.players||[])
+    .filter(p=>p.gender===gender)
+    .filter(p=>incInactive ? true : !!p.active)
+    .filter(p=>teamSel==="ALL" ? true : (p.team===teamSel))
+    .filter(p=>!q ? true : String(p.name||"").toLowerCase().includes(q))
+    .sort((a,b)=> (a.eloRank||999999) - (b.eloRank||999999)); // static ranks
+}
+
+function recordSingles(p){ return `${p.sW||0}-${p.sL||0}-${p.sT||0}`; }
+function recordDoubles(p){ return `${p.dW||0}-${p.dL||0}`; }
+
+function renderMen(){
+  const rows = filterList("men");
+  const tb = $("menBody");
+  if (!rows.length){
+    tb.innerHTML = `<tr><td colspan="8" class="small">No players match your filters.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(p=>`
+    <tr>
+      <td class="num">${p.eloRank||""}</td>
+      <td>${rankBubble(p.baseRank)}</td>
+      <td class="playerCell"><a href="#" class="playerLink" data-id="${esc(p.id)}">${esc(p.name)}</a></td>
+      <td class="teamCell">${esc(teamAbbrev(p.team||""))}</td>
+      <td class="num"><b>${p.elo||""}</b></td>
+      <td class="num">${p.baseRating||""}</td>
+      <td class="num">${recordSingles(p)}</td>
+      <td class="num">${recordDoubles(p)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderWomen(){
+  const rows = filterList("women");
+  const tb = $("womenBody");
+  if (!rows.length){
+    tb.innerHTML = `<tr><td colspan="8" class="small">No players match your filters.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(p=>`
+    <tr>
+      <td class="num">${p.eloRank||""}</td>
+      <td>${rankBubble(p.baseRank)}</td>
+      <td class="playerCell"><a href="#" class="playerLink" data-id="${esc(p.id)}">${esc(p.name)}</a></td>
+      <td class="teamCell">${esc(teamAbbrev(p.team||""))}</td>
+      <td class="num"><b>${p.elo||""}</b></td>
+      <td class="num">${p.baseRating||""}</td>
+      <td class="num">${recordSingles(p)}</td>
+      <td class="num">${recordDoubles(p)}</td>
+    </tr>
+  `).join("");
+}
+
+function _num(v){ v = Number(v); return isFinite(v) ? v : null; }
+function _avg(arr){
+  let s = 0, n = 0;
+  for (let i=0;i<(arr||[]).length;i++){
+    const x = _num(arr[i]);
+    if (x==null) continue;
+    s += x; n++;
+  }
+  return n ? (s / n) : null;
+}
+function _fmtAvg(x){
+  const n = _num(x);
+  if (n==null) return "";
+  return String(Math.round(n));
+}
+
+function renderTeams(){
+  const tb = $("teamsBody");
+  if (!lastPack){
+    tb.innerHTML = `<tr><td colspan="2" class="small">Press Apply to calculate.</td></tr>`;
+    return;
+  }
+
+  const g = ($("teamsGender") && $("teamsGender").value) ? $("teamsGender").value : "ALL";
+  const incInactive = $("teamsIncludeInactive") ? $("teamsIncludeInactive").checked : false;
+
+  const list = (lastPack.players||[])
+    .filter(p => (g==="ALL") ? true : (p.gender === g))
+    .filter(p => incInactive ? true : !!p.active);
+
+  const teams = Object.create(null);
+  list.forEach(p=>{
+    const t = String(p.team||"").trim();
+    if (!t) return;
+    (teams[t] = teams[t] || []).push(p);
+  });
+
+  const rows = Object.keys(teams).map(team=>{
+    const ps = teams[team] || [];
+    const totalAvg = _avg(ps.map(p=>p.elo));
+    return { team, totalAvg };
+  })
+  .sort((a,b)=> (_num(b.totalAvg)||-1e9) - (_num(a.totalAvg)||-1e9));
+
+  if (!rows.length){
+    tb.innerHTML = `<tr><td colspan="2" class="small">No teams found.</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = rows.map(r=>`
+    <tr>
+      <td style="font-weight:950;">${esc(r.team)}</td>
+      <td class="num"><b>${_fmtAvg(r.totalAvg)}</b></td>
+    </tr>
+  `).join("");
+}
+
+
+
+
+function parseStrokePair(scoreStr){
+  const m = String(scoreStr||"").trim().match(/^(\d+)\s*[-–]\s*(\d+)$/);
+  return m ? [m[1], m[2]] : null;
+}
+function teamForSide(ids){
+  if (!ids || !ids.length) return "";
+  const p = playersById[ids[0]];
+  return (p && p.team) ? p.team : "";
+}
+function nameLineForId(pid, pillLeft, highlight){
+  const p = playersById[pid] || {};
+  const nm = p.name || "(Unknown)";
+  const rb = rankBubble(p.baseRank);
+  const eno = Math.round(Number(p.elo));
+  const eloMini = (isFinite(eno) && eno > 0) ? `<span class="eloMini">${eno}</span>` : "";
+  const nmHtml = `<span class="nm"${highlight ? ' style="font-weight:1000;"' : ''}>${esc(nm)}${eloMini}</span>`;
+  return `<div class="mc-name">${pillLeft ? (rb + nmHtml) : (nmHtml + rb)}</div>`;
+}
+function buildEloMatchCard(m, playerId){
+  const isA = (m.aIds||[]).includes(playerId);
+  const myIdsRaw = isA ? (m.aIds||[]) : (m.bIds||[]);
+  const oppIds = isA ? (m.bIds||[]) : (m.aIds||[]);
+  const myIds = [playerId].concat(myIdsRaw.filter(id=>id!==playerId)); // ensure clicked player first
+
+  const leftTeam = teamForSide(myIds);
+  const rightTeam = teamForSide(oppIds);
+
+  const res = (isA ? m.result : (m.result==="W"?"L":m.result==="L"?"W":"T"));
+  const resCls = res==="W"?"w":res==="L"?"l":"t";
+  const cls = res==="W"?"score-win":res==="L"?"score-loss":"score-tie";
+
+  const delta = isA ? m.delta : -m.delta;
+  const deltaHtml = (Math.abs(Number(delta||0))>0.05) ? fmtDelta(delta) : "";
+
+  const date = m.date ? esc(m.date) : "";
+  const mode = String(m.mode||"").toUpperCase();
+  const scoreMode = m.scoreMode ? String(m.scoreMode).toUpperCase() : "";
+  const rightMeta = [mode, scoreMode].filter(Boolean).join(" • ");
+
+  const meta = `<div class="mc-meta">
+    <span class="mc-meta-left">${date}</span>
+    <span class="mc-meta-mid"><span class="res ${resCls}">${res}</span>${deltaHtml}</span>
+    <span class="mc-meta-right">${esc(rightMeta)}</span>
+  </div>`;
+
+  const leftHtml =
+    `${leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : ""}` +
+    myIds.map(id=>nameLineForId(id,true,id===playerId)).join("");
+
+  const rightHtml =
+    `${rightTeam ? `<div class="mc-side-team">${esc(rightTeam)}</div>` : ""}` +
+    oppIds.map(id=>nameLineForId(id,false,false)).join("");
+
+  const scoreStr = cleanScore(m.score||"");
+  const pair = parseStrokePair(scoreStr);
+  const modeLc = String(m.mode||"").toLowerCase();
+  const scoreModeLc = String(m.scoreMode||"").toLowerCase();
+  const isStroke = !!pair || scoreModeLc==="stroke" || modeLc==="doubles" || modeLc==="triples";
+
+  let scoreHtml = "";
+  if (isStroke && pair){
+    let a = pair[0], o = pair[1];
+    if (!isA){ const tmp=a; a=o; o=tmp; }
+    scoreHtml = `<div class="mc-score mc-score-stroke ${cls}">
+      <span class="mc-stroke mc-stroke-aces">${esc(a)}</span>
+      <span class="mc-stroke-dash">–</span>
+      <span class="mc-stroke mc-stroke-opp">${esc(o)}</span>
+    </div>`;
+  } else {
+    scoreHtml = `<div class="mc-score mc-score-mp ${cls}">${esc(scoreStr || "—")}</div>`;
+  }
+
+  const midHtml = `${scoreHtml}`;
+
+  return `<div class="match-card ${cls}">
+    ${meta}
+    <div class="mc-left">${leftHtml}</div>
+    <div class="mc-mid">${midHtml}</div>
+    <div class="mc-right">${rightHtml}</div>
+  </div>`;
+}
+
+function openModal(playerId){
+  const p = playersById[playerId];
+  if (!p) return;
+
+  $("mTitle").textContent = p.name || "Player";
+  $("mSub").textContent = (p.team ? (p.team + " • ") : "") + "Rank " + (p.eloRank||"") + ((p.elo!=null && String(p.elo).trim()!=="" ) ? (" • " + p.elo) : "");
+
+  // pills: rank + rating + records
+  const pills = [];
+  if (p.baseRank) pills.push(`<span class="nameChip">${rankBubble(p.baseRank)}<span>${esc(p.baseRank)}</span></span>`);
+  if (p.baseRating) pills.push(`<span class="nameChip">Rating&nbsp;<b>${esc(p.baseRating)}</b></span>`);
+  pills.push(`<span class="nameChip">Singles&nbsp;<b>${recordSingles(p)}</b></span>`);
+  pills.push(`<span class="nameChip">Doubles&nbsp;<b>${recordDoubles(p)}</b></span>`);
+  $("mPills").innerHTML = pills.join("");
+
+  // matches for this player
+  const rel = (matches||[])
+    .filter(m => (m.aIds||[]).includes(playerId) || (m.bIds||[]).includes(playerId))
+    .slice()
+    .sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+  if (!rel.length){
+    $("mMatches").innerHTML = `<div class="small">No matches found for this player.</div>`;
+  } else {
+    $("mMatches").innerHTML = rel.slice(0,80).map(m => buildEloMatchCard(m, playerId)).join("");
+  }
+
+  $("modal").classList.add("show");
+}
+
+function nameChip(id, bold){
+  const p = playersById[id] || {};
+  const nm = p.name || "(Unknown)";
+  const rb = rankBubble(p.baseRank);
+  return `<span class="nameChip">${rb}${bold?`<span style="font-weight:1000;">${esc(nm)}</span>`:`<span>${esc(nm)}</span>`}</span>`;
+}
+
+// event handlers
+$("applyBtn").addEventListener("click", apply);
+$("resetBtn").addEventListener("click", ()=>{
+  setDefaults();
+  // Save shared league-wide defaults for everyone
+  saveEloSettings(DEFAULT_ELO_SETTINGS);
+});
+$("exportBtn").addEventListener("click", ()=>{
+  if (!lastPack){ alert("Press Apply first."); return; }
+  // Basic CSV export from current visible men+women rows (static ranks kept)
+  const men = filterList("men");
+  const women = filterList("women");
+  const lines = [];
+  lines.push(["Gender","Elo Rank","Rank","Player","Team","Elo","Rating","Singles W-L-T","Doubles W-L"].join(","));
+  function q(s){
+    s = (s==null?"":String(s));
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }
+  function addRows(g, list){
+    list.forEach(p=>{
+      lines.push([
+        g,
+        p.eloRank||"",
+        q(p.baseRank||""),
+        q(p.name||""),
+        q(p.team||""),
+        (p.elo||""),
+        (p.baseRating||""),
+        q(recordSingles(p)),
+        q(recordDoubles(p))
+      ].join(","));
+    });
+  }
+  addRows("Men", men);
+  addRows("Women", women);
+
+  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "elo_leaderboard.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+});
+
+["menTeam","menSearch","menIncludeInactive"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{ if (lastPack) renderMen(); });
+  $(id).addEventListener("change", ()=>{ if (lastPack) renderMen(); });
+});
+["womenTeam","womenSearch","womenIncludeInactive"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{ if (lastPack) renderWomen(); });
+  $(id).addEventListener("change", ()=>{ if (lastPack) renderWomen(); });
+});
+
+
+["teamsGender","teamsIncludeInactive"].forEach(id=>{
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener("input", ()=>{ if (lastPack) renderTeams(); });
+  el.addEventListener("change", ()=>{ if (lastPack) renderTeams(); });
+});
+
+
+document.addEventListener("click", (e)=>{
+  const a = e.target.closest && e.target.closest("a.playerLink");
+  if (a){
+    e.preventDefault();
+    openModal(a.getAttribute("data-id"));
+  }
+});
+
+$("closeBtn").addEventListener("click", ()=> $("modal").classList.remove("show"));
+$("modal").addEventListener("click", (e)=>{
+  if (e.target === $("modal")) $("modal").classList.remove("show");
+});
+
+initEloSettings(()=>{
+  // auto-run on page visit (after shared settings are loaded)
+  setTimeout(()=>{ try{ apply(); }catch(e){} }, 50);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,3384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stats</title>
+
+<style>
+:root{ font-size: 12.5px; --btn-angle:135deg; }
+html, body{
+  margin:0; padding:0;
+  background:#f7f8fa; color:#222;
+  font-family:"Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body { padding: 10px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  overflow-x:hidden;
+}
+
+/* panels */
+.panel{
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  padding:14px;
+  margin:12px 0;
+}
+.h2{ font-size:14px; font-weight:900; margin:0 0 10px; }
+.muted{ color:#667085; font-weight:700; }
+hr.sep{ border:0; height:1px; background:#eef2f7; margin:10px 0; }
+
+/* diag banner */
+#diag{
+  display:none;
+  background:#fff3cd;
+  border:1px solid #ffe69c;
+  color:#7a5b00;
+  font-weight:900;
+  border-radius:14px;
+  padding:10px 12px;
+  margin:10px 0 0;
+}
+
+/* buttons (page-level) */
+button{
+  border:0;
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+button:disabled{ opacity:.55; cursor:not-allowed; }
+.btn-blue{ background: linear-gradient(var(--btn-angle), #3a86ff, #0d6efd); }
+.btn-red{ background: linear-gradient(var(--btn-angle), #ff3b3b, #e40000); }
+.btn-gray{ background: linear-gradient(var(--btn-angle), #9aa3af, #6b7280); }
+.btn-red, .btn-blue, .btn-gray{ text-transform: uppercase; letter-spacing:.02em; }
+
+.small-btn{
+  padding:7px 10px;
+  border-radius:12px;
+  font-size:12px;
+  box-shadow:none;
+  background: linear-gradient(var(--btn-angle), #ff6b6b, #e11d48);
+}
+
+/* table */
+.table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.table-wrap.tight th, .table-wrap.tight td{ padding:8px 8px; }
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+thead th{
+  font-size:11px;
+  letter-spacing:.06em;
+  color:#4b5563;
+  padding:10px 10px;
+  border-bottom:1px solid #eef2f7;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  text-align:center;
+}
+tbody td{
+  padding:10px 10px;
+  border-bottom:1px solid #f1f5f9;
+  font-size:13px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+tbody td:first-child{ text-align:left; }
+thead th:nth-child(n+2),
+tbody td:nth-child(n+2){ text-align:center; }
+
+.pill{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 9px;
+  border-radius:999px;
+  background:#f1f5f9;
+  font-weight:900;
+  color:#111827;
+  font-size:11.5px;
+}
+
+/* bottom action bar */
+.bottom-bar{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247,248,250,0), rgba(247,248,250,.85) 30%, rgba(247,248,250,1));
+  backdrop-filter: blur(6px);
+  z-index: 50;
+}
+.bottom-inner{
+  max-width: 720px;
+  margin: 0 auto;
+  display:flex;
+  gap:10px;
+
+  flex-wrap:wrap;
+}
+.bottom-inner button{ flex:1; min-width: 160px; }
+
+.bottom-inner button{ width:100%; }
+
+/* modal */
+.modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2000;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.modal.show{ display:flex; }
+.modal-card{
+  width: min(640px, 100%);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.35);
+  padding: 14px;
+}
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.modal-head .title{ font-weight:950; font-size:15px; }
+.icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background: linear-gradient(var(--btn-angle), #9aa3af, #6b7280);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+}
+.icon-btn span{ font-size:18px; line-height:1; }
+
+.form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+@media (max-width: 740px){ .form-grid{ grid-template-columns: 1fr; } }
+.field label{
+  display:block;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:#3a3f46;
+  margin:2px 0 6px;
+}
+.field select, .field input{
+  width:100%;
+  box-sizing:border-box;
+  border-radius:12px;
+  border:1px solid #e6e8ee;
+  padding:10px 12px;
+  font-size:13px;
+  outline:none;
+  background:#fff;
+}
+
+.btn-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+@media (max-width: 740px){ .btn-row{ grid-template-columns: 1fr; } }
+
+/* hide some columns on narrow screens (tables only) */
+@media (max-width: 520px){
+  thead th{ padding:9px 8px; }
+  tbody td{ padding:9px 8px; font-size:12px; }
+/* MEN/WOMEN roster tables: make Rating/Elo tighter so Name gets more width */
+@media (max-width: 520px){
+
+  /* Rating column */
+  #menRoster  table.stats th:nth-child(2),
+  #menRoster  table.stats td:nth-child(2),
+  #womenRoster table.stats th:nth-child(2),
+  #womenRoster table.stats td:nth-child(2){
+    width: 72px;
+    min-width: 72px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  /* Elo column */
+  #menRoster  table.stats th:nth-child(3),
+  #menRoster  table.stats td:nth-child(3),
+  #womenRoster table.stats th:nth-child(3),
+  #womenRoster table.stats td:nth-child(3){
+    width: 64px;
+    min-width: 64px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  /* OPTIONAL: if you prefer wrap instead of ellipsis */
+  /*
+  #menRoster  table.stats td:first-child,
+  #womenRoster table.stats td:first-child{
+    white-space: normal;
+    line-height: 1.15;
+  }
+  */
+}}
+
+/* =========================================================
+   Collapsible panels (CENTERED + ALL CAPS like your "good" version)
+   ========================================================= */
+details.collapsible{ padding:0; }
+details.collapsible > summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 14px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+  font-weight:950;
+  font-size:14px;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  position:relative;
+  list-style:none;
+}
+details.collapsible > summary::-webkit-details-marker{ display:none; }
+details.collapsible .collap-chevron{
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%) rotate(0deg);
+  transition: transform 180ms ease;
+  font-size:18px;
+  color:#667085;
+}
+details.collapsible[open] .collap-chevron{ transform: translateY(-50%) rotate(180deg); }
+details.collapsible .collap-body{ padding:0 14px 14px; }
+
+/* partner table: more row height + stacked names */
+.pair-table tbody td{ padding-top:14px; padding-bottom:14px; }
+.stack{ white-space:normal !important; line-height:1.15; }
+
+/* 
+=========================================================
+   Compact match rows (NOT bold names; score colored by result)
+   ========================================================= */
+.match-card{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  padding:8px 10px;
+  display:grid;
+  grid-template-columns: 1fr 86px 1fr;
+  gap:8px;
+  align-items:center;
+
+  font-weight: 400; /* ✅ not bold overall */
+}
+
+/* outcome borders: left team vs right team */
+.match-card.score-win{
+  box-shadow: inset 6px 0 0 rgba(21,128,61,.22), inset -6px 0 0 rgba(185,28,28,.18);
+}
+.match-card.score-loss{
+  box-shadow: inset 6px 0 0 rgba(185,28,28,.18), inset -6px 0 0 rgba(21,128,61,.22);
+}
+.match-card.score-tie{
+  box-shadow: inset 6px 0 0 rgba(161,98,7,.18), inset -6px 0 0 rgba(161,98,7,.18);
+}
+
+/* Elo number pill under player name (number only, no 'Elo' label) */
+.elo-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid #e7edf5;
+  background:#f8fafc;
+  color:#475569;
+  font-size:11px;
+  font-weight:900;
+  margin-top:4px;
+}
+
+.match-card + .match-card{ margin-top:10px; }
+
+.mc-side-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:4px;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.mc-left, .mc-right{
+  min-width:0;
+  font-weight: inherit; /* keep names non-bold */
+}
+.mc-left{ text-align:left; }
+.mc-right{ text-align:right; }
+
+.mc-left .mc-side-team{ text-align:left; }
+.mc-right .mc-side-team{ text-align:right; }
+
+.mc-name{
+  line-height:1.12;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.mc-right .mc-name{ justify-content:flex-end; }
+.mc-left .mc-name{ justify-content:flex-start; }
+
+.mc-name .nm{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.mc-name a{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.elo-pill{ flex:0 0 auto; }
+.mc-mid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  font-weight: 700; /* small center labels a bit stronger */
+}
+.mc-vs{
+  font-size:11px;
+  color:#667085;
+  line-height:1;
+  font-weight: 700;
+}
+.mc-mid-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:3px;
+  text-align:center;
+  max-width:92px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-score{
+  font-weight:900;
+  text-align:center;
+  border-radius:12px;
+  padding:4px 6px;
+  min-width:68px;
+  border:1px solid #eef2f7;
+  background:#f8fafc;
+  line-height:1;
+}
+.mc-score-stroke{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:15px;
+}
+.mc-score-mp{ font-size:14px; line-height:1; }
+.score-win{ color:#15803d; }
+.score-loss{ color:#b91c1c; }
+.score-tie{ color:#a16207; }
+
+/* =========================================================
+   Rank pills (A/B/C/D + women AF/BF/CF)
+   - Aces pill on LEFT; Opp pill on RIGHT
+   ========================================================= */
+.rank-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0px;
+  padding:1px 4px;
+  border-radius:900px;
+  font-weight:1000;
+  font-size:10px;
+  line-height:1;
+  border:1px solid transparent;
+}
+.rank-left{ margin-right:6px; }
+.rank-right{ margin-left:6px; }
+
+/* Rank colors: A=green, B=blue, C=yellow, D=red; Women AF/BF/CF */
+.rank-A, .rank-AF{
+  background:#e8f7ee;
+  border-color:#bbf7d0;
+  color:#15803d;
+}
+.rank-B, .rank-BF{
+  background:#e8f1ff;
+  border-color:#bfdbfe;
+  color:#1d4ed8;
+}
+.rank-C, .rank-CF{
+  background:#fff7dd;
+  border-color:#fde68a;
+  color:#a16207;
+}
+.rank-D{
+  background:#ffe6e6;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
+
+@media (max-width: 520px){
+  .match-card{ grid-template-columns: 1fr 78px 1fr; padding:9px; }
+  .mc-score{ min-width:62px; padding:6px 7px; }
+  .mc-score-stroke{ font-size:14px; gap:5px; }
+}
+
+/* table alignment + compact numeric columns */
+.stats th, .stats td{ text-align:center; }
+.stats td:first-child{ text-align:left; }
+
+/* Singles (5-col): Name | W | L | T | Win%  */
+.stats-5 th:nth-child(2), .stats-5 td:nth-child(2),
+.stats-5 th:nth-child(3), .stats-5 td:nth-child(3),
+.stats-5 th:nth-child(4), .stats-5 td:nth-child(4){
+  width:22px;           /* narrower W/L/T */
+  min-width:22px;
+  padding-left:6px;     /* tighten padding so the width actually helps */
+  padding-right:6px;
+  text-align:center;
+  white-space:nowrap;
+}
+
+/* Optional: keep Win% from hogging space (helps name column) */
+.stats-5 th:nth-child(5), .stats-5 td:nth-child(5){
+  width:76px;
+  min-width:76px;
+  text-align:right;
+}
+
+/* Doubles-by-partner (4-col): Pair | W | L | Win% */
+.stats-4 th:nth-child(2), .stats-4 td:nth-child(2),
+.stats-4 th:nth-child(3), .stats-4 td:nth-child(3){
+  width:28px;           /* a bit tighter than before */
+  min-width:28px;
+  padding-left:6px;
+  padding-right:6px;
+}
+
+
+/* opponent results table column sizing */
+.stats-opp th:nth-child(1), .stats-opp td:nth-child(1){ width:92px; }
+.stats-opp th:nth-child(2), .stats-opp td:nth-child(2){ width:70px; }
+.stats-opp th:nth-child(3), .stats-opp td:nth-child(3){ width:54px; }
+.stats-opp th:nth-child(6), .stats-opp td:nth-child(6){ width:86px; }
+
+
+/* Non-collapsible header that matches the collapsible <summary> look (RED like active pages) */
+.panel-titlebar{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  /* make it span edge-to-edge inside .panel (which has padding:14px) */
+  margin:-14px -14px 12px;
+
+  /* ✅ match Matchups round button height */
+  height:32px;
+  padding:0 14px;           /* horizontal padding only */
+  box-sizing:border-box;
+
+  text-transform:uppercase;
+  font-weight:950;
+  font-size:14px;
+  letter-spacing:.02em;
+  user-select:none;
+
+  background: linear-gradient(var(--btn-angle), #ff3b3b, #e40000);
+  color:#fff;
+  border-top-left-radius:18px;
+  border-top-right-radius:18px;
+}
+
+
+/* Toast */
+#toast{
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.88);
+  color:#fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2500;
+  transition: opacity .18s ease, transform .18s ease;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show{
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+
+/* ✅ allow horizontal swipe in tables on mobile */
+.table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+/* clickable player names */
+a.playerLink{ color:#111; text-decoration:none; font-weight:inherit; }
+a.playerLink:hover{ text-decoration:underline; }
+
+/* boot overlay spinner */
+.faSpinner{
+  width:22px; height:22px;
+  border-radius:50%;
+  border:3px solid rgba(0,0,0,.12);
+  border-top-color: rgba(0,122,255,.95);
+  animation: faSpin 0.9s linear infinite;
+}
+@keyframes faSpin{ to{ transform: rotate(360deg); } }
+
+</style>
+</head>
+
+<body>
+
+<?!= include('Header'); ?>
+
+<div id="diag"></div>
+
+
+<!-- TEAM STATS -->
+  <div class="panel">
+        <div class="panel-titlebar">STATS</div>
+
+<div class="field" style="margin:0;">
+      <label for="statsTeamPick">SELECT TEAM</label>
+      <select id="statsTeamPick"></select>
+    </div>
+  </div>
+
+
+<!-- MEN ROSTER (from Scouting) -->
+<details class="panel collapsible" id="menRoster">
+  <summary>MEN ROSTER<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="table-wrap">
+      <table class="stats">
+        <thead>
+          <tr><th></th><th>Rating</th><th>Elo</th></tr>
+        </thead>
+        <tbody id="scoutRosterMenBody">
+          <tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<!-- WOMEN ROSTER (from Scouting) -->
+<details class="panel collapsible" id="womenRoster">
+  <summary>WOMEN ROSTER<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="table-wrap">
+      <table class="stats">
+        <thead>
+          <tr><th></th><th>Rating</th><th>Elo</th></tr>
+        </thead>
+        <tbody id="scoutRosterWomenBody">
+          <tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel collapsible">
+  <summary>Singles<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="table-wrap tight">
+      <table class="stats stats-5">
+        <thead><tr><th></th><th>W</th><th>L</th><th>T</th><th>Win%</th></tr></thead>
+        <tbody id="singlesBody">
+          <tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel collapsible">
+  <summary>Doubles<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="table-wrap tight">
+      <table class="stats stats-4">
+        <thead><tr><th></th><th>W</th><th>L</th><th>Win%</th></tr></thead>
+        <tbody id="doublesPlayerBody">
+          <tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel collapsible">
+  <summary>Doubles by partner<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="table-wrap tight">
+      <table class="stats stats-4 pair-table">
+        <thead><tr><th></th><th>W</th><th>L</th><th>Win%</th></tr></thead>
+        <tbody id="doublesPairBody">
+          <tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<!-- INDIVIDUAL RESULTS -->
+<details class="panel collapsible" id="indivResults">
+  <summary>Individual Results<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+<div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
+    <div class="field">
+      <select id="playerPick"><option value="">Loading…</option></select>
+    </div>
+</div>
+
+  <div id="playerSection" style="display:none; margin-top:10px;">
+    <hr class="sep">
+    <div id="playerMeta" style="font-size:16px; font-weight:950; margin-top:2px;"></div>
+
+    <div class="table-wrap" style="margin-top:10px;">
+      <table class="stats stats-5">
+        <thead><tr><th></th><th>W</th><th>L</th><th>T</th><th>Win%</th></tr></thead>
+        <tbody id="playerSummaryBody">
+          <tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="h2" style="margin-top:12px;">Partners</div>
+    <div class="table-wrap">
+      <table class="stats stats-4">
+        <thead><tr><th></th><th>W</th><th>L</th><th>Win%</th></tr></thead>
+        <tbody id="playerPartnersBody">
+          <tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="h2" style="margin-top:12px;">Matches</div>
+    <div id="playerCards" class="cards" style="margin-top:8px;">
+      <div class="muted" style="padding:6px 2px; font-weight:900;">Loading…</div>
+    </div>
+  </div>
+</details>
+
+<!-- RESULTS BY OPPONENT -->
+<details class="panel collapsible">
+  <summary>Results by opponent<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
+      <div class="field">
+        <select id="oppFilter"><option value="">Loading…</option></select>
+      </div>
+    </div>
+
+    
+    <div id="oppResultsCards" style="margin-top:10px;">
+      <div class="muted" style="padding:6px 2px; font-weight:900;">Loading…</div>
+    </div>
+
+
+    <div id="oppResultsMeta" class="muted" style="margin-top:8px; font-weight:900;"></div>
+  </div>
+
+</details>
+
+
+
+
+<!-- SINGLES LINKS (from Scouting) -->
+<details class="panel collapsible" id="singlesLinks">
+  <summary>SINGLES LINKS (ACES ONLY)<span class="collap-chevron">▾</span></summary>
+  <div class="collap-body">
+    <div class="muted" style="font-weight:900; margin:0 0 10px;">
+      Shows “Flying Aces → intermediary → selected team” when the intermediary appears in both teams’ recent singles matches.
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr; margin-top:6px;">
+      <div class="field">
+        <div class="label">Opponent team</div>
+        <select id="scoutOpp" disabled></select>
+        <div class="small">Select an opponent team to generate transitive singles links.</div>
+      </div>
+
+      <div class="field">
+        <div class="label">Opponent player filter</div>
+        <select id="transitiveOppPick" disabled></select>
+        <div class="small">Filter to links that end with a specific player on the selected team.</div>
+      </div>
+    </div>
+
+    <div id="scoutMeta" class="muted" style="font-weight:900; margin:8px 0 6px;"></div>
+    <div id="scoutTransitive"></div>
+  </div>
+</details>
+
+<script>
+
+function prettyTeamName(s){
+  s = String(s || "").trim();
+  // remove leading "OPP - " (case-insensitive, flexible spacing)
+  return s.replace(/^OPP\s*-\s*/i, "");
+}
+/* ---------- helpers ---------- */
+function $(id){ return document.getElementById(id); }
+
+// cache recent matches for client-side filtering
+let FA_RECENT_CACHE = [];
+// keep last stats payload in memory (for instant dropdown filtering)
+let FA_STATS_OBJ = null;
+// per-player computed view cache (rebuilt whenever stats change)
+let FA_PLAYER_CACHE = Object.create(null);
+
+/* ---------- stats cache (localStorage) ---------- */
+function statsCacheKey(teamId){ return "FA_STATS_CACHE_V3_" + _key(teamId || (window.FA_ACES_TEAM || "Flying Aces")); }
+const STATS_CACHE_VER = "FA_STATS_VER_V2";
+
+function loadCachedStats(teamId){
+  try{
+    const ver  = localStorage.getItem(STATS_CACHE_VER) || "";
+    const json = localStorage.getItem(statsCacheKey(teamId));
+    return json ? { version: ver, stats: JSON.parse(json) } : null;
+  }catch(e){ return null; }
+}
+function saveCachedStats(teamId, version, stats){
+  try{
+    localStorage.setItem(STATS_CACHE_VER, String(version || ""));
+    localStorage.setItem(statsCacheKey(teamId), JSON.stringify(stats || {}));
+  }catch(e){}
+}
+
+function setDiag(msg){
+  const d = $("diag");
+  d.textContent = msg || "";
+  d.style.display = msg ? "block" : "none";
+}
+
+function dispTeamName(s){ return (s||"").toString().replace(/^OPP\s*-\s*/i,"").trim(); }
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+}
+function pct(x){
+  const n = Number(x||0);
+  if (!isFinite(n)) return "0.0%";
+  return (Math.round(n*1000)/10).toFixed(1) + "%";
+}
+function stripOppPrefix(name){
+  const s = String(name||"");
+  return s.startsWith("OPP - ") ? s.slice(6) : s;
+}
+function fillSelectSimple(id, items, placeholder, selectedVal, labelFn){
+  const el = $(id);
+  if (!el) return;
+
+  el.innerHTML = "";
+
+  if (placeholder != null){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = placeholder;
+    el.appendChild(opt);
+  }
+
+  (items || []).forEach(v => {
+    const val = String(v ?? "").trim();
+    if (!val) return;
+
+    const opt = document.createElement("option");
+    opt.value = val; // ✅ keep raw value (e.g., "OPP - Pelham")
+    opt.textContent = labelFn ? labelFn(val) : val; // ✅ show cleaned label
+    el.appendChild(opt);
+  });
+
+  if (selectedVal != null){
+    el.value = selectedVal;
+  }
+}
+
+function fillOppTeamSelect(items){
+  // Old match entry modal is removed, but bootstrap still calls this.
+  // Safe: fillSelectSimple no-ops if #oppTeam doesn't exist.
+  fillSelectSimple("oppTeam", items || [], "Select opponent…", "", prettyTeamName);
+}
+
+function fillSelectExact(elId, items, selected){
+  const el = (typeof elId === "string") ? $(elId) : elId;
+  if (!el) return;
+  items = (items || []).map(x => (typeof x === "string" ? x : (x && x.name ? String(x.name) : ""))).map(s => String(s||"").trim()).filter(Boolean);
+
+  // ✅ keep Flying Aces first if present
+  const aces = (window.FA_ACES_TEAM || "Flying Aces").trim();
+  items = items.slice().sort((a,b)=>a.localeCompare(b));
+  if (aces){
+    const idx = items.findIndex(x => _key(x) === _key(aces));
+    if (idx >= 0){
+      items.splice(idx,1);
+      items.unshift(aces);
+    }
+  }
+
+  el.innerHTML = items.map(s => `<option value="${esc(s)}">${esc(dispTeamName(s))}</option>`).join("");
+
+  if (selected && items.some(x => _key(x) === _key(selected))) el.value = selected;
+}
+
+function getStatsTeam(){
+  const el = $("statsTeamPick");
+  return (el && el.value) ? el.value : (window.FA_ACES_TEAM || "Flying Aces");
+}
+function loadPlayersForTeam(teamId){
+  teamId = String(teamId || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
+  const aces = (window.FA_ACES_TEAM || "Flying Aces");
+
+  const apply = (list) => {
+  // faGetTeamPlayers_v2 returns { ok:true, players:[...] }
+  let arr = list;
+  try{ if (list && typeof list === 'object' && list.playerRows) setPlayerIdMap(list.playerRows); }catch(e){}
+  if (arr && typeof arr === "object" && !Array.isArray(arr)){
+    if (Array.isArray(arr.players)) arr = arr.players;
+    else if (Array.isArray(arr.aces)) arr = arr.aces;
+    else arr = [];
+  }
+
+  const names = (arr || [])
+    .map(x => (typeof x === "string" ? x : (x && x.name ? String(x.name) : "")))
+    .map(s => String(s||"").trim())
+    .filter(Boolean)
+    .filter(n => _key(n) !== "all players");
+
+  fillSelectSimple("playerPick", names, "Select a player…");
+
+};
+
+
+  if (_key(teamId) === _key(aces)){
+    apply(window.FA_ACE_PLAYERS || []);
+    return;
+  }
+
+  // opponent team / other team
+  google.script.run
+    .withSuccessHandler(apply)
+    .withFailureHandler(err => {
+      console.error(err);
+      // fallback: keep current pick list
+      toast("Could not load team players", 2000);
+    })
+    .faGetTeamPlayers_v2(teamId);
+}
+
+function setStatsTeam(teamId){
+  teamId = String(teamId || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
+  window.FA_STATS_TEAM = teamId;
+
+  const el = $("statsTeamPick");
+  if (el) el.value = teamId;
+
+  // ✅ reset player dropdown + hide player section when switching teams
+  try{
+    if ($("playerPick")){
+      fillSelectSimple("playerPick", [], "Select a player…");
+      $("playerPick").value = "";
+    }
+    if (typeof setPlayerEmpty === "function") setPlayerEmpty();
+  }catch(e){}
+
+  loadPlayersForTeam(teamId);
+  // ✅ update roster tables to match selected team
+  try{ if (typeof updateRostersForTeam === 'function') updateRostersForTeam(teamId); }catch(e){}
+
+  // show cached stats ONLY if it matches the server version (prevents "flash" + re-sort)
+  try{
+    const cached = loadCachedStats(teamId);
+    const serverVer = String(window.FA_STATS_VERSION || "");
+    if (cached && cached.version && serverVer && cached.version === serverVer && cached.stats){
+      applyStats(cached.stats);
+      return; // already correct; don't fetch + rerender
+    }
+  }catch(e){}
+
+  // clear old stats while fetching, so we don't show incorrect tables
+  try{
+    if ($("singlesBody")) $("singlesBody").innerHTML = `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    if ($("doublesPlayerBody")) $("doublesPlayerBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    if ($("doublesPairBody")) $("doublesPairBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+  }catch(e){}
+
+  refreshStats();
+}
+
+
+function fillOppFilterSelect(items){
+  // value is the sheet name; label hides "OPP - "
+  fillSelectSimple("oppFilter", items || [], "All Opponents", "", prettyTeamName);
+}
+
+
+/* ---------- MatchLog persistence (date / opponent team / mode) ---------- */
+const FA_MATCHLOG_CTX_KEY = "FA_STATS_MATCHLOG_CTX_V1";
+
+function _getMatchLogCtx(){
+  return {
+    matchDate: $("matchDate") ? ($("matchDate").value || "") : "",
+    oppTeam:   $("oppTeam")   ? ($("oppTeam").value   || "") : "",
+    mode:      $("mode")      ? ($("mode").value      || "singles") : "singles"
+  };
+}
+
+function persistMatchLogCtx(){
+  try{ localStorage.setItem(FA_MATCHLOG_CTX_KEY, JSON.stringify(_getMatchLogCtx())); }catch(_){}
+}
+function restoreMatchLogCtx(){
+  // Old match entry modal removed; keep this for back-compat but no-op if fields are missing
+  if (!$("matchDate") || !$("mode") || !$("oppTeam")) return;
+
+  let ctx = null;
+  try{ ctx = JSON.parse(localStorage.getItem(FA_MATCHLOG_CTX_KEY) || "null"); }catch(_){}
+  if (!ctx || typeof ctx !== "object") return;
+
+  if (ctx.matchDate) $("matchDate").value = ctx.matchDate;
+
+  if (ctx.mode === "singles" || ctx.mode === "doubles") $("mode").value = ctx.mode;
+
+  if (ctx.oppTeam){
+    const has = Array.from($("oppTeam").options).some(o => o.value === ctx.oppTeam);
+    if (has) $("oppTeam").value = ctx.oppTeam;
+  }
+
+  // Refresh opponents / mode visuals after restore
+  onOppTeamChange();
+  showMode();
+}
+
+/* ---------- League MatchLog persistence (date / mode / teams / score mode) ---------- */
+const FA_LEAGUELOG_CTX_KEY = "FA_STATS_LEAGUELOG_CTX_V1";
+
+function _getLeagueLogCtx(){
+  return {
+    matchDate: $("lmDate") ? ($("lmDate").value || "") : "",
+    mode: $("lmMode") ? ($("lmMode").value || "") : "",
+    teamA: $("lmTeamA") ? ($("lmTeamA").value || "") : "",
+    teamB: $("lmTeamB") ? ($("lmTeamB").value || "") : "",
+    scoreMode: $("lmScoreMode") ? ($("lmScoreMode").value || "") : "",
+    result: $("lmResult") ? ($("lmResult").value || "") : ""
+  };
+}
+function persistLeagueLogCtx(){
+  try{ localStorage.setItem(FA_LEAGUELOG_CTX_KEY, JSON.stringify(_getLeagueLogCtx())); }catch(_){}
+}
+function restoreLeagueLogCtx(){
+  if (!$("lmDate") || !$("lmMode") || !$("lmTeamA") || !$("lmTeamB")) return;
+
+  let ctx = null;
+  try{ ctx = JSON.parse(localStorage.getItem(FA_LEAGUELOG_CTX_KEY) || "null"); }catch(_){}
+  if (!ctx || typeof ctx !== "object") return;
+
+  if (ctx.matchDate) $("lmDate").value = ctx.matchDate;
+
+  if (ctx.mode === "singles" || ctx.mode === "doubles" || ctx.mode === "triples") $("lmMode").value = ctx.mode;
+
+  if ($("lmScoreMode") && ctx.scoreMode){
+    const hasSM = Array.from($("lmScoreMode").options).some(o => o.value === ctx.scoreMode);
+    if (hasSM) $("lmScoreMode").value = ctx.scoreMode;
+  }
+
+  if (ctx.teamA){
+    const hasA = Array.from($("lmTeamA").options).some(o => o.value === ctx.teamA);
+    if (hasA) $("lmTeamA").value = ctx.teamA;
+  }
+
+  if (ctx.teamB){
+    const hasB = Array.from($("lmTeamB").options).some(o => o.value === ctx.teamB);
+    if (hasB) $("lmTeamB").value = ctx.teamB;
+  }
+
+  if ($("lmResult") && ctx.result){
+    const hasR = Array.from($("lmResult").options).some(o => o.value === ctx.result);
+    if (hasR) $("lmResult").value = ctx.result;
+  }
+}
+
+function clearLeagueEntryFields(){
+  // Keep: date/mode/teams/result/scoreMode
+  const ids = ["lmA1","lmA2","lmA3","lmB1","lmB2","lmB3","lmAScore","lmBScore","lmMpScore"];
+  ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+
+  // Re-apply current mode/score UI (also re-runs auto-result for stroke)
+  try{ showLeagueMode(); }catch(_){}
+  try{ showLeagueScoreMode(); }catch(_){}
+  try{ maybeAutoLeagueResultFromScores(); }catch(_){}
+
+  try{ $("lmA1") && $("lmA1").focus(); }catch(_){}
+}
+
+
+
+function resetMatchEntryForNext(){
+  // Keep matchDate / oppTeam / mode (persisted), but clear per-match picks/scores.
+  $("a1").value = "";
+  $("a2").value = "";
+  $("o1").value = "";
+  $("o2").value = "";
+
+  $("acesScore").value = "";
+  $("oppScore").value = "";
+  if ($("mpScore")) $("mpScore").value = "PUSH";
+
+
+  // ✅ NEW: don\'t let Round 2 toggle carry over
+  $("singlesStrokeToggle").checked = false;
+
+  showMode();
+  try{ $("a1").focus(); }catch(_){}
+}
+
+/* wiring helpers */
+function onOppTeamChange(){
+  persistMatchLogCtx();
+  loadOppPlayers();
+}
+function onModeChange(){
+  persistMatchLogCtx();
+  showMode();
+}
+function onMatchDateChange(){
+  persistMatchLogCtx();
+}
+
+/* ---------- modal ---------- */
+function openModal(){
+  const mm = $("matchModal");
+  if (!mm) return;
+  mm.classList.add("show");
+  mm.setAttribute("aria-hidden","false");
+  restoreMatchLogCtx();
+  showMode();
+}
+function closeModal(){
+  const mm = $("matchModal");
+  if (!mm) return;
+  mm.classList.remove("show");
+  mm.setAttribute("aria-hidden","true");
+}
+
+var _toastTimer=null;
+function toast(msg, ms){
+  try{
+    var el = $("toast");
+    if (!el) return;
+    el.textContent = String(msg||"");
+    el.classList.add("show");
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function(){ el.classList.remove("show"); }, ms || 1600);
+  }catch(_){ }
+}
+
+function openLeagueModal(){
+  $("leagueMatchModal").classList.add("show");
+  $("leagueMatchModal").setAttribute("aria-hidden","false");
+
+  // Restore last-used context (so you can batch-enter without re-selecting)
+  try{ restoreLeagueLogCtx(); }catch(_){}
+
+  // Default date only if empty (don’t overwrite persisted)
+  try{
+    if ($("lmDate") && !$("lmDate").value) $("lmDate").valueAsDate = new Date();
+  }catch(_){}
+
+  // If teams already selected, load rosters immediately
+  try{
+    loadLeagueTeamRoster($("lmTeamA").value, "A");
+    loadLeagueTeamRoster($("lmTeamB").value, "B");
+  }catch(_){}
+
+  showLeagueMode();
+  showLeagueScoreMode();
+  maybeAutoLeagueResultFromScores();
+
+  try{ $("lmA1") && $("lmA1").focus(); }catch(_){}
+}
+function closeLeagueModal(){
+  $("leagueMatchModal").classList.remove("show");
+  $("leagueMatchModal").setAttribute("aria-hidden","true");
+}
+
+function showLeagueMode(){
+  const mode = $("lmMode").value;
+  const isS = (mode === "singles");
+  const isD = (mode === "doubles");
+  const isT = (mode === "triples");
+
+  $("lmA2Field").style.display = isS ? "none" : "";
+  $("lmB2Field").style.display = isS ? "none" : "";
+
+  // Triples extra players
+  const a3f = $("lmA3Field"), b3f = $("lmB3Field");
+  if (a3f) a3f.style.display = isT ? "" : "none";
+  if (b3f) b3f.style.display = isT ? "" : "none";
+
+  // Force stroke-play scoring for doubles/triples
+  const scoreMode = $("lmScoreMode");
+  if (scoreMode){
+    if (isS){
+      scoreMode.disabled = false;
+    } else {
+      scoreMode.value = "stroke";
+      scoreMode.disabled = true;
+    }
+  }
+
+  // Ensure score fields match current score mode
+  showLeagueScoreMode();
+  maybeAutoLeagueResultFromScores();
+}
+function showLeagueScoreMode(){
+  const mode = ($("lmMode").value || "singles").toLowerCase();
+  const sm = ($("lmScoreMode").value || "match").toLowerCase();
+  const isStroke = (mode === "doubles" || mode === "triples") || (sm === "stroke");
+
+  $("lmMpField").style.display = isStroke ? "none" : "";
+  $("lmStrokeFieldA").style.display = isStroke ? "" : "none";
+  $("lmStrokeFieldB").style.display = isStroke ? "" : "none";
+
+  maybeAutoLeagueResultFromScores();
+
+  // Persist on every score-mode change
+  persistLeagueLogCtx();
+}
+function maybeAutoLeagueResultFromScores(){
+  const mode = ($("lmMode").value || "singles").toLowerCase();
+  const sm = ($("lmScoreMode").value || "match").toLowerCase();
+  const isStroke = (mode === "doubles" || mode === "triples") || (sm === "stroke");
+  if (!isStroke) return;
+
+  const a = Number($("lmAScore").value);
+  const b = Number($("lmBScore").value);
+  if (!isFinite(a) || !isFinite(b)) return;
+
+  if (a === b) $("lmResult").value = "T";
+  else if (a < b) $("lmResult").value = "W"; // lower score wins
+  else $("lmResult").value = "L";
+}
+
+function _key(s){ return String(s||"").trim().toLowerCase(); }
+
+function loadLeagueTeamRoster(teamId, which){
+  // Back-compat: allow calling as loadLeagueTeamRoster("A") / loadLeagueTeamRoster("B")
+  if ((teamId === "A" || teamId === "B") && !which){
+    which = teamId;
+    teamId = (which === "A") ? $("lmTeamA").value : $("lmTeamB").value;
+  }
+  which = (which === "A" || which === "B") ? which : "B";
+
+  const sel1 = (which === "A") ? "lmA1" : "lmB1";
+  const sel2 = (which === "A") ? "lmA2" : "lmB2";
+  const sel3 = (which === "A") ? "lmA3" : "lmB3";
+
+  fillSelectSimple(sel1, [], "Select…");
+  fillSelectSimple(sel2, [], "Select…");
+  const s3 = $(sel3);
+  if (s3) fillSelectSimple(sel3, [], "Select…");
+
+  if (!teamId){
+    // nothing selected yet
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(res => {
+      // Support both shapes: array OR {ok:true, players:[...]}
+      let players = [];
+      if (Array.isArray(res)) players = res;
+      else if (res && Array.isArray(res.players)) players = res.players;
+      else if (res && res.ok && Array.isArray(res.players)) players = res.players;
+
+      // Normalize to strings
+      players = (players||[]).map(x => (x==null ? "" : String(x))).filter(Boolean);
+
+      fillSelectSimple(sel1, players, "Select…");
+      fillSelectSimple(sel2, players, "Select…");
+      if (s3) fillSelectSimple(sel3, players, "Select…");
+    })
+    .withFailureHandler(err => toast((err && err.message ? err.message : err), 2200))
+    .faGetTeamPlayers_v2(teamId);
+}
+
+function refreshLeague(){
+  if (!$("leagueMeta")) return;
+  $("leagueMeta").textContent = "Loading league…";
+  google.script.run
+    .withSuccessHandler(data => {
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data");
+        if (data.ok === false) throw new Error(data.error || "League stats failed");
+        renderLeague(data);
+      }catch(e){
+        console.error(e);
+        $("leagueMeta").textContent = "League error: " + (e && e.message ? e.message : e);
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      $("leagueMeta").textContent = "League load error";
+    })
+    .faGetLeagueStatsData_v2({ upsetLimit: 15 });
+}
+
+function renderLeague(data){
+  const s = data.standings || [];
+  $("leagueMeta").textContent = "Teams: " + (data.teams ? data.teams.length : s.length);
+
+  // Standings table (server provides: w, l, pointsPct, elo, sos)
+  const tb = $("leagueStandingsBody");
+  tb.innerHTML = "";
+  if (!s.length){
+    tb.innerHTML = '<tr><td colspan="6" style="padding:14px; color:#777; font-weight:800;">No league matches yet.</td></tr>';
+  } else {
+    s.forEach(r => {
+      const tr = document.createElement("tr");
+      const elo = (r.elo==null) ? "" : Math.round(Number(r.elo));
+      const sos = (r.sos==null) ? "" : Math.round(Number(r.sos));
+      const pp  = (r.pointsPct==null) ? "" : (Math.round(Number(r.pointsPct)*1000)/10).toFixed(1) + "%";
+      tr.innerHTML =
+        "<td style='font-weight:900;'>" + esc(dispTeamName(r.team)) + "</td>" +
+        "<td>" + Number(r.w||0) + "</td>" +
+        "<td>" + Number(r.l||0) + "</td>" +
+        "<td style='font-weight:900;'>" + pp + "</td>" +
+        "<td>" + elo + "</td>" +
+        "<td>" + sos + "</td>";
+      tb.appendChild(tr);
+    });
+  }
+
+  // Upsets
+  const up = $("upsetCards");
+  const ups = data.upsets || [];
+  up.innerHTML = "";
+  if (!ups.length){
+    up.innerHTML = '<div class="muted" style="padding:6px 2px; font-weight:900;">No upsets yet.</div>';
+  } else {
+    ups.forEach(u => {
+      const div = document.createElement("div");
+      div.className = "card";
+      const pct = Math.round((Number(u.expected||0)*100));
+      div.innerHTML =
+        "<div class='card-row'><div class='card-left'>" +
+          "<div class='card-title'>" + esc(dispTeamName(u.winner)) + " over " + esc(dispTeamName(u.loser)) + "</div>" +
+          "<div class='card-sub'>Expected win chance: " + pct + "% · " + esc(u.mode) + "</div>" +
+        "</div></div>";
+      up.appendChild(div);
+    });
+  }
+}
+
+function refreshScout(){
+  const opp = $("scoutOpp").value || "";
+  if (!opp){
+    $("scoutSummary").textContent = "";
+    $("commonOppBody").innerHTML = '<tr><td colspan="6" style="padding:14px; color:#777; font-weight:800;">Select an opponent…</td></tr>';
+    $("oppLeaders").textContent = "Select an opponent…";
+    return;
+  }
+
+  $("scoutSummary").textContent = "Loading scout…";
+  google.script.run
+    .withSuccessHandler(data => {
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data");
+        if (data.ok === false) throw new Error(data.error || "Scout failed");
+        renderScout(data);
+      }catch(e){
+        console.error(e);
+        $("scoutSummary").textContent = "Scout error: " + (e && e.message ? e.message : e);
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      $("scoutSummary").textContent = "Scout load error";
+    })
+    .faGetScoutData_v2(opp, {});
+}
+
+function renderScout(d){
+  const p = Math.round((Number(d.winProb||0)*100));
+  $("scoutSummary").textContent = "Projected Aces win chance vs " + d.oppTeam + ": " + p + "% (Team Elo " + Math.round(d.teamElo.aces) + " vs " + Math.round(d.teamElo.opp) + ")";
+
+  // Common opponents table
+  const cb = $("commonOppBody");
+  const common = d.commonOpponents || [];
+  cb.innerHTML = "";
+  if (!common.length){
+    cb.innerHTML = '<tr><td colspan="6" style="padding:14px; color:#777; font-weight:800;">No common opponents yet.</td></tr>';
+  } else {
+    common.forEach(r => {
+      const tr = document.createElement("tr");
+      const a = r.aces || {}, b = r.opp || {};
+      tr.innerHTML =
+        "<td style='font-weight:900;'>" + esc(r.opponent) + "</td>" +
+        "<td>" + (Math.round(Number(a.points||0)*10)/10) + "</td>" +
+        "<td>" + Number(a.w||0) + "-" + Number(a.l||0) + "-" + Number(a.t||0) + "</td>" +
+        "<td>" + (Math.round(Number(b.points||0)*10)/10) + "</td>" +
+        "<td>" + Number(b.w||0) + "-" + Number(b.l||0) + "-" + Number(b.t||0) + "</td>" +
+        "<td style='font-weight:900;'>" + (Math.round(Number(r.pointGap||0)*10)/10) + "</td>";
+      cb.appendChild(tr);
+    });
+  }
+
+  // Leaders + suggestions
+  const singles = d.oppSinglesLeaders || [];
+  const pairs = d.oppDoublesLeaders || [];
+  const sug = d.matchupSuggestions || [];
+
+  let html = "";
+  html += "<div style='font-weight:900; margin-top:6px;'>Top singles (opponent)</div>";
+  if (!singles.length) html += "<div class='muted' style='margin-top:4px;'>No singles data yet.</div>";
+  else {
+    html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>PLAYER</th><th>W-L-T</th><th>WIN%</th><th>ELO</th></tr></thead><tbody>";
+    singles.forEach(p => {
+      const wp = Math.round(Number(p.winPct||0)*100);
+      html += "<tr><td style='font-weight:900;'>" + esc(p.player) + "</td><td>" + p.w + "-" + p.l + "-" + p.t + "</td><td>" + wp + "%</td><td>" + Math.round(p.elo) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+  }
+
+  html += "<div style='font-weight:900; margin-top:12px;'>Top doubles pairs (opponent)</div>";
+  if (!pairs.length) html += "<div class='muted' style='margin-top:4px;'>No doubles data yet.</div>";
+  else {
+    html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>PAIR</th><th>W-L-T</th><th>WIN%</th><th>ELO</th></tr></thead><tbody>";
+    pairs.forEach(p => {
+      const wp = Math.round(Number(p.winPct||0)*100);
+      html += "<tr><td style='font-weight:900;'>" + esc(p.p1 + ' / ' + p.p2) + "</td><td>" + p.w + "-" + p.l + "-" + p.t + "</td><td>" + wp + "%</td><td>" + Math.round(p.elo) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+  }
+
+  html += "<div style='font-weight:900; margin-top:12px;'>Best Aces singles matchups (by Elo)</div>";
+  if (!sug.length) html += "<div class='muted' style='margin-top:4px;'>Need more league singles results for suggestions.</div>";
+  else {
+    html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>ACES</th><th>OPP</th><th>WIN%</th></tr></thead><tbody>";
+    sug.forEach(s => {
+      const wp = Math.round(Number(s.winProb||0)*100);
+      html += "<tr><td style='font-weight:900;'>" + esc(s.acesPlayer) + "</td><td>" + esc(s.oppPlayer) + "</td><td>" + wp + "%</td></tr>";
+    });
+    html += "</tbody></table></div>";
+  }
+
+  $("oppLeaders").innerHTML = html;
+}
+
+function submitLeagueMatch(){
+  const mode = ($("lmMode").value || "singles").toLowerCase();
+  const teamA = $("lmTeamA").value || "";
+  const teamB = $("lmTeamB").value || "";
+  const scoreMode = ($("lmScoreMode").value || "match").toLowerCase();
+  const result = $("lmResult").value || "W";
+
+  // Persist the parts you want to keep (date/mode/teams/etc.)
+  persistLeagueLogCtx();
+
+  const entry = {
+    matchDate: $("lmDate").value || "",
+    mode: mode,
+    teamA: teamA,
+    teamB: teamB,
+    result: result,
+    scoreMode: scoreMode,
+    a1: $("lmA1").value || "",
+    a2: $("lmA2").value || "",
+    b1: $("lmB1").value || "",
+    b2: $("lmB2").value || "",
+    a3: (mode === "triples") ? ($("lmA3").value || "") : "",
+    b3: (mode === "triples") ? ($("lmB3").value || "") : "",};
+
+  if (mode === "doubles" || scoreMode === "stroke"){
+    entry.aScore = $("lmAScore").value || "";
+    entry.bScore = $("lmBScore").value || "";
+  } else {
+    entry.mpScore = $("lmMpScore").value || "";
+  }
+
+  $("submitLeagueBtn").disabled = true;
+
+  google.script.run
+    .withSuccessHandler(data => {
+      $("submitLeagueBtn").disabled = false;
+
+      // Parse safe-return payload
+      if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+      if (!data) { toast("Save failed (no response)", 2200); return; }
+      if (data.ok === false) { toast(String(data.error || "Save failed"), 2600); return; }
+
+      // ✅ Success: keep modal open for batch entry
+      toast("Saved — enter next match", 1400);
+      clearLeagueEntryFields();
+
+      // Refresh league panel (don’t treat refresh failures as save failures)
+      try{
+        if (data.league && data.league.ok) renderLeague(data.league);
+        else refreshLeague();
+      }catch(e){
+        console.error(e);
+      }
+
+      // Refresh stats if this match involved the currently-selected stats team
+      try{
+        const statsTeam = getStatsTeam();
+        if (_key(teamA) === _key(statsTeam) || _key(teamB) === _key(statsTeam)) refreshStats();
+      }catch(e){
+        console.error(e);
+      }
+    })
+    .withFailureHandler(err => {
+      $("submitLeagueBtn").disabled = false;
+      console.error(err);
+      toast("Save failed", 2200);
+    })
+    .faAddLeagueMatchLogEntry_v2(entry);
+}
+function isManageOpen(){
+  return $("manageModal") && $("manageModal").classList.contains("show");
+}
+function renderManageList(){
+  // Uses the latest cached "recent" list from stats (includes rowNum)
+  renderMatchCards("manageCards", (FA_RECENT_CACHE || []), true, "No matches yet.");
+}
+function openManageModal(){
+  $("manageCards").innerHTML = `<div class="muted" style="padding:12px; font-weight:900;">Loading…</div>`;
+  $("manageModal").classList.add("show");
+  $("manageModal").setAttribute("aria-hidden","false");
+
+  // If we already have stats, render immediately; otherwise fetch then render in applyStats().
+  if (FA_STATS_OBJ && FA_STATS_OBJ.ok !== false){
+    renderManageList();
+  } else {
+    refreshStats();
+  }
+}
+function closeManageModal(){
+  $("manageModal").classList.remove("show");
+  $("manageModal").setAttribute("aria-hidden","true");
+}
+if ($("openManageBtn")) $("openManageBtn").addEventListener("click", openManageModal);
+if ($("closeManageBtn")) $("closeManageBtn").addEventListener("click", closeManageModal);
+if ($("manageModal")) $("manageModal").addEventListener("click", (e) => {
+  if (e.target === $("manageModal")) closeManageModal();
+});
+if ($("openLogBtn")) $("openLogBtn").addEventListener("click", openModal);
+if ($("closeModalBtn")) $("closeModalBtn").addEventListener("click", closeModal);
+if ($("cancelBtn")) $("cancelBtn").addEventListener("click", closeModal);
+if ($("openLeagueLogBtn")) $("openLeagueLogBtn").addEventListener("click", openLeagueModal);
+if ($("closeLeagueModalBtn")) $("closeLeagueModalBtn").addEventListener("click", closeLeagueModal);
+if ($("cancelLeagueBtn")) $("cancelLeagueBtn").addEventListener("click", closeLeagueModal);
+const mm = $("matchModal");
+if (mm){
+  mm.addEventListener("click", (e) => {
+    if (e.target === mm) closeModal();
+  });
+}
+
+
+/* ---------- scoring ---------- */
+const MATCHPLAY_SCORES = [
+  "PUSH",
+  "1 UP","2 UP",
+  "2 & 1","3 & 1","3 & 2","4 & 2","4 & 3","5 & 3","5 & 4","6 & 4","6 & 5","7 & 5","7 & 6","8 & 6","8 & 7","9 & 7","9 & 8","10 & 8"
+];
+
+function isStrokeMode(){
+  const modeEl = $("mode");
+  const toggle = $("singlesStrokeToggle");
+  if (!modeEl || !toggle) return false;
+  return modeEl.value === "doubles" || toggle.checked;
+}
+function initMatchPlayScores(){
+  if ($("mpScore")){
+    fillSelectSimple("mpScore", MATCHPLAY_SCORES, "Select…");
+    $("mpScore").value = "PUSH";
+  }
+  if ($("lmMpScore")){
+    fillSelectSimple("lmMpScore", MATCHPLAY_SCORES, "Select…");
+    $("lmMpScore").value = "PUSH";
+  }
+}
+function showMode(){
+  // Old match entry modal removed; keep this for back-compat but no-op if fields are missing
+  if (!$("mode") || !$("singlesStrokeToggle")) return;
+
+  const mode = $("mode").value;
+
+  // ✅ Doubles always uses stroke scoring; clear the singles-only toggle
+  if (mode === "doubles" && $("singlesStrokeToggle")) $("singlesStrokeToggle").checked = false;
+
+  const stroke = isStrokeMode();
+  if ($("aces2Field")) $("aces2Field").style.display = (mode === "doubles") ? "block" : "none";
+  if ($("opp2Field"))  $("opp2Field").style.display  = (mode === "doubles") ? "block" : "none";
+  if ($("strokeToggleRow")) $("strokeToggleRow").style.display = (mode === "singles") ? "flex" : "none";
+
+  if ($("mpScoreBlock")) $("mpScoreBlock").style.display = (mode === "singles" && !stroke) ? "block" : "none";
+  if ($("strokeBlock"))  $("strokeBlock").style.display  = stroke ? "grid" : "none";
+
+  if (mode === "singles" && !stroke && $("result") && $("mpScore")){
+    if ($("result").value === "T"){
+      $("mpScore").value = "PUSH";
+      $("mpScore").disabled = true;
+    } else {
+      $("mpScore").disabled = false;
+      if (!$("mpScore").value) $("mpScore").value = "PUSH";
+    }
+  }
+}
+
+/* ---------- rendering ---------- */
+function renderSinglesTable(items){
+  const body = $("singlesBody");
+  const rows = (items||[]).map(r => `
+    <tr>
+      <td>${_rankPill_(r.rank, "left")}${playerLinkHTML(r.name||"", getStatsTeam())}</td>
+      <td>${r.w||0}</td>
+      <td>${r.l||0}</td>
+      <td>${r.t||0}</td>
+      <td><span class="pill">${pct(r.winPct)}</span></td>
+    </tr>
+  `);
+  body.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">No matches yet.</td></tr>`;
+}
+
+function renderDoublesPlayerTable(items){
+  const body = $("doublesPlayerBody");
+  const rows = (items||[]).map(r => `
+    <tr>
+      <td>${_rankPill_(r.rank, "left")}${playerLinkHTML(r.name||"", getStatsTeam())}</td>
+      <td>${r.w||0}</td>
+      <td>${r.l||0}</td>
+      <td><span class="pill">${pct(r.winPct)}</span></td>
+    </tr>
+  `);
+  body.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">No matches yet.</td></tr>`;
+}
+
+function renderPartnersTable(items){
+  const body = $("doublesPairBody");
+
+  const stackPair = (r) => {
+    const p1 = (r && (r.p1 || r.player1)) ? String(r.p1 || r.player1) : "";
+    const p2 = (r && (r.p2 || r.player2)) ? String(r.p2 || r.player2) : "";
+    const p1Rank = (r && (r.p1Rank || r.player1Rank)) ? String(r.p1Rank || r.player1Rank) : "";
+    const p2Rank = (r && (r.p2Rank || r.player2Rank)) ? String(r.p2Rank || r.player2Rank) : "";
+
+    // Fallback to parsing "pair" if p1/p2 not provided
+    if (!p1 || !p2){
+      const raw = (r && r.pair) ? String(r.pair) : "";
+      const parts = raw.split("+").map(s=>s.trim()).filter(Boolean);
+      const a = parts[0] || raw;
+      const b = parts[1] || "";
+      if (b){
+        return `<div class="stack">${_rankPill_(p1Rank, "left")}${playerLinkHTML(a, getStatsTeam())}<br>${_rankPill_(p2Rank, "left")}${playerLinkHTML(b, getStatsTeam())}</div>`;
+      }
+      return _rankPill_(p1Rank, "left") + (playerLinkHTML(a, getStatsTeam()) || esc(a));
+    }
+
+    return `<div class="stack">${_rankPill_(p1Rank, "left")}${playerLinkHTML(p1, getStatsTeam())}<br>${_rankPill_(p2Rank, "left")}${playerLinkHTML(p2, getStatsTeam())}</div>`;
+  };
+
+  const rows = (items||[]).map(r => `
+    <tr>
+      <td>${stackPair(r)}</td>
+      <td>${r.w||0}</td>
+      <td>${r.l||0}</td>
+      <td><span class="pill">${pct(r.winPct)}</span></td>
+    </tr>
+  `);
+
+  body.innerHTML = rows.length
+    ? rows.join("")
+    : `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">No matches yet.</td></tr>`;
+}
+
+/* ✅ Restored "good" match card renderer:
+   - rank-colored pills (A/B/C/D + AF/BF/CF)
+   - aces pill on LEFT, opponent pill on RIGHT
+   - doubles/stroke shows BOTH scores side-by-side
+   - score text colored by W/L/T
+   - names not bold
+*/
+function _rankClass_(rankVal){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  const key = raw.replace(/[^A-Z]/g,"");
+  return key ? ("rank-" + key) : "";
+}
+function _rankPill_(rankVal, side){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  if (!raw) return "";
+  const cls = _rankClass_(raw);
+  const sideCls = (side === "left") ? "rank-left" : "rank-right";
+  return `<span class="rank-pill ${cls} ${sideCls}">${esc(raw)}</span>`;
+}
+
+function _buildMatchCardHtml(r, withDelete){
+  const mode = String(r.mode||"").toLowerCase();
+  const resRaw = String(r.result||"").trim().toUpperCase();
+
+  const leftTeamRaw  = r.leftTeam  || r.teamA || r.team || getStatsTeam();
+  const rightTeamRaw = r.rightTeam || r.oppTeam || r.opponentTeam || r.teamB || "";
+
+  const leftTeam  = dispTeamName(leftTeamRaw);
+  const rightTeam = dispTeamName(rightTeamRaw);
+
+  const cls = (resRaw === "W" || resRaw === "WIN") ? "score-win"
+            : (resRaw === "L" || resRaw === "LOSS") ? "score-loss"
+            : "score-tie";
+
+  // winner label above the score
+  const winnerLabel = (resRaw === "W" || resRaw === "WIN") ? leftTeam
+                    : (resRaw === "L" || resRaw === "LOSS") ? rightTeam
+                    : "TIE";
+
+  const aces = [
+      { n:r.a1, rr:r.a1Rank, id:r.a1Id },
+      { n:r.a2, rr:r.a2Rank, id:r.a2Id },
+      { n:r.a3, rr:r.a3Rank, id:r.a3Id }
+    ].filter(x => x.n);
+
+  const opp = [
+      { n:r.o1, rr:r.o1Rank, id:r.o1Id },
+      { n:r.o2, rr:r.o2Rank, id:r.o2Id },
+      { n:r.o3, rr:r.o3Rank, id:r.o3Id }
+    ].filter(x => x.n);
+
+  function nameLine(name, rankVal, pillLeft, pid){
+const pill = _rankPill_(rankVal, pillLeft ? "left" : "right");
+const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
+const linked = playerLinkHTML(name||"", teamRaw, pid);
+
+// Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
+let eloNum = null;
+try{
+  if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
+    const n = Math.round(Number(FA_ELO_BY_ID[pid]));
+    if (isFinite(n) && n > 0) eloNum = n;
+  }
+  if (eloNum == null){
+    const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
+    const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
+    const n2 = Math.round(Number(raw));
+    if (isFinite(n2) && n2 > 0) eloNum = n2;
+  }
+}catch(e){}
+
+const nmSpan = `<span class="nm">${linked || esc(name||"")}</span>`;
+const eloHtml = (eloNum == null) ? "" : `<div class="elo-pill">${eloNum}</div>`;
+
+return `<div class="mc-name">`
+  + (pillLeft ? (pill + nmSpan)
+              : (nmSpan + pill))
+  + eloHtml
+  + `</div>`;
+  }
+
+  const leftHtml  = (leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : "")
+                  + aces.map(x => nameLine(x.n, x.rr, true, x.id)).join("");
+
+  const rightHtml = (rightTeam ? `<div class="mc-side-team">${esc(rightTeam)}</div>` : "")
+                  + opp.map(x => nameLine(x.n, x.rr, false, x.id)).join("");
+
+  // --- Scores ---
+  const aScore = (r.acesScore==null ? "" : String(r.acesScore)).trim();
+  const oScore = (r.oppScore==null  ? "" : String(r.oppScore)).trim();
+
+  const hasStrokePair = (aScore !== "" && oScore !== "");
+  const isStroke = (mode === "doubles")
+    || (String(r.scoreMode||"").toLowerCase() === "stroke")
+    || hasStrokePair;
+
+  const mp = String(r.mpScore || aScore || oScore || "").trim();
+
+  const scoreHtml = isStroke
+    ? `<div class="mc-score mc-score-stroke ${cls}">
+         <span>${esc(aScore)}</span>
+         <span style="opacity:.5;">–</span>
+         <span>${esc(oScore)}</span>
+       </div>`
+    : `<div class="mc-score mc-score-mp ${cls}">${esc(mp)}</div>`;
+
+  const midHtml = scoreHtml;
+
+  return `
+    <div class="match-card ${cls}">
+      <div class="mc-left">${leftHtml}</div>
+      <div class="mc-mid">${midHtml}</div>
+      <div class="mc-right">${rightHtml}</div>
+      ${withDelete ? `<button class="small-btn" data-row="${r.rowNum}">DELETE</button>` : ``}
+    </div>
+  `;
+}
+
+function renderMatchCards(containerId, list, withDelete, emptyText, opts){
+  const wrap = $(containerId);
+  if (!wrap) return;
+  opts = opts || {};
+
+  const rows = (list||[]).map(r => {
+    const rr = (opts.leftTeam || opts.rightTeam)
+      ? Object.assign({}, r, {
+          leftTeam:  r.leftTeam  || opts.leftTeam,
+          rightTeam: r.rightTeam || opts.rightTeam
+        })
+      : r;
+    return _buildMatchCardHtml(rr, withDelete);
+  });
+
+  wrap.innerHTML = rows.length
+    ? rows.join("")
+    : `<div class="muted" style="padding:12px; font-weight:900;">${esc(emptyText || "No matches yet.")}</div>`;
+
+  if (withDelete){
+    wrap.querySelectorAll("button[data-row]").forEach(btn => {
+      btn.addEventListener("click", () => deleteRow(btn.getAttribute("data-row")));
+    });
+  }
+}
+
+
+/* ---------- opponent-filtered results table ---------- */
+function _fmtDateYMD(ts){
+  if (!ts) return "";
+  try{
+    if (typeof ts === "string"){
+      // ISO string: "YYYY-MM-DDTHH:MM:SSZ"
+      if (ts.length >= 10) return ts.slice(0,10);
+      return ts;
+    }
+    const d = (ts instanceof Date) ? ts : new Date(ts);
+    if (!isNaN(d.getTime())){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${dd}`;
+    }
+  }catch(_){}
+  return "";
+}
+
+function prettyDateTime(ts){
+  if (!ts) return "";
+  try{
+    // Server serializes Dates to ISO strings; accept Date/number too.
+    let d = null;
+    if (ts instanceof Date){
+      d = ts;
+    }else if (typeof ts === "number"){
+      d = new Date(ts);
+    }else if (typeof ts === "string"){
+      const s = ts.trim();
+      if (!s) return "";
+      d = new Date(s);
+      // Fallback for non-ISO strings like "M/D/YYYY HH:MM:SS"
+      if (isNaN(d.getTime())){
+        const m = s.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?\s*$/i);
+        if (m){
+          const mm = parseInt(m[1],10)-1;
+          const dd = parseInt(m[2],10);
+          let yy = parseInt(m[3],10);
+          if (yy < 100) yy += 2000;
+          let hh = m[4] ? parseInt(m[4],10) : 0;
+          const mi = m[5] ? parseInt(m[5],10) : 0;
+          const ss = m[6] ? parseInt(m[6],10) : 0;
+          const ap = (m[7]||"").toUpperCase();
+          if (ap){
+            if (ap === "PM" && hh < 12) hh += 12;
+            if (ap === "AM" && hh === 12) hh = 0;
+          }
+          d = new Date(yy, mm, dd, hh, mi, ss);
+        }
+      }
+    }else{
+      d = new Date(ts);
+    }
+
+    if (!d || isNaN(d.getTime())) return String(ts);
+
+    const mo = d.getMonth()+1;
+    const da = d.getDate();
+    const yr = d.getFullYear();
+
+    let hr = d.getHours();
+    const ampm = (hr >= 12) ? "PM" : "AM";
+    hr = hr % 12; if (hr === 0) hr = 12;
+
+    const min = String(d.getMinutes()).padStart(2,"0");
+    return `${mo}/${da}/${yr} ${hr}:${min} ${ampm}`;
+  }catch(e){
+    return String(ts||"");
+  }
+}
+
+
+function _rowIsStroke(r){
+  const mode = String(r && r.mode || "").toLowerCase();
+  const sm   = String(r && r.scoreMode || "").toLowerCase();
+  const a = String(r && r.acesScore == null ? "" : r.acesScore).trim();
+  const o = String(r && r.oppScore  == null ? "" : r.oppScore ).trim();
+  const hasStrokePair = (a !== "" && o !== "");
+  return (mode === "doubles" || mode === "triples") || (sm === "stroke") || hasStrokePair;
+}
+
+
+function _rowSortCat(r){
+  const mode = String(r && r.mode || "").toLowerCase();
+  const isStroke = _rowIsStroke(r);
+  // 0 = singles (match play)
+  // 1 = doubles
+  // 2 = singles (stroke, round 2)
+  if (mode === "singles" && !isStroke) return 0;
+  if (mode === "doubles" || mode === "triples") return 1;
+  if (mode === "singles" && isStroke) return 2;
+  return 3;
+}
+
+function _rowDateKey(r){
+  const ts = (r && (r.ts || r.matchDate || r.date)) || "";
+  if (!ts) return 0;
+  try{
+    if (typeof ts === "string"){
+      // Try ISO first, else YYYY-MM-DD
+      const d = ts.includes("T") ? new Date(ts) : new Date(ts + "T12:00:00");
+      const t = d.getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    const d = (ts instanceof Date) ? ts : new Date(ts);
+    const t = d.getTime();
+    return isNaN(t) ? 0 : t;
+  }catch(_){
+    return 0;
+  }
+}
+
+/* =========================================================
+   SCOUTING (new): roster + transitive singles links
+   - roster uses faGetTeamPlayers_v2(team) + Elo overall from getLeagueEloV2Data()
+   - transitive uses: your team recent singles + scout team recent singles
+   ========================================================= */
+
+const FA_ELO_DEFAULTS = {
+  kBase: 24,
+  kDiffFactor: 0.25,
+  upsetBoost: 0.35,
+  expectedDampen: 0.25,
+  tieKMult: 0.85,
+  provisionalGames: 5,
+  provisionalKMult: 1.50,
+  ratingSeedSpread: 90,
+  rankSeedSpread: 45,
+  seedClamp: 240,
+  doublesKMult: 0.85,
+  doublesBlend: 0.20
+};
+
+let FA_ELO_PACK = null;
+let FA_ELO_BY_PLAYER = Object.create(null);
+let FA_ELO_LOADED_AT = 0;
+let FA_ELO_BY_ID = Object.create(null);
+
+function _eloIndexPack_(pack){
+  FA_ELO_BY_PLAYER = Object.create(null);
+  const rows = (pack && pack.overall) ? pack.overall : [];
+  rows.forEach(r => {
+    const k = _nameKey_(r && r.player);
+    if (!k) return;
+    FA_ELO_BY_PLAYER[k] = r;
+  });
+}
+
+function loadEloPack(cb, force){
+  cb = cb || function(){};
+  const now = Date.now();
+  const TTL = 15*1000; // short TTL to avoid spamming calls, still stays fresh
+
+  if (!force && FA_ELO_PACK && (now - FA_ELO_LOADED_AT) < TTL){
+    cb(FA_ELO_PACK);
+    return;
+  }
+
+  const onOk = (pack) => {
+    try{
+      FA_ELO_PACK = pack || null;
+      FA_ELO_LOADED_AT = Date.now();
+      _eloIndexPack_(FA_ELO_PACK);
+      try{ if (typeof updateRostersForTeam === 'function') updateRostersForTeam(window.FA_STATS_TEAM || window.FA_ACES_TEAM); }catch(e){}
+
+    }catch(e){
+      console.error(e);
+      FA_ELO_PACK = null;
+      FA_ELO_BY_PLAYER = Object.create(null);
+    }
+    cb(FA_ELO_PACK);
+  };
+
+  const onFail = (err) => {
+    console.error(err);
+    // Fallback: compute using defaults if the server expects an explicit config object
+    google.script.run
+      .withSuccessHandler(onOk)
+      .withFailureHandler(err2 => {
+        console.error(err2);
+        FA_ELO_PACK = null;
+        FA_ELO_BY_PLAYER = Object.create(null);
+        cb(null);
+      })
+      .getLeagueEloV2Data(FA_ELO_DEFAULTS);
+  };
+
+  // Prefer server-side persisted ELO settings (sliders) when available.
+  google.script.run
+    .withSuccessHandler(onOk)
+    .withFailureHandler(onFail)
+    .getLeagueEloV2Data();
+}
+
+// ---------------- League Match Index (for instant player modals) ----------------
+let FA_MATCH_INDEX = null;
+let FA_MATCH_INDEX_LOADED_AT = 0;
+let FA_MATCH_INDEX_INFLIGHT = null;
+
+let FA_MATCH_PLAYERS_BY_ID = Object.create(null);     // id -> {id,name,team,rank,...}
+let FA_MATCH_ID_BY_NAME_TEAM = Object.create(null);   // "name|team" -> id
+let FA_MATCHES_BY_ID = Object.create(null);           // id -> [match,...] (chronological)
+
+function _nameTeamKey_(name, team){
+  return _key(name||"") + "|" + _key(team||"");
+}
+
+function _invertRes_(res){
+  res = String(res||"").toUpperCase();
+  if (res === "W") return "L";
+  if (res === "L") return "W";
+  return res; // T or blank
+}
+
+function loadLeagueMatchIndex(cb, force){
+  cb = cb || function(){};
+  const TTL = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+
+  if (!force && FA_MATCH_INDEX && (now - FA_MATCH_INDEX_LOADED_AT) < TTL){
+    cb(FA_MATCH_INDEX);
+    return;
+  }
+
+  if (FA_MATCH_INDEX_INFLIGHT){
+    FA_MATCH_INDEX_INFLIGHT.then(()=>cb(FA_MATCH_INDEX)).catch(()=>cb(null));
+    return;
+  }
+
+  FA_MATCH_INDEX_INFLIGHT = gsRun("faGetLeagueMatchIndex_v2", {});
+  FA_MATCH_INDEX_INFLIGHT.then(idx => {
+    FA_MATCH_INDEX_INFLIGHT = null;
+
+    if (typeof idx === "string") { try{ idx = JSON.parse(idx); }catch(_){ } }
+    if (!idx || idx.ok === false) { FA_MATCH_INDEX = null; cb(null); return; }
+
+    FA_MATCH_INDEX = idx;
+    FA_MATCH_INDEX_LOADED_AT = Date.now();
+
+    // players map + name/team resolver
+    FA_MATCH_PLAYERS_BY_ID = Object.create(null);
+    FA_MATCH_ID_BY_NAME_TEAM = Object.create(null);
+    (idx.players || []).forEach(p => {
+      if (!p || !p.id) return;
+      const id = String(p.id);
+      FA_MATCH_PLAYERS_BY_ID[id] = p;
+      const k = _nameTeamKey_(p.name, p.team);
+      if (k && !FA_MATCH_ID_BY_NAME_TEAM[k]) FA_MATCH_ID_BY_NAME_TEAM[k] = id;
+    });
+
+    // matches by id (chronological as stored)
+    FA_MATCHES_BY_ID = Object.create(null);
+    (idx.matches || []).forEach(m => {
+      if (!m) return;
+
+      // Resolve IDs if missing, using names + team
+      const teamA = m.teamA || "";
+      const teamB = m.teamB || "";
+
+      const aIds = (m.aIds || []).slice(0,3);
+      const bIds = (m.bIds || []).slice(0,3);
+      const aNames = (m.aNames || []).slice(0,3);
+      const bNames = (m.bNames || []).slice(0,3);
+
+      const resolvedA = [0,1,2].map(i => {
+        const raw = String(aIds[i] || "").trim();
+        if (raw) return raw;
+        const nm = String(aNames[i] || "").trim();
+        if (!nm) return "";
+        return FA_MATCH_ID_BY_NAME_TEAM[_nameTeamKey_(nm, teamA)] || "";
+      });
+
+      const resolvedB = [0,1,2].map(i => {
+        const raw = String(bIds[i] || "").trim();
+        if (raw) return raw;
+        const nm = String(bNames[i] || "").trim();
+        if (!nm) return "";
+        return FA_MATCH_ID_BY_NAME_TEAM[_nameTeamKey_(nm, teamB)] || "";
+      });
+
+      // Store back resolved ids so later adapt is simpler
+      m._aIds = resolvedA;
+      m._bIds = resolvedB;
+
+      const ids = resolvedA.concat(resolvedB).filter(Boolean);
+      ids.forEach(id => {
+        (FA_MATCHES_BY_ID[id] = FA_MATCHES_BY_ID[id] || []).push(m);
+      });
+    });
+
+    cb(FA_MATCH_INDEX);
+  }).catch(err => {
+    console.error(err);
+    FA_MATCH_INDEX_INFLIGHT = null;
+    FA_MATCH_INDEX = null;
+    cb(null);
+  });
+}
+
+function _adaptIndexMatchToCard_(m, focalId){
+  if (!m) return null;
+
+  const aIds = (m._aIds || m.aIds || []).slice(0,3);
+  const bIds = (m._bIds || m.bIds || []).slice(0,3);
+
+  const inA = aIds.indexOf(focalId) >= 0;
+  const inB = bIds.indexOf(focalId) >= 0;
+
+  // Default: show from teamA perspective
+  let leftTeam = m.teamA || "";
+  let rightTeam = m.teamB || "";
+  let leftIds = aIds;
+  let rightIds = bIds;
+  let res = String(m.result || "").toUpperCase();
+
+  // If the player is on teamB, flip so player is always on the left
+  if (!inA && inB){
+    leftTeam = m.teamB || "";
+    rightTeam = m.teamA || "";
+    leftIds = bIds;
+    rightIds = aIds;
+    res = _invertRes_(res);
+  }
+
+  const r = {
+    ts: m.ts || m.date || "",
+    mode: m.mode || "",
+    result: res,
+    scoreMode: m.scoreMode || "",
+    leftTeam: leftTeam,
+    rightTeam: rightTeam
+  };
+
+  function fillSide(prefix, ids){
+    for (let i=0; i<3; i++){
+      const id = String(ids[i] || "").trim();
+      const p = id ? (FA_MATCH_PLAYERS_BY_ID[id] || null) : null;
+      r[prefix + (i+1)] = p ? (p.name || "") : "";
+      r[prefix + (i+1) + "Id"] = id;
+      r[prefix + (i+1) + "Rank"] = p ? (p.rank || "") : "";
+    }
+  }
+
+  fillSide("a", leftIds);
+  fillSide("o", rightIds);
+
+  // Score parsing
+  const sc = String(m.score || "").trim();
+  const mm = sc.match(/^\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
+  if (mm){
+    let sL = mm[1], sR = mm[2];
+    // if flipped, swap numeric scores
+    if (!inA && inB){ const tmp = sL; sL = sR; sR = tmp; }
+    r.acesScore = sL;
+    r.oppScore = sR;
+  } else {
+    r.mpScore = sc;
+  }
+
+  return r;
+}
+
+
+function _rankPillNoSide_(rankVal){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  if (!raw) return "";
+  const cls = _rankClass_(raw);
+  return `<span class="rank-pill ${cls}">${esc(raw)}</span>`;
+}
+
+function getTeamRosterNames(teamId, cb){
+  teamId = String(teamId||"").trim();
+  const aces = (window.FA_ACES_TEAM || "Flying Aces").trim();
+  if (_key(teamId) === _key(aces)){
+    cb((window.FA_ACE_PLAYERS || []).slice());
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(data => {
+      try{ if (data && typeof data === 'object' && data.playerRows) setPlayerIdMap(data.playerRows); }catch(e){}
+
+      let arr = data;
+      if (arr && typeof arr === "object" && !Array.isArray(arr)){
+        if (Array.isArray(arr.players)) arr = arr.players;
+        else if (Array.isArray(arr.aces)) arr = arr.aces;
+        else arr = [];
+      }
+      const names = (arr || [])
+        .map(x => (typeof x === "string" ? x : (x && x.name ? String(x.name) : "")))
+        .map(s => String(s||"").trim())
+        .filter(Boolean)
+        .filter(n => _key(n) !== "all players");
+      cb(names);
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      cb([]);
+    })
+    .faGetTeamPlayers_v2(teamId);
+}
+
+function renderScoutRoster(teamId, names){
+  const tbMen = $("scoutRosterMenBody");
+  const tbWomen = $("scoutRosterWomenBody");
+  if (!tbMen && !tbWomen) return;
+
+  const rows = (names || []).map(n => {
+    const er = FA_ELO_BY_PLAYER[_nameKey_(n)] || null;
+    const rank = er ? (er.rank || "") : "";
+    const rating = (er && er.rating != null) ? Number(er.rating) : null;
+    const elo = (er && er.eloOverall != null) ? Number(er.eloOverall) : null;
+
+    // Women ranks are AF/BF/CF in this app (suffix "F")
+    const rKey = String(rank || "").trim().toUpperCase();
+    const isFemale = /F$/.test(rKey);
+
+    return { name:n, rank, rating, elo, isFemale };
+  });
+
+  function sortRows(arr){
+    arr.sort((a,b) => {
+      const ea = (a.elo==null ? -1e18 : a.elo);
+      const eb = (b.elo==null ? -1e18 : b.elo);
+      if (eb !== ea) return eb - ea;
+
+      const ra = (a.rating==null ? -1e18 : a.rating);
+      const rb = (b.rating==null ? -1e18 : b.rating);
+      if (rb !== ra) return rb - ra;
+
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  const men = [];
+  const women = [];
+  rows.forEach(r => (r.isFemale ? women : men).push(r));
+
+  sortRows(men);
+  sortRows(women);
+
+  function renderInto(tb, arr, emptyMsg){
+    if (!tb) return;
+    tb.innerHTML = arr.length ? arr.map(r => `
+      <tr>
+        <td style="text-align:left;">${playerLinkHTML(r.name, teamId)}</td>
+        <td>${_rankPillNoSide_(r.rank) || ""}</td>
+        <td>${(r.rating==null || !isFinite(r.rating)) ? "" : Math.round(r.rating)}</td>
+        <td style="font-weight:900;">${(r.elo==null || !isFinite(r.elo)) ? "" : Math.round(r.elo)}</td>
+      </tr>
+    `).join("") : `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">${esc(emptyMsg || "No players found.")}</td></tr>`;
+  }
+
+  renderInto(tbMen, men, "No men found.");
+  renderInto(tbWomen, women, "No women found.");
+}
+
+
+// ✅ Keep Men/Women roster tables in sync with the main Stats team picker
+function updateRostersForTeam(teamId){
+  const aces = (window.FA_ACES_TEAM || "Flying Aces");
+  teamId = String(teamId || "").trim() || aces;
+
+  const apply = (res) => {
+    try{
+      if (typeof res === "string"){ try{ res = JSON.parse(res); }catch(_){ } }
+    }catch(e){}
+    const rows = (res && typeof res === "object" && Array.isArray(res.playerRows)) ? res.playerRows
+               : (res && typeof res === "object" && Array.isArray(res.rows)) ? res.rows
+               : [];
+    window.FA_ROSTERS_PACK = { rows: rows };
+
+    // keep the player-id map in sync for linkable names / modals
+    try{ if (Array.isArray(rows) && typeof setPlayerIdMap === "function") setPlayerIdMap(rows); }catch(e){}
+
+    // render roster tables from PlayersDB (NOT the derived ELO pack)
+    try{ if (typeof renderRostersForTeam === "function") renderRostersForTeam(teamId); }catch(e){}
+  };
+
+  try{
+    google.script.run
+      .withSuccessHandler(apply)
+      .withFailureHandler(err => console.error(err))
+      .faGetTeamPlayers_v2(teamId);
+  }catch(e){
+    console.error(e);
+  }
+}
+
+
+const FA_SCOUT_STATS_CACHE = Object.create(null);
+
+function fetchScoutTeamRecent(teamId, cb){
+  const k = _key(teamId);
+  const hit = FA_SCOUT_STATS_CACHE[k];
+  if (hit && hit.stats && (Date.now() - hit.at) < 60*1000){
+    cb(hit.stats);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(data => {
+      if (typeof data === "string"){ try{ data = JSON.parse(data); }catch(_){ } }
+      if (!data || data.ok === false) data = { recent: [] };
+      FA_SCOUT_STATS_CACHE[k] = { at: Date.now(), stats: data };
+      cb(data);
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      cb({ recent: [] });
+    })
+    .faGetStatsData_v2({ recentLimit: 250, teamId: teamId });
+}
+
+function buildTransitiveLinks(myRecent, scoutRecent){
+  const mySingles = (myRecent || []).filter(r => String(r.mode||"").toLowerCase() === "singles");
+  const scSingles = (scoutRecent || []).filter(r => String(r.mode||"").toLowerCase() === "singles");
+
+  const idx = Object.create(null);
+  scSingles.forEach(r => {
+    [r.o1, r.o2].filter(Boolean).forEach(n => {
+      const nk = _nameKey_(n);
+      if (!nk) return;
+      (idx[nk] ||= []).push(r);
+    });
+  });
+
+  Object.keys(idx).forEach(k => idx[k].sort((a,b)=>_rowDateKey(b)-_rowDateKey(a)));
+
+  const best = Object.create(null);
+  mySingles.forEach(r => {
+    const inter = String(r.o1||"").trim();
+    if (!inter) return;
+    const ik = _nameKey_(inter);
+    const scList = idx[ik];
+    if (!scList || !scList.length) return;
+
+    const tMy = _rowDateKey(r);
+    const cur = best[ik];
+    if (!cur || tMy > cur.tMy){
+      best[ik] = { interName: inter, my: r, sc: scList[0], tMy, tSc: _rowDateKey(scList[0]) };
+    }
+  });
+
+  return Object.keys(best).map(k => {
+    const o = best[k];
+    return {
+      interKey: k,
+      interName: o.interName,
+      my: o.my,
+      sc: o.sc,
+      t: Math.max(o.tMy||0, o.tSc||0)
+    };
+  })
+  .sort((a,b)=>b.t-a.t)
+  ;
+}
+
+function renderScoutTransitive(myTeam, scoutTeam, links){
+  const wrap = $("scoutTransitive");
+  if (!wrap) return;
+
+  if (!links || !links.length){
+    wrap.innerHTML = `<div class="muted" style="padding:6px 2px; font-weight:900;">No transitive links found (in recent singles matches).</div>`;
+    return;
+  }
+
+  wrap.innerHTML = links.map((x, i) => {
+    const myRow = Object.assign({}, x.my, { leftTeam: myTeam });
+    const scRow = Object.assign({}, x.sc, { leftTeam: scoutTeam });
+
+    const myA = String(myRow.a1||"").trim();
+    const scA = String(scRow.a1||"").trim();
+
+    return `
+      <div style="${i ? "margin-top:14px;" : ""}">
+        <div class="muted" style="font-weight:900; margin:0 0 6px;">
+          ${esc(myA || dispTeamName(myTeam))} ↔ ${esc(x.interName)} ↔ ${esc(scA || dispTeamName(scoutTeam))}
+        </div>
+        ${_buildMatchCardHtml(myRow, false)}
+        <div style="height:8px;"></div>
+        ${_buildMatchCardHtml(scRow, false)}
+      </div>
+    `;
+  }).join("");
+}
+
+
+// Transitive link filtering (by scout opponent player)
+let FA_SCOUT_TRANSITIVE_ALL = [];
+let FA_SCOUT_TRANSITIVE_MY_TEAM = "";
+let FA_SCOUT_TRANSITIVE_TEAM = "";
+
+function populateTransitiveOppPick(links, keepSelection){
+  const el = $("transitiveOppPick");
+  if (!el) return;
+
+  const prev = keepSelection ? (el.value || "") : "";
+  const seen = Object.create(null);
+  const names = [];
+
+  (links || []).forEach(x => {
+    const n = String(x && x.sc && x.sc.a1 || "").trim(); // scout team player in that link
+    if (!n) return;
+    const k = _nameKey_(n);
+    if (!k || seen[k]) return;
+    seen[k] = 1;
+    names.push(n);
+  });
+
+  names.sort((a,b)=>a.localeCompare(b));
+
+  // Default always shows all players
+  fillSelectSimple("transitiveOppPick", names, "All Players", "");
+
+  // Preserve previous selection if still available
+  if (prev){
+    const has = Array.from(el.options).some(o => _nameKey_(o.value) === _nameKey_(prev));
+    if (has) el.value = prev;
+    else el.value = "";
+  } else {
+    el.value = "";
+  }
+
+  el.disabled = (names.length === 0);
+}
+
+function renderScoutTransitiveFiltered(){
+  const myTeam = FA_SCOUT_TRANSITIVE_MY_TEAM || getStatsTeam();
+  const scoutTeam = FA_SCOUT_TRANSITIVE_TEAM || ($("scoutOpp") ? ($("scoutOpp").value || "") : "");
+  const all = FA_SCOUT_TRANSITIVE_ALL || [];
+
+  const sel = $("transitiveOppPick") ? ($("transitiveOppPick").value || "") : "";
+  const links = sel
+    ? all.filter(x => _nameKey_(x && x.sc && x.sc.a1) === _nameKey_(sel))
+    : all;
+
+  renderScoutTransitive(myTeam, scoutTeam, links);
+}
+
+let FA_SCOUT_REQ = 0;
+
+function updateScout(){
+  const sel = $("scoutOpp");
+  // If the Singles Links UI isn't present, do nothing.
+  if (!sel) return;
+
+  const scoutTeam = sel.value || "";
+  const meta = $("scoutMeta");
+
+  // Singles Links are always "Flying Aces → intermediary → selected opponent"
+  const myTeam = (window.FA_ACES_TEAM || "Flying Aces");
+
+  if (!scoutTeam){
+    if (meta) meta.textContent = "";
+    if ($("scoutTransitive")) $("scoutTransitive").innerHTML =
+      `<div class="muted" style="padding:6px 2px; font-weight:900;">Select an opponent team…</div>`;
+
+    // reset transitive filter dropdown
+    if ($("transitiveOppPick")){
+      fillSelectSimple("transitiveOppPick", [], "All Players", "");
+      $("transitiveOppPick").disabled = true;
+    }
+
+    FA_SCOUT_TRANSITIVE_ALL = [];
+    FA_SCOUT_TRANSITIVE_MY_TEAM = myTeam;
+    FA_SCOUT_TRANSITIVE_TEAM = "";
+    return;
+  }
+
+  const req = ++FA_SCOUT_REQ;
+  if (meta) meta.textContent = `Loading links vs ${dispTeamName(scoutTeam)}…`;
+
+  // Pull recent singles for Aces (myTeam) and the selected opponent, then compute links.
+  fetchScoutTeamRecent(myTeam, myStats => {
+    if (req !== FA_SCOUT_REQ) return;
+
+    fetchScoutTeamRecent(scoutTeam, oppStats => {
+      if (req !== FA_SCOUT_REQ) return;
+
+      const myRecent    = (myStats && myStats.recent) ? myStats.recent : [];
+      const scoutRecent = (oppStats && oppStats.recent) ? oppStats.recent : [];
+
+      const links = buildTransitiveLinks(myRecent, scoutRecent);
+
+      // cache + render (supports dropdown filtering)
+      FA_SCOUT_TRANSITIVE_ALL = links;
+      FA_SCOUT_TRANSITIVE_MY_TEAM = myTeam;
+      FA_SCOUT_TRANSITIVE_TEAM = scoutTeam;
+
+      populateTransitiveOppPick(links, true);
+      renderScoutTransitiveFiltered();
+
+      if (meta){
+        meta.textContent = links.length
+          ? `${links.length} link${links.length===1?"":"s"} found vs ${dispTeamName(scoutTeam)}.`
+          : `No links found vs ${dispTeamName(scoutTeam)}.`;
+      }
+    });
+  });
+}
+
+/* keep scouting in sync when your team stats refresh */
+let __SCOUT_TIMER = null;
+function scheduleScoutUpdate(){
+  clearTimeout(__SCOUT_TIMER);
+  __SCOUT_TIMER = setTimeout(() => {
+    if ($("scoutOpp") && $("scoutOpp").value) updateScout();
+  }, 60);
+}
+
+function _fmtModeLabel(r){
+  const mode = String(r && r.mode || "").toLowerCase();
+  const isStroke = _rowIsStroke(r);
+  if (mode === "singles" && isStroke) return "Singles (stroke)";
+  if (mode === "singles") return "Singles";
+  if (mode === "doubles") return "Doubles";
+  return esc(mode || "");
+}
+
+function _fmtSideNames(r, side){
+  const mode = String(r && r.mode || "").toLowerCase();
+  const isDoubles = (mode === "doubles");
+  const a1 = String(r && r.a1 || "").trim();
+  const a2 = String(r && r.a2 || "").trim();
+  const o1 = String(r && r.o1 || "").trim();
+  const o2 = String(r && r.o2 || "").trim();
+
+  if (side === "aces"){
+    if (isDoubles) return [a1,a2].filter(Boolean).join(" + ");
+    return a1 || "";
+  } else {
+    if (isDoubles) return [o1,o2].filter(Boolean).join(" + ");
+    return o1 || "";
+  }
+}
+
+function _fmtScore(r){
+  const isStroke = _rowIsStroke(r);
+  const a = String(r && r.acesScore==null ? "" : r.acesScore).trim();
+  const o = String(r && r.oppScore ==null ? "" : r.oppScore ).trim();
+
+  if (isStroke){
+    if (a && o) return `${a}–${o}`;
+    return a || o || "";
+  }
+
+  const mp = String(r && (r.mpScore || a || o) || "").trim();
+  return mp;
+}
+
+
+function renderOpponentResults(){
+  const meta = $("oppResultsMeta");
+  const selected = $("oppFilter") ? $("oppFilter").value : "";
+
+  const src = (FA_RECENT_CACHE || []).slice();
+
+  // Filter by selected opponent (or show all)
+  const list = src.filter(r => {
+    if (!selected) return true;
+    return String(r.oppTeam || r.opponentTeam || "") === selected;
+  });
+
+  // Sort helper for rows within a single opponent group:
+  // Singles (match play) first, then Doubles, then Singles (stroke); then most recent.
+  function rowCmp(a, b){
+    const ca = _rowSortCat(a), cb = _rowSortCat(b);
+    if (ca !== cb) return ca - cb;
+
+    const da = _rowDateKey(a), db = _rowDateKey(b);
+    if (db !== da) return db - da;
+
+    const ra = Number(a.rowNum || 0), rb = Number(b.rowNum || 0);
+    if (rb !== ra) return rb - ra;
+
+    return 0;
+  }
+
+  let sorted = [];
+
+  if (selected){
+    // Single-opponent view: just apply the within-group sort.
+    sorted = list.slice().sort(rowCmp);
+  } else {
+    // All-opponents view:
+    // 1) group by opponent team
+    // 2) order opponent groups by "most recent match vs that opponent"
+    // 3) within each opponent group, apply the same category+date sort
+    const groups = Object.create(null);
+
+    list.forEach(r => {
+      const team = String(r.oppTeam || r.opponentTeam || "") || "(No team)";
+      (groups[team] ||= []).push(r);
+    });
+
+    const groupArr = Object.keys(groups).map(team => {
+      const rows = groups[team];
+      let latest = 0;
+      for (let i=0; i<rows.length; i++){
+        const t = _rowDateKey(rows[i]);
+        if (t > latest) latest = t;
+      }
+      return { team, latest, rows };
+    });
+
+    groupArr.sort((a,b) => {
+      if (b.latest !== a.latest) return b.latest - a.latest;
+      // stable-ish: alphabetical fallback
+      return a.team.localeCompare(b.team);
+    });
+
+    groupArr.forEach(g => {
+      g.rows.sort(rowCmp);
+      sorted.push(...g.rows);
+    });
+  }
+
+  if ($("oppResultsCards")){
+    renderMatchCards("oppResultsCards", sorted, false, "No matches for this opponent.");
+  }
+
+  // Meta line
+  const teamLabel = selected ? stripOppPrefix(selected) : "All Opponents";
+  if (meta) meta.textContent = `${teamLabel}: ${sorted.length} match${sorted.length===1?"":"es"}`;
+}
+
+
+
+function applyStats(stats){
+  if (!stats || stats.ok === false) return;
+  // keep latest stats payload for fast client-side filtering
+  FA_STATS_OBJ = stats;
+
+// merge server-provided Elo-by-id map for consistent Elo pills in match cards
+try{
+  if (stats.eloById){
+    Object.keys(stats.eloById).forEach(k => { FA_ELO_BY_ID[k] = stats.eloById[k]; });
+  }
+}catch(e){}
+  // invalidate per-player cache whenever we receive fresh stats
+  FA_PLAYER_CACHE = Object.create(null);
+  renderSinglesTable(stats.singlesByPlayer);
+  renderDoublesPlayerTable(stats.doublesByPlayer);
+  renderPartnersTable(stats.doublesByPair);
+
+  // Cache recent list for opponent filtering UI
+  FA_RECENT_CACHE = (stats.recent || []).slice();
+  if ($("oppResultsCards")) { try{ loadEloPack(() => renderOpponentResults()); }catch(e){ renderOpponentResults(); } }
+  if (isManageOpen()) renderManageList();
+  scheduleScoutUpdate();
+}
+
+/* ---------- player view ---------- */
+function _nameKey_(s){ return String(s||"").trim().toLowerCase(); }
+
+function _getPlayerStatsLocal_(player){
+  if (!FA_STATS_OBJ || FA_STATS_OBJ.ok === false) return null;
+  const pKey = _nameKey_(player);
+  if (!pKey) return null;
+  if (FA_PLAYER_CACHE[pKey]) return FA_PLAYER_CACHE[pKey];
+
+  // Summary rows are already computed server-side across the full MatchLog
+  const sRow = (FA_STATS_OBJ.singlesByPlayer || []).find(r => _nameKey_(r.name) === pKey) || { w:0, l:0, t:0, winPct:0 };
+  const dRow = (FA_STATS_OBJ.doublesByPlayer || []).find(r => _nameKey_(r.name) === pKey) || { w:0, l:0, t:0, winPct:0 };
+
+  // Partners can be derived from doublesByPair (full-history)
+  const partners = (FA_STATS_OBJ.doublesByPair || [])
+    .filter(r => _nameKey_(r.p1) === pKey || _nameKey_(r.p2) === pKey)
+    .map(r => {
+      const partner = (_nameKey_(r.p1) === pKey) ? (r.p2 || "") : (r.p1 || "");
+      const w = Number(r.w||0), l = Number(r.l||0), t = Number(r.t||0);
+      const played = w + l + t;
+      return { partner, w, l, t, winPct: Number(r.winPct||0), played };
+    })
+    .sort((a,b) => (b.played - a.played) || (b.winPct - a.winPct))
+    .map(({played, ...rest}) => rest);
+
+  // Recent match cards for this player (fast filter)
+  const list = (FA_RECENT_CACHE && FA_RECENT_CACHE.length) ? FA_RECENT_CACHE : (FA_STATS_OBJ.recent || []);
+  const recent = [];
+  const lim = 25;
+  for (let i=0; i<list.length && recent.length<lim; i++){
+    const r = list[i];
+    const a1 = _nameKey_(r.a1);
+    const a2 = _nameKey_(r.a2);
+    if (a1 === pKey || a2 === pKey) recent.push(r);
+  }
+
+  const out = {
+    ok: true,
+    player: player,
+    summary: { singles: { w:+sRow.w||0, l:+sRow.l||0, t:+sRow.t||0, winPct:+sRow.winPct||0 },
+               doubles: { w:+dRow.w||0, l:+dRow.l||0, t:+dRow.t||0, winPct:+dRow.winPct||0 } },
+    partners: partners,
+    recent: recent
+  };
+  FA_PLAYER_CACHE[pKey] = out;
+  return out;
+}
+
+
+function setPlayerEmpty(){
+  $("playerSection").style.display = "none";
+  $("playerMeta").textContent = "";
+  $("playerSummaryBody").innerHTML = `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Select a player.</td></tr>`;
+  $("playerPartnersBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Select a player.</td></tr>`;
+  $("playerCards").innerHTML = `<div class="muted" style="padding:6px 2px; font-weight:900;">Select a player.</div>`;
+}
+
+function renderPlayerStats(data){
+  $("playerSection").style.display = "block";
+  $("playerMeta").textContent = data.player || "";
+
+  const s = (data.summary && data.summary.singles) ? data.summary.singles : {w:0,l:0,t:0,winPct:0};
+  const d = (data.summary && data.summary.doubles) ? data.summary.doubles : {w:0,l:0,t:0,winPct:0};
+
+  $("playerSummaryBody").innerHTML = `
+    <tr><td>Singles</td><td>${s.w||0}</td><td>${s.l||0}</td><td>${s.t||0}</td><td><span class="pill">${pct(s.winPct)}</span></td></tr>
+    <tr><td>Doubles</td><td>${d.w||0}</td><td>${d.l||0}</td><td>${d.t||0}</td><td><span class="pill">${pct(d.winPct)}</span></td></tr>
+  `;
+
+  const partners = (data.partners||[]).map(p => `
+    <tr><td>${esc(p.partner||"")}</td><td>${p.w||0}</td><td>${p.l||0}</td><td><span class="pill">${pct(p.winPct)}</span></td></tr>
+  `);
+  $("playerPartnersBody").innerHTML = partners.length ? partners.join("") : `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">No doubles matches found.</td></tr>`;
+
+  renderMatchCards("playerCards", data.recent || [], false);
+}
+
+/* ---------- server calls (direct v2) ---------- */
+function bootstrap(){
+  if (!google.script || !google.script.run){
+    setDiag("Bootstrap error: google.script.run is not available. Open the Apps Script Web App URL.");
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(data => {
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data returned from server.");
+        if (data.ok === false) throw new Error(data.error || "Bootstrap failed.");
+
+        // Existing dropdown fills
+        fillOppTeamSelect(data.oppTeams || []);
+        fillOppFilterSelect(data.oppTeams || []);
+        if ($("a1")) fillSelectSimple("a1", data.aces || [], "Select…");
+        if ($("a2")) fillSelectSimple("a2", data.aces || [], "Select…");
+
+        // League-wide UI
+        window.FA_ACES_TEAM   = data.acesTeam || "Flying Aces";
+        window.FA_LEAGUE_TEAMS = data.leagueTeams || [window.FA_ACES_TEAM].concat(data.oppTeams || []);
+
+        // ✅ keep a master list of Aces players for team switching
+        window.FA_ACE_PLAYERS = data.aces || [];
+
+        // ✅ keep server stats version for local cache validation
+        window.FA_STATS_VERSION = String(data.statsVersion || "");
+
+        // ✅ Stats tab dropdowns
+        if ($("statsTeamPick")){
+          fillSelectSimple("statsTeamPick", window.FA_LEAGUE_TEAMS || [], "Select team…", window.FA_ACES_TEAM, prettyTeamName);
+        }
+        if ($("oppFilter")) fillOppFilterSelect(data.oppTeams || []);
+        if ($("scoutOpp")){
+          fillSelectSimple("scoutOpp", data.oppTeams || [], "Select opponent…", "", prettyTeamName);
+          $("scoutOpp").disabled = false;
+        }
+
+        // ✅ set initial stats team so Player dropdown + stats load correctly
+        if (typeof setStatsTeam === "function"){
+          setStatsTeam(window.FA_ACES_TEAM);
+        } else {
+          // fallback: at least set the global so refreshStats has a team
+          window.FA_STATS_TEAM = window.FA_ACES_TEAM;
+          if ($("statsTeamPick")) $("statsTeamPick").value = window.FA_ACES_TEAM;
+          fillSelectSimple("playerPick", data.aces || [], "Select player…");
+        }
+
+        // League match entry dropdowns (if present)
+        if ($("lmTeamA")) fillSelectSimple("lmTeamA", window.FA_LEAGUE_TEAMS || [], "Select…", "", prettyTeamName);
+if ($("lmTeamB")) fillSelectSimple("lmTeamB", window.FA_LEAGUE_TEAMS || [], "Select…", "", prettyTeamName);
+
+
+        // ---- legacy match-entry bits (guarded so they don't crash if removed) ----
+        try{ if ($("matchDate")) $("matchDate").valueAsDate = new Date(); }catch(_){}
+        try{ if (typeof restoreMatchLogCtx === "function") restoreMatchLogCtx(); }catch(_){}
+        try{ if (typeof initMatchPlayScores === "function") initMatchPlayScores(); }catch(_){}
+        try{ if (typeof showMode === "function") showMode(); }catch(_){}
+
+        // Load league panel
+        try{ if (typeof refreshLeague === "function") refreshLeague(); }catch(_){}
+
+      }catch(e){
+        console.error(e);
+        setDiag("Bootstrap render error: " + (e && e.message ? e.message : e));
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      setDiag("Bootstrap load error: " + (err && err.message ? err.message : err));
+    })
+    .faStatsBootstrap_v2({ includeStats:false });
+}
+
+
+let FA_STATS_REFRESH_INFLIGHT = false;
+let FA_STATS_REFRESH_PENDING = false;
+
+
+function refreshStats(){
+  if (FA_STATS_REFRESH_INFLIGHT){
+    FA_STATS_REFRESH_PENDING = true;
+    return;
+  }
+  FA_STATS_REFRESH_INFLIGHT = true;
+
+  setDiag("");
+  google.script.run
+    .withSuccessHandler(data => {
+      FA_STATS_REFRESH_INFLIGHT = false;
+
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data returned from server.");
+        if (data.ok === false) throw new Error(data.error || "Stats load failed.");
+
+        // keep version in sync so setStatsTeam can trust the cache
+        if (data.version != null) window.FA_STATS_VERSION = String(data.version || "");
+
+        applyStats(data);
+        saveCachedStats(getStatsTeam(), window.FA_STATS_VERSION || (data.version || ""), data);
+        try{ setTimeout(function(){ loadLeagueMatchIndex(function(){}); }, 250); }catch(_){ }
+      }catch(e){
+        console.error(e);
+        setDiag("Stats render error: " + (e && e.message ? e.message : e));
+        google.script.run.withSuccessHandler(info=>{
+          if (typeof info === "string") { try{ info = JSON.parse(info); }catch(_){ } }
+          if (info && info.ok){
+            setDiag(( $("diag").textContent || "" ) + " | Diag: sheet=" + info.sheet + " rows=" + info.lastRow + " cols=" + info.lastCol);
+          }
+        }).faStatsDiag_v2();
+      }
+
+      if (FA_STATS_REFRESH_PENDING){
+        FA_STATS_REFRESH_PENDING = false;
+        setTimeout(refreshStats, 0);
+      }
+    })
+    .withFailureHandler(err => {
+      FA_STATS_REFRESH_INFLIGHT = false;
+      console.error(err);
+      setDiag("Stats load error: " + (err && err.message ? err.message : err));
+
+      if (FA_STATS_REFRESH_PENDING){
+        FA_STATS_REFRESH_PENDING = false;
+        setTimeout(refreshStats, 0);
+      }
+    })
+    .faGetStatsData_v2({ recentLimit: 200, teamId: getStatsTeam() });
+}
+
+
+function loadOppPlayers(){
+  const team = $("oppTeam").value;
+  fillSelectSimple("o1", [], "Select…");
+  fillSelectSimple("o2", [], "Select…");
+  if (!team) return;
+
+  google.script.run
+    .withSuccessHandler(list => {
+      if (typeof list === "string") { try{ list = JSON.parse(list); }catch(_){ } }
+      fillSelectSimple("o1", list || [], "Select…");
+      fillSelectSimple("o2", list || [], "Select…");
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      setDiag("Opponent load error: " + (err && err.message ? err.message : err));
+    })
+    .faGetOpponentPlayers_v2(team);
+}
+
+function saveMatch(){
+  setDiag("");
+  const btn = $("saveBtn");
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "SAVING…";
+
+  const mode = $("mode").value;
+  const result = $("result").value;
+
+  const entry = {
+    matchDate: $("matchDate").value,
+    mode,
+    result,
+    oppTeam: $("oppTeam").value,
+    a1: $("a1").value,
+    a2: $("a2").value,
+    o1: $("o1").value,
+    o2: $("o2").value,
+    notes: "" // removed from UI
+  };
+
+  if (mode === "doubles" || $("singlesStrokeToggle").checked){
+    entry.scoreMode = "stroke";
+    entry.acesScore = $("acesScore").value;
+    entry.oppScore  = $("oppScore").value;
+  } else {
+    entry.scoreMode = "matchplay";
+    entry.mpScore = $("mpScore").value;
+  }
+
+  google.script.run
+    .withSuccessHandler(resp => {
+      try{
+        if (typeof resp === "string") { try{ resp = JSON.parse(resp); }catch(_){ } }
+        if (!resp || resp.ok === false) throw new Error(resp && resp.error ? resp.error : "Save failed.");
+
+        // Persist shared fields for the next entry.
+        persistMatchLogCtx();
+
+        // update stats
+        if (resp.stats && resp.stats.ok !== false) applyStats(resp.stats);
+        else refreshStats();
+
+        // refresh player section if open
+        if ($("playerSection").style.display !== "none" && $("playerPick").value){
+          loadPlayerStats();
+        }
+
+        // Prep for the next entry (keep date/team/mode; clear the per-match picks/scores)
+        resetMatchEntryForNext();
+
+        // quick visual feedback on the button
+        btn.textContent = "SAVED";
+        setTimeout(()=>{ btn.textContent = prevLabel; }, 650);
+
+      }catch(e){
+        console.error(e);
+        setDiag("Save render error: " + (e && e.message ? e.message : e));
+        btn.textContent = prevLabel;
+      }finally{
+        btn.disabled = false;
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      setDiag("Save error: " + (err && err.message ? err.message : err));
+      btn.textContent = prevLabel;
+      btn.disabled = false;
+    })
+    .faAddMatchLogEntry_v2(entry);
+}
+
+function deleteRow(rowNum){
+  if (!rowNum) return;
+  if (!confirm("Delete this match from MatchLog?")) return;
+
+  setDiag("");
+
+  google.script.run
+    .withSuccessHandler(resp => {
+      try{
+        if (typeof resp === "string") { try{ resp = JSON.parse(resp); }catch(_){ } }
+        if (!resp || resp.ok === false) throw new Error(resp && resp.error ? resp.error : "Delete failed.");
+        if (resp.stats && resp.stats.ok !== false) applyStats(resp.stats);
+        else refreshStats();
+        if ($("playerSection").style.display !== "none" && $("playerPick").value){
+          loadPlayerStats();
+        }
+      }catch(e){
+        console.error(e);
+        setDiag("Delete render error: " + (e && e.message ? e.message : e));
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      setDiag("Delete error: " + (err && err.message ? err.message : err));
+    })
+    .faDeleteMatchLogRow_v2(rowNum);
+}
+
+function loadPlayerStats(){
+  const player = $("playerPick").value;
+  if (!player){ setPlayerEmpty(); return; }
+
+  setDiag("");
+
+  // ✅ Instant (client-side) path: derive everything from the already-loaded stats payload
+  const local = _getPlayerStatsLocal_(player);
+  if (local){
+    renderPlayerStats(local);
+    return;
+  }
+
+  // Fallback (should rarely be needed): ask the server
+  google.script.run
+    .withSuccessHandler(data => {
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data returned from server.");
+        if (data.ok === false) throw new Error(data.error || "Player stats failed.");
+        renderPlayerStats(data);
+      }catch(e){
+        console.error(e);
+        setDiag("Player stats render error: " + (e && e.message ? e.message : e));
+      }
+    })
+    .withFailureHandler(err => {
+      console.error(err);
+      setDiag("Player stats load error: " + (err && err.message ? err.message : err));
+    })
+    .faGetPlayerStats_v2(player, { recentLimit: 25 });
+}
+
+
+/* ---------- wire up (SAFE) ---------- */
+function wireOnce(){
+  if (window.__FA_WIRED__) return;
+  window.__FA_WIRED__ = true;
+
+  if ($("statsTeamPick")){
+    $("statsTeamPick").addEventListener("change", ()=> setStatsTeam(getStatsTeam()));
+  }
+  if ($("playerPick")){
+  $("playerPick").addEventListener("change", loadPlayerStats);
+}
+  if ($("oppFilter")){
+    $("oppFilter").addEventListener("change", renderOpponentResults);
+  }
+  if ($("scoutOpp")){
+  $("scoutOpp").addEventListener("change", updateScout);
+}
+
+  if ($("transitiveOppPick")){
+    $("transitiveOppPick").addEventListener("change", renderScoutTransitiveFiltered);
+  }
+
+
+  if ($("openLeagueLogBtn")) if ($("openLeagueLogBtn")) $("openLeagueLogBtn").addEventListener("click", openLeagueModal);
+  if ($("closeLeagueBtn")) $("closeLeagueBtn").addEventListener("click", closeLeagueModal);
+  if ($("submitLeagueBtn")) $("submitLeagueBtn").addEventListener("click", submitLeagueMatch);
+
+  if ($("openManageBtn")) if ($("openManageBtn")) $("openManageBtn").addEventListener("click", openManageModal);
+  if ($("closeManageBtn")) if ($("closeManageBtn")) $("closeManageBtn").addEventListener("click", closeManageModal);
+  if ($("lmTeamA")){
+  $("lmTeamA").addEventListener("change", () => { persistLeagueLogCtx(); loadLeagueTeamRoster($("lmTeamA").value, "A"); });
+}
+if ($("lmTeamB")){
+  $("lmTeamB").addEventListener("change", () => { persistLeagueLogCtx(); loadLeagueTeamRoster($("lmTeamB").value, "B"); });
+}
+if ($("lmMode")){
+  $("lmMode").addEventListener("change", () => { persistLeagueLogCtx(); showLeagueMode(); });
+}
+if ($("lmScoreMode")){
+  $("lmScoreMode").addEventListener("change", () => { persistLeagueLogCtx(); showLeagueScoreMode(); });
+  if ($("lmDate")) $("lmDate").addEventListener("change", persistLeagueLogCtx);
+  if ($("lmResult")) $("lmResult").addEventListener("change", persistLeagueLogCtx);
+
+}
+if ($("lmAScore")) $("lmAScore").addEventListener("input", maybeAutoLeagueResultFromScores);
+  if ($("lmBScore")) $("lmBScore").addEventListener("input", maybeAutoLeagueResultFromScores);
+
+
+
+}
+
+/* ===========================
+   STATS + SCOUTING COMBINED
+   Strategy 2 preload + player popups
+   =========================== */
+
+const FULL_PRELOAD_DONE_KEY = "FA_STATS_FULL_DONE_V1";
+const ROSTERS_CACHE_VER = "FA_ROSTERS_VER_V1";
+const ROSTERS_CACHE_KEY = "FA_ROSTERS_JSON_V1";
+
+function _cleanScore_(s){
+  return String(s||"").replace(/\s*-\s*$/,"").trim();
+}
+
+function bootOverlay(show, msg){
+  const o = $("bootOverlay");
+  if (!o) return;
+  if (show){
+    o.style.display = "flex";
+    o.classList.add("show");
+    o.setAttribute("aria-hidden","false");
+    const t = $("bootOverlayMsg");
+    if (t) t.textContent = msg || "Loading…";
+  }else{
+    o.style.display = "none";
+    o.classList.remove("show");
+    o.setAttribute("aria-hidden","true");
+  }
+}
+
+function gsRun(fn /*, ...args */){
+  const args = Array.prototype.slice.call(arguments, 1);
+  return new Promise((resolve, reject) => {
+    try{
+      const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, args);
+    }catch(e){ reject(e); }
+  });
+}
+
+function saveRosters(version, pack){
+  try{
+    localStorage.setItem(ROSTERS_CACHE_VER, String(version||""));
+    localStorage.setItem(ROSTERS_CACHE_KEY, JSON.stringify(pack||{}));
+  }catch(e){}
+}
+function loadRosters(version){
+  try{
+    if (String(localStorage.getItem(ROSTERS_CACHE_VER)||"") !== String(version||"")) return null;
+    const raw = localStorage.getItem(ROSTERS_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+function buildIdMapFromRosters(pack){
+  const map = Object.create(null);
+  const rows = (pack && (pack.rows || pack.players)) || [];
+  rows.forEach(p => {
+    const id = String(p.id||"").trim();
+    const team = String(p.team||"").trim();
+    const name = String(p.name||"").trim();
+    if (!id || !team || !name) return;
+    map[_key(team) + "|" + _key(name)] = id;
+  });
+  window.FA_ID_BY_TEAM_NAME = map;
+}
+function setPlayerIdMap(playerRows){
+  // playerRows: [{id, team, name, ...}]
+  if (!playerRows) return;
+  buildIdMapFromRosters({rows: playerRows});
+}
+function getPlayerId(team, name){
+  const map = window.FA_ID_BY_TEAM_NAME || {};
+  return map[_key(team) + "|" + _key(name)] || "";
+}
+function playerLinkHTML(name, teamRaw, id){
+  const nm = String(name||"").trim();
+  if (!nm) return "";
+  const t = String(teamRaw||"").trim();
+  const pid = String(id||"").trim() || getPlayerId(t, nm);
+  if (pid){
+    return `<a href="#" class="playerLink" data-id="${esc(pid)}" data-team="${esc(t)}">${esc(nm)}</a>`;
+  }
+  // Still make it clickable; we'll resolve ID on click (name+team).
+  return `<a href="#" class="playerLink" data-name="${esc(nm)}" data-team="${esc(t)}">${esc(nm)}</a>`;
+}
+
+// Override match card HTML builder so every player name is clickable (when id available or mappable).
+
+// Override table renderers so names are clickable
+
+
+
+function _isFemaleRank_(rankStr){
+  const r = String(rankStr||"").trim();
+  return /F$/i.test(r);
+}
+function _dispRankRating_(p){
+  const acesTeam = window.FA_ACES_TEAM || "Flying Aces";
+  const useFA = (_key(p.team) === _key(acesTeam));
+  return {
+    rank: String(useFA ? (p.farank || p.rank || "") : (p.rank || "")).trim(),
+    rating: String(useFA ? (p.farating || p.rating || "") : (p.rating || "")).trim(),
+    elo: (p.elo == null ? "" : String(p.elo))
+  };
+}
+
+function renderRostersForTeam(teamId){
+  const pack = window.FA_ROSTERS_PACK;
+  const menBody = $("scoutRosterMenBody");
+  const womenBody = $("scoutRosterWomenBody");
+  if (!menBody || !womenBody) return;
+
+  if (!pack || !pack.rows){
+    menBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">No roster data.</td></tr>`;
+    womenBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">No roster data.</td></tr>`;
+    return;
+  }
+  const teamK = _key(teamId);
+  const rows = pack.rows.filter(p => _key(p.team) === teamK);
+
+  function num(x){
+    const n = Number(x);
+    return isFinite(n) ? n : -1e18;
+  }
+  rows.sort((a,b) => num(b.elo) - num(a.elo));
+
+  const men = rows.filter(p => !_isFemaleRank_(_dispRankRating_(p).rank));
+  const women = rows.filter(p => _isFemaleRank_(_dispRankRating_(p).rank));
+
+  function rowHtml(p){
+    const rr = _dispRankRating_(p);
+    return `<tr>
+      <td style="text-align:left;">${_rankPill_(rr.rank||"", "left")}${playerLinkHTML(p.name, p.team, p.id)}</td>
+      <td style="text-align:center;">${esc(rr.rating)}</td>
+      <td style="text-align:center;">${esc(rr.elo)}</td>
+    </tr>`;
+  }
+
+  menBody.innerHTML = men.length ? men.map(rowHtml).join("") :
+    `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">No players.</td></tr>`;
+  womenBody.innerHTML = women.length ? women.map(rowHtml).join("") :
+    `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">No players.</td></tr>`;
+}
+
+// Player modal
+function closePlayerModal(){
+  const mm = $("playerModal");
+  if (!mm) return;
+  mm.classList.remove("show");
+  mm.style.display = ""; // ensure no lingering inline display
+  mm.setAttribute("aria-hidden","true");
+}
+
+function openPlayerModal(pid, name, team){
+  const modal = $("playerModal");
+  const title = $("pmTitle");
+  const body  = $("pmBody");
+
+function setModalTitle(){
+  let tName = name;
+  let tTeam = team;
+  if ((!tName || !tTeam) && pid && FA_MATCH_PLAYERS_BY_ID && FA_MATCH_PLAYERS_BY_ID[pid]){
+    const p = FA_MATCH_PLAYERS_BY_ID[pid];
+    if (!tName) tName = p.name || "";
+    if (!tTeam) tTeam = p.team || "";
+  }
+  $("pmTitle").textContent = tName ? (tName + (tTeam ? " • " + tTeam : "")) : "Player";
+}
+
+
+  pid = String(pid||"").trim();
+  name = String(name||"").trim();
+  team = String(team||"").trim();
+  setModalTitle();
+  // Show modal immediately (custom modal, not Bootstrap)
+  modal.classList.add("show");
+  modal.style.display = ""; // rely on CSS (.modal.show)
+  modal.setAttribute("aria-hidden","false");
+
+  // If we already have the match index, render instantly
+  if (pid && FA_MATCHES_BY_ID && FA_MATCHES_BY_ID[pid]){
+    renderPlayerModalFromIndex(pid);
+    return;
+  }
+
+  // Otherwise, load the league match index in the background, then render
+  body.innerHTML = '<div class="small text-muted" style="padding:10px;">Loading match history…</div>';
+  if (!pid){
+    body.innerHTML = '<div class="small text-muted" style="padding:10px;">No player ID found for this link.</div>';
+    return;
+  }
+
+  loadLeagueMatchIndex(() => {
+    renderPlayerModalFromIndex(pid);
+  }, false);
+}
+
+function renderPlayerModalFromIndex(pid){
+
+try{
+  if (pid && FA_MATCH_PLAYERS_BY_ID && FA_MATCH_PLAYERS_BY_ID[pid]){
+    const p = FA_MATCH_PLAYERS_BY_ID[pid];
+    $("pmTitle").textContent = (p.name || name || "Player") + ((p.team || team) ? " • " + (p.team || team) : "");
+  }else if (name){
+    $("pmTitle").textContent = name + (team ? " • " + team : "");
+  }
+}catch(_){}
+
+  const body  = $("pmBody");
+
+  const ms = (FA_MATCHES_BY_ID && FA_MATCHES_BY_ID[pid]) ? FA_MATCHES_BY_ID[pid].slice() : [];
+  if (!ms.length){
+    body.innerHTML = '<div class="small text-muted" style="padding:10px;">No matches found.</div>';
+    return;
+  }
+
+  // Most recent first (match index is chronological)
+  ms.reverse();
+
+  body.innerHTML = '<div id="pmCards"></div>';
+
+  const adapted = [];
+  for (let i=0; i<ms.length; i++){
+    const r = _adaptIndexMatchToCard_(ms[i], pid);
+    if (r) adapted.push(r);
+  }
+
+  // Render using the same match-card UI as the Stats page
+  try{
+    renderMatchCards("pmCards", adapted, false, "No matches found.");
+  }catch(e){
+    console.error(e);
+    $("pmCards").innerHTML = '<div class="small text-muted" style="padding:10px;">Error rendering match cards.</div>';
+  }
+}
+
+// Global link click handler
+document.addEventListener("click", (e) => {
+  const a = e.target && e.target.closest ? e.target.closest("a.playerLink") : null;
+  if (a){
+    e.preventDefault();
+    const nm = String(a.getAttribute("data-name") || a.textContent || "").trim();
+    const team = String(a.getAttribute("data-team")||"").trim();
+    const pid = String(a.getAttribute("data-id")||"").trim();
+    if (pid){
+      openPlayerModal(pid, nm, team);
+      return;
+    }
+    if (!nm) return;
+    gsRun("faResolvePlayerIdByName_v2", nm, team)
+      .then(res => {
+        if (typeof res === "string"){ try{ res = JSON.parse(res); }catch(_){ } }
+        const id2 = res && (res.id || (res.player && res.player.id)) ? String(res.id || res.player.id) : "";
+        if (id2) openPlayerModal(id2, nm, team);
+      })
+      .catch(err => console.error(err));
+    return;
+  }
+  if (e.target && (e.target.id === "pmCloseBtn" || e.target.closest && e.target.closest("#pmCloseBtn"))){
+    e.preventDefault();
+    closePlayerModal();
+    return;
+  }
+  const mm = $("playerModal");
+  if (mm && mm.classList.contains("show") && e.target === mm){
+    closePlayerModal();
+  }
+});
+
+// (removed) Strategy-2 preload override bootstrap; using safe bootstrap()
+
+/* run wiring after DOM is ready */
+window.addEventListener("load", () => {
+  try{
+    wireOnce();
+    bootstrap();
+  }catch(e){
+    console.error(e);
+    setDiag("Startup error: " + (e && e.message ? e.message : e));
+  }
+});
+
+</script>
+
+
+<!-- Boot overlay (Strategy 2 preload) -->
+<div class="modal show" id="bootOverlay" aria-hidden="true" style="display:none;">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bootOverlayMsg" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="title" id="bootOverlayMsg">Loading…</div>
+    </div>
+    <div style="padding:16px; display:flex; align-items:center; justify-content:center; gap:12px;">
+      <div class="faSpinner" aria-hidden="true"></div>
+      <div class="muted" style="font-weight:900;">Please wait…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Player popup modal -->
+<div class="modal" id="playerModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+    <div class="modal-head">
+      <div class="title" id="pmTitle">PLAYER</div>
+      <button class="icon-btn" id="pmCloseBtn" type="button" aria-label="Close"><span>×</span></button>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="field" style="margin:0;">
+        <div class="small" id="pmMeta"></div>
+      </div>
+    </div>
+    <div class="modal-body" id="pmBody" style="max-height:60vh; overflow:auto; -webkit-overflow-scrolling:touch; padding:12px 14px;">
+      <div class="muted" style="font-weight:900;">Loading…</div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<div id="toast" aria-live="polite"></div>
+</body>
+</html>

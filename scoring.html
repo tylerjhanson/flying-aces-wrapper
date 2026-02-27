@@ -2,9 +2,103 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Scoring</title>
+
+<style>
+/* =========================================================
+   1. HEADER STYLES (Exact copy from matchups.html)
+   ========================================================= */
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
+.fa-header{
+  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
+  border-bottom: none; padding: 0 !important; box-sizing: border-box;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+}
+html, body { touch-action: pan-x pan-y; }
+.fa-header .fa-tabs{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important; padding: 8px 0 !important; margin: 0 !important;
+  border: none !important; background: transparent !important;
+}
+.fa-header .fa-tabs button, .fa-header .fa-submenu button{
+  -webkit-appearance:none !important; appearance:none !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  width:100% !important; box-sizing:border-box !important;
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important; line-height: 1 !important;
+  height: 40px !important; min-height: 40px !important; padding: 0 6px !important;
+  border-radius: 8px !important; border: 0 !important; outline: none !important;
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important;
+  cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+  -webkit-tap-highlight-color: transparent !important; user-select: none !important;
+}
+.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
+#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
+#nav-menu .menu-logo{ height: 18px; width: auto; display: block; }
+#nav-menu .hamburger-icon{ width: 24px; height: 24px; flex: 0 0 auto; }
+.fa-submenu{
+  position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
+  opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden;
+  padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px);
+}
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{ height: 36px !important; min-height: 36px !important; font-size: 13px !important; }
+  #nav-menu .menu-logo{ height: 16px; }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+}
+
+/* =========================================================
+   2. SCORING STYLES (Single Column + Sticky Header)
+   ========================================================= */
+html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #f7f8fa; margin: 0; padding: 4px; color: #222; touch-action: manipulation; }
+.scoring-wrapper { display: flex; flex-direction: column; gap: 10px; max-width: 600px; margin: 0 auto; }
+
+.team { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 10px; box-sizing: border-box; }
+
+.inputs-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+label { display:flex; align-items:center; justify-content:center; height: 26px; margin-bottom: 4px; font-size: 11px; font-weight: 900; letter-spacing: .3px; text-transform: uppercase; background: #000; color: #fff; border-radius: 8px; white-space: nowrap; }
+select { width: 100%; box-sizing: border-box; height: 42px; font-size: 18px; font-weight: 900; color: #333; background-color: #fff; text-align: center; text-align-last: center; border: 1.5px solid #ddd; border-radius: 8px; -webkit-appearance: none; appearance: none; line-height: 1.15; padding: 9px 4px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+.stat-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 6px 2px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+.stat-label { font-size: 0.82em; color: #555; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
+.stat-value { font-size: 1.6em; font-weight: bold; color: #333; }
+.stat-aces { background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%); border-color: #b30000; }
+.stat-aces .stat-label, .stat-aces .stat-value { color: white; }
+.stat-opp { background: linear-gradient(145deg, #333333, #000000); border-color: #111; }
+.stat-opp .stat-label, .stat-opp .stat-value { color: white; }
+
+/* ✅ STICKY TABLE HEADER */
+.table-wrap { overflow: visible; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 1.1em; } 
+th, td { padding: 8px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
+th { 
+  background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em; text-transform: uppercase; 
+  position: sticky; top: 56px; /* Header height (40px) + Header padding (8px*2) */
+  z-index: 10;
+}
+@media (max-width: 420px) { th { top: 48px; } } /* Adjusted for mobile header height */
+
+.res-win { color: #28a745; }
+.res-loss { color: #dc3545; }
+.res-tie  { color: #ffc107; }
+</style>
+</head>
+
+<body>
 <style>
 :root{ --fa-header-offset: 0px; }
 
@@ -246,44 +340,31 @@ html, body { touch-action: pan-x pan-y; }
 }
 @keyframes faSpin { to { transform: rotate(360deg); } }
 </style>
-</head>
 
-<body>
 <div class="fa-header fa-submenu-wrap">
-  <nav class="fa-tabs">
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-
-    <!-- Hamburger -->
-<button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
-  <img
-    class="menu-logo"
-    src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32"
-    alt=""
-    aria-hidden="true"
-    loading="eager"
-    decoding="async"
-  />
-  <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
-  </svg>
+<nav class="fa-tabs">
+<button data-page="scoring" id="nav-scoring" type="button">SCORING</button>
+<button data-page="rosters" id="nav-rosters" type="button">ROSTERS</button>
+<button data-page="matchups" id="nav-matchups" type="button">MATCHUPS</button>
+<!-- Hamburger -->
+<button aria-expanded="false" aria-label="More" data-key="menu" id="nav-menu" type="button">
+<img alt="" aria-hidden="true" class="menu-logo" decoding="async" loading="eager" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&amp;h=32"/>
+<svg aria-hidden="true" class="hamburger-icon" viewbox="0 0 24 24">
+<path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"></path>
+</svg>
 </button>
-
-  </nav>
-
-  <!-- Dropdown (anchored under hamburger) -->
-  <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
-    <div class="inner">
-  <button data-page="rankings">RANKINGS</button>
-  <button data-page="stats">STATS</button>
-  <button data-page="elo">ELO</button>
-  <button data-page="standings">STANDINGS</button>
-  <button data-page="admin">ADMIN</button>
+</nav>
+<!-- Dropdown (anchored under hamburger) -->
+<div aria-hidden="true" class="fa-submenu" id="faMoreMenu">
+<div class="inner">
+<button data-page="rankings">RANKINGS</button>
+<button data-page="stats">STATS</button>
+<button data-page="elo">ELO</button>
+<button data-page="standings">STANDINGS</button>
+<button data-page="admin">ADMIN</button>
 </div>
-  </div>
 </div>
-
+</div>
 <script>
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
@@ -341,10 +422,19 @@ html, body { touch-action: pan-x pan-y; }
       p = h;
     }
 
-    if (!p) return "";
+    // Support clean-path routing (/rosters, /matchups, etc.)
+    if (!p){
+      var path = (window.location.pathname || "").toLowerCase();
+      path = path.replace(/\/+$/, ""); // trim trailing slash
+      if (path && path !== "/"){
+        var seg = path.split("/").filter(Boolean).pop() || "";
+        seg = seg.replace(/\.html$/, "");
+        p = seg;
+      }
+    }
+
+    if (!p) return "matchups";
     if (p === "doubles") p = "rosters";
-    if (p === "scores") p = "scoring";
-    if (p === "players") p = "admin";
     return p;
   }
 
@@ -427,9 +517,50 @@ html, body { touch-action: pan-x pan-y; }
     }
   }
 
-  function extraQS(){ return ""; }
+  function extraQS(opts){
+    opts = opts || {};
+    var s = qs();
+    var parts = [];
+    var scale = s.get("scale");
+    var v = s.get("v");
+    if (opts.embed) parts.push("embed=1");
+    if (scale) parts.push("scale=" + encodeURIComponent(scale));
+    if (v) parts.push("v=" + encodeURIComponent(v));
+    return parts.join("&");
+  }
 
-  function buildHref(page){ return page + ".html"; }
+  function buildHref(page){ return page + ".html"; });
+      var parts = ["p=" + encodeURIComponent(page)];
+      if (q) parts.push(q);
+      return "?" + parts.join("&");
+    } else {
+      var base = "/" + encodeURIComponent(page);
+      var q2 = extraQS({ embed:false });
+      return q2 ? (base + "?" + q2) : base;
+    }
+  }
+
+  function maybeRedirectLegacyParams(){
+    if (isEmbedded()) return;
+    var s = qs();
+    var p = (s.get("p") || s.get("page") || "").toLowerCase();
+    if (!p) return;
+
+    // If someone lands on /something?p=rosters, send them to /rosters
+    var target = "/" + encodeURIComponent(p);
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+    if (!cur) cur = "/";
+    if (cur === target) return;
+
+    var q2 = extraQS({ embed:false });
+    try{
+      window.location.replace(q2 ? (target + "?" + q2) : target);
+    }catch(e){
+      window.location.href = q2 ? (target + "?" + q2) : target;
+    }
+  }
+
+  
 
   function sendToWrapper(page){
     var msg = { type: "FA_NAV", page: page };
@@ -590,6 +721,7 @@ html, body { touch-action: pan-x pan-y; }
     });
   }catch(_){ }
 
+  maybeRedirectLegacyParams();
   detectActive();
   setMenuAria(false);
 
@@ -792,5 +924,42 @@ html, body { touch-action: pan-x pan-y; }
   }, { passive:true });
 })();
 </script>
+
+
+<script>
+/* =========================
+   google.script.run → fetch() bridge (Native Fetch Polyfill)
+   - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
+   ========================= */
+(function(){
+  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
+  window.GAS_API_URL = GAS_API_URL;
+
+  function createProxy(s, f){
+    return new Proxy({}, {
+      get: (t, prop) => {
+        if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+        if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+        return (...args) => fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: prop, args: args })
+        })
+        .then(r => r.json())
+        .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
+        .catch(e => { if (f) f(e); });
+      }
+    });
+  }
+
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  if (!window.google.script.run){
+    window.google.script.run = new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] });
+  }
+})();
+</script>
+
+  
 </body>
 </html>

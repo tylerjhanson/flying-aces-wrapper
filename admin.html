@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Admin</title>
+
+  <style>
+    :root{
+      font-size:12.5px;
+      --btn-angle:135deg;
+
+      /* match your active-page reds (Rankings/Matchups) */
+      --red1:#ff3b3b;
+      --red2:#e40000;
+    }
+
+    html, body{
+      margin:0; padding:0;
+      background:#f7f8fa; color:#222;
+      font-family:"Segoe UI", Roboto, Arial, sans-serif;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+    }
+    body { padding: 10px;
+      padding-bottom: calc(190px + env(safe-area-inset-bottom));
+      overflow-x:hidden;
+    }
+
+    /* panels */
+    .panel{
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08);
+      padding:14px;
+      margin:12px 0;
+    }
+
+    /* red header like active pages */
+    .panel-titlebar{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      /* span edge-to-edge inside .panel (which has padding:14px) */
+      margin:-14px -14px 10px;
+      padding:14px;
+
+      text-transform:uppercase;
+      font-weight:950;
+      font-size:14px;
+      letter-spacing:.02em;
+      user-select:none;
+
+      color:#fff;
+      background: linear-gradient(var(--btn-angle), var(--red1, #e11d48) 0%, var(--red2, #b91c1c) 100%);
+      border-radius:18px 18px 0 0;
+    }
+
+    .h2{ font-size:14px; font-weight:900; margin:0 0 10px; text-transform:uppercase; text-align:center; }
+    .muted{ color:#667085; font-size:12px; }
+    
+    .toggleRow{ display:flex; align-items:center; gap:10px; font-weight:900; }
+    .toggleRow input{ width:18px; height:18px; }
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .field{ flex:1 1 160px; min-width:160px; }
+    label{ display:block; font-weight:800; font-size:11px; text-transform:uppercase; color:#667085; margin:0 0 6px; }
+    input, select{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      outline:none;
+      background:#fff;
+      font-size:13px;
+      box-sizing:border-box;
+    }
+    input:focus, select:focus{ border-color:#f43f5e; box-shadow:0 0 0 3px rgba(244,63,94,.15); }
+
+    .btn{
+      border:0;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:950;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+      cursor:pointer;
+      background: linear-gradient(var(--btn-angle), var(--red1, #e11d48) 0%, var(--red2, #b91c1c) 100%);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(0,0,0,.12);
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+    .btn.secondary{
+      background:#111827;
+    }
+    .btn.ghost{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      color:#111827;
+      box-shadow:none;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:8px;
+    }
+    .toolbar-left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .toggle{
+      display:flex; align-items:center; gap:8px;
+      user-select:none;
+      font-weight:800;
+      color:#667085;
+      text-transform:uppercase;
+      font-size:11px;
+    }
+    .toggle input{ width:auto; }
+
+    /* table (match Stats) */
+    .table-wrap{ overflow-x:hidden; }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    thead th{
+      font-size:11px;
+      letter-spacing:.06em;
+      color:#4b5563;
+      padding:10px 10px;
+      border-bottom:1px solid #eef2f7;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-transform:uppercase;
+      text-align:center;
+    }
+    tbody td{
+      padding:10px 10px;
+      border-bottom:1px solid #f1f5f9;
+      font-size:13px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    tbody td:first-child{ text-align:left; }
+    thead th:nth-child(n+2),
+    tbody td:nth-child(n+2){ text-align:center; }
+
+.actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 8px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      color:#111827;
+    }
+    .pill.off{ background:#fff1f2; border-color:#fecdd3; color:#9f1239; }
+    .pill.on{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
+
+    .toast{
+      position:fixed;
+      left:12px; right:12px;
+      bottom:calc(12px + env(safe-area-inset-bottom));
+      background:#111827;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+      display:none;
+      z-index:9999;
+      font-weight:800;
+      font-size:12px;
+    }
+
+    @media (min-width: 840px){
+      body{ max-width:980px; margin:0 auto; }
+    }
+  
+/* bottom action bar */
+.bottom-bar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:10px 12px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(247,248,250,.92);
+  backdrop-filter: blur(10px);
+  border-top:1px solid #eef2f7;
+  z-index: 999;
+}
+.bottom-inner{
+  max-width:980px;
+  margin:0 auto;
+  display:flex;
+  gap:10px;
+}
+.btn-blue, .btn-gray{
+  flex:1;
+  border:0;
+  border-radius:16px;
+  padding:14px 12px;
+  font-weight:950;
+  font-size:14px;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+}
+.btn-blue{
+  color:#fff;
+  background: linear-gradient(var(--btn-angle), #2f6fff, #1557ff);
+}
+.btn-gray{
+  color:#fff;
+  background: linear-gradient(var(--btn-angle), #9aa4b2, #667085);
+}
+/* modal */
+.modal{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.4);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding: 18px 12px;
+  z-index: 2000;
+}
+.modal.show{ display:flex; }
+.modal-card{
+  width:100%;
+  max-width: 720px;
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  overflow:hidden;
+}
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 14px 12px;
+  border-bottom:1px solid #eef2f7;
+}
+.modal-head .title{
+  font-weight:950;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  font-size:14px;
+}
+.icon-btn{
+  border:0;
+  background:transparent;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  font-size:26px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+  padding:14px;
+}
+@media (max-width:520px){
+  .form-grid{ grid-template-columns: 1fr; }
+}
+.btn-row{
+  display:flex;
+  gap:10px;
+  padding:14px;
+  border-top:1px solid #eef2f7;
+}
+
+/* ==== Admin table mobile tighten ==== */
+#playersTable{ table-layout: fixed; }
+#playersTable th, #playersTable td{ padding: 8px 8px; }
+
+#playersTable th:nth-child(1), #playersTable td:nth-child(1){ width: 34%; text-align:left; }
+#playersTable th:nth-child(2), #playersTable td:nth-child(2){ width: 12%; }
+#playersTable th:nth-child(3), #playersTable td:nth-child(3){ width: 14%; } /* status */
+#playersTable th:nth-child(4), #playersTable td:nth-child(4){ width: 10%; }
+#playersTable th:nth-child(5), #playersTable td:nth-child(5){ width: 12%; }
+#playersTable th:nth-child(6), #playersTable td:nth-child(6){ width: 18%; }
+
+#playersTable .actions{ justify-content:flex-end; gap:6px; }
+#playersTable .actions .btn{
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+/* On phones: hide Status column, give Name more room */
+@media (max-width: 520px){
+  #playersTable th:nth-child(3),
+  #playersTable td:nth-child(3){ display:none; } /* hide status */
+
+  #playersTable th:nth-child(1), #playersTable td:nth-child(1){ width: 46%; }
+  #playersTable th:nth-child(2), #playersTable td:nth-child(2){ width: 14%; }
+  #playersTable th:nth-child(4), #playersTable td:nth-child(4){ width: 10%; }
+  #playersTable th:nth-child(5), #playersTable td:nth-child(5){ width: 12%; }
+  #playersTable th:nth-child(6), #playersTable td:nth-child(6){ width: 18%; }
+
+  /* Keep actions from wrapping too tall */
+  #playersTable td:nth-child(6) .actions{ flex-wrap: nowrap; }
+}
+/* name + pill layout */
+.nameCell{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.nameCell .nm{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* base widths for 4-column table */
+#playersTable th:nth-child(1), #playersTable td:nth-child(1){ width: 58%; }
+#playersTable th:nth-child(2), #playersTable td:nth-child(2){ width: 10%; text-align:center; }
+#playersTable th:nth-child(3), #playersTable td:nth-child(3){ width: 12%; text-align:center; }
+#playersTable th:nth-child(4), #playersTable td:nth-child(4){ width: 20%; }
+
+/* actions stay compact */
+#playersTable .actions{ justify-content:flex-end; gap:6px; }
+#playersTable .actions .btn{
+  padding: 7px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+/* phone tuning */
+@media (max-width: 520px){
+  th, td{ padding: 9px 8px; font-size: 12px; }
+  #playersTable .actions{ flex-wrap:nowrap; }
+  #playersTable .actions .btn{ padding: 7px 9px; font-size: 10.5px; }
+  .pill{ padding: 3px 7px; font-size: 9px; }
+}
+
+</style>
+</head>
+
+<body data-build="admin-v7">
+
+<?!= include('Header'); ?>
+
+  <div class="panel">
+    <div class="panel-titlebar">ADMIN</div>
+
+
+    <div class="panel" style="margin-top:14px;">
+      <div class="h2">Season</div>
+      <div class="row">
+        <div class="field">
+          <label for="seasonSelect">Active season</label>
+          <select id="seasonSelect"><option value="">Loading…</option></select>
+        </div>
+        <div class="field" style="flex:0 0 220px; min-width:220px;">
+          <button class="btn" id="saveSeasonBtn" type="button">Save season</button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="panel" style="margin-top:14px;">
+      <div class="h2">Matchups</div>
+      <div class="row">
+        <div class="field" style="flex:1 1 auto;">
+          <label class="toggleRow">
+            <input type="checkbox" id="matchupsSortElo">
+            <span>Sort all matchups by ELO</span>
+          </label>
+          <label class="toggleRow" style="margin-top:10px;">
+            <input type="checkbox" id="matchupsSortEloOpp">
+            <span>Sort opponent side only by ELO</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="teamSelect">Select Team</label>
+        <select id="teamSelect"></select>
+      </div>
+</div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="toggle">
+          <input type="checkbox" id="showInactive">
+          <label for="showInactive" style="margin:0; font-size:11px; font-weight:900;">Show inactive</label>
+        </div>
+        <button class="btn ghost" id="refreshBtn" type="button">Refresh</button>
+      </div>
+      <div class="muted" id="countLabel"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px;">
+      <div class="h2">Add or update player</div>
+
+      <div class="row">
+        <div class="field">
+          <label for="formTeam">Team</label>
+          <input id="formTeam" list="teamList">
+          <datalist id="teamList"></datalist>
+        </div>
+
+        <div class="field">
+          <label for="formName">Name (required)</label>
+          <input id="formName">
+        </div>
+
+        <div class="field">
+          <label for="formRank">Rank (optional)</label>
+          <input id="formRank">
+        </div>
+
+        <div class="field">
+          <label for="formRating">Rating (optional)</label>
+          <input id="formRating" type="number" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="row" id="acesExtras" style="display:none;">
+        <div class="field">
+          <label for="formCaptainRank">Captain Rank (Aces only)</label>
+          <input id="formCaptainRank" type="number" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="formLeagueAvg">League Avg (Aces only)</label>
+          <input id="formLeagueAvg" type="number" inputmode="numeric">
+        </div>
+        <div class="field" style="flex:0 0 220px; min-width:220px;">
+          <button class="btn" id="saveBtn" type="button">Save player</button>
+          <button class="btn secondary" id="clearBtn" type="button" style="margin-left:8px;">Clear</button>
+        </div>
+      </div>
+
+      <div class="row" id="nonAcesBtns">
+        <div class="field" style="flex:0 0 220px; min-width:220px;">
+          <button class="btn" id="saveBtn2" type="button">Save player</button>
+          <button class="btn secondary" id="clearBtn2" type="button" style="margin-left:8px;">Clear</button>
+        </div>
+      </div>
+
+      <div class="muted" id="editHint" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="table-wrap"><table id="playersTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Rank</th>
+      <th>Rating</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  
+
+<!-- Bottom action -->
+<div class="bottom-bar">
+  <div class="bottom-inner">
+    <button class="btn-blue" id="openLeagueLogBtn" type="button">ENTER LEAGUE MATCH</button>
+  </div>
+</div>
+
+<!-- League Match Modal -->
+<div class="modal" id="leagueMatchModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="leagueMatchModalTitle">
+    <div class="modal-head">
+      <div class="title" id="leagueMatchModalTitle">ENTER LEAGUE MATCH</div>
+      <button class="icon-btn" id="closeLeagueModalBtn" type="button" aria-label="Close"><span>×</span></button>
+    </div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label for="lmDate">Date</label>
+        <input id="lmDate" type="date">
+      </div>
+
+      <div class="field">
+        <label for="lmMode">Mode</label>
+        <select id="lmMode">
+          <option value="singles">Singles</option>
+          <option value="doubles">Doubles</option>
+          <option value="triples">Triples</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="lmTeamA">Team A</label>
+        <select id="lmTeamA"><option value="">Loading…</option></select>
+      </div>
+      <div class="field">
+        <label for="lmTeamB">Team B</label>
+        <select id="lmTeamB"><option value="">Loading…</option></select>
+      </div>
+
+      <div class="field">
+        <label for="lmResult">Result (Team A)</label>
+        <select id="lmResult">
+          <option value="W">Win</option>
+          <option value="L">Loss</option>
+          <option value="T">Tie</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="lmScoreMode">Score Mode</label>
+        <select id="lmScoreMode">
+          <option value="match">Match Play</option>
+          <option value="stroke">Stroke</option>
+        </select>
+      </div>
+
+      <!-- ✅ Updated doubles input order: A1, A2, B1, B2 (a-a-b-b) -->
+      <div class="field">
+        <label for="lmA1">Team A Player 1</label>
+        <select id="lmA1"><option value="">Select…</option></select>
+      </div>
+
+      <div class="field" id="lmA2Field">
+        <label for="lmA2">Team A Player 2</label>
+        <select id="lmA2"><option value="">Select…</option></select>
+      </div>
+
+      <div class="field" id="lmA3Field" style="display:none">
+        <label for="lmA3">Team A Player 3</label>
+        <select id="lmA3"><option value="">Select…</option></select>
+      </div>
+      <div class="field">
+        <label for="lmB1">Team B Player 1</label>
+        <select id="lmB1"><option value="">Select…</option></select>
+      </div>
+
+      <div class="field" id="lmB2Field">
+        <label for="lmB2">Team B Player 2</label>
+        <select id="lmB2"><option value="">Select…</option></select>
+      </div>
+
+      <div class="field" id="lmB3Field" style="display:none">
+        <label for="lmB3">Team B Player 3</label>
+        <select id="lmB3"><option value="">Select…</option></select>
+      </div>
+      <div class="field" id="lmMpField" style="grid-column: 1 / -1;">
+        <label for="lmMpScore">Match Play Score (Team A)</label>
+        <select id="lmMpScore"><option value="">Select…</option></select>
+      </div>
+
+      <div class="field" id="lmStrokeFieldA">
+        <label for="lmAScore">Team A Score</label>
+        <input id="lmAScore" inputmode="numeric" type="number" placeholder="">
+      </div>
+      <div class="field" id="lmStrokeFieldB">
+        <label for="lmBScore">Team B Score</label>
+        <input id="lmBScore" inputmode="numeric" type="number" placeholder="">
+      </div>
+</div>
+
+    <div class="btn-row">
+      <button class="btn-gray" id="cancelLeagueBtn" type="button">CANCEL</button>
+      <button class="btn-blue" id="submitLeagueBtn" type="button">SAVE LEAGUE MATCH</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    var ALL = [];
+    var ACTIVE_TEAM = '';
+    var EDITING_ID = null;
+
+    function $(id){ return document.getElementById(id); }
+    function norm(s){ return String(s||'').trim(); }
+    function isAces(team){ return norm(team).toLowerCase() === 'flying aces'; }
+
+    function toast(msg){
+      var t = $('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(t._tmr);
+      t._tmr = setTimeout(function(){ t.style.display='none'; }, 2400);
+    }
+
+
+    function setSeasonOptions(cfg){
+      var sel = $('seasonSelect');
+      if (!sel) return;
+
+      var seasons = (cfg && cfg.seasons) ? cfg.seasons.slice() : [];
+      seasons = seasons.filter(function(x){ return !!String(x||'').trim(); });
+
+      // Show most recent first
+      seasons.sort();
+      seasons.reverse();
+
+      sel.innerHTML = '';
+
+      // Always include "All seasons"
+      var oAll = document.createElement('option');
+      oAll.value = 'all';
+      oAll.textContent = 'All seasons';
+      sel.appendChild(oAll);
+
+      seasons.forEach(function(k){
+        var o = document.createElement('option');
+        o.value = k;
+        o.textContent = k;
+        sel.appendChild(o);
+      });
+
+      var active = (cfg && cfg.activeSeason) ? String(cfg.activeSeason) : '';
+      if (!active) active = 'all';
+      sel.value = active;
+    }
+
+    function loadSeasonConfig(){
+      var sel = $('seasonSelect');
+      var btn = $('saveSeasonBtn');
+      if (btn) btn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(cfg){
+          setSeasonOptions(cfg);
+          if (btn) btn.disabled = false;
+        })
+        .withFailureHandler(function(err){
+          if (btn) btn.disabled = false;
+          toast('Season load error: ' + (err && err.message ? err.message : err));
+          if (sel) sel.innerHTML = '<option value="all">All seasons</option>';
+        })
+        .faGetSeasonConfig();
+    }
+
+    function bindSeasonControls(){
+      var btn = $('saveSeasonBtn');
+      if (!btn) return;
+
+      btn.addEventListener('click', function(){
+        var sel = $('seasonSelect');
+        var v = sel ? String(sel.value||'') : '';
+        if (!v) v = 'all';
+
+        btn.disabled = true;
+        google.script.run
+          .withSuccessHandler(function(){
+            toast('Saved');
+            btn.disabled = false;
+            // Re-load so the dropdown reflects any normalization
+            loadSeasonConfig();
+          })
+          .withFailureHandler(function(err){
+            btn.disabled = false;
+            toast('Error: ' + (err && err.message ? err.message : err));
+          })
+          .faSetActiveSeason(v);
+      });
+    }
+
+    function setTeamOptions(teams){
+      var sel = $('teamSelect');
+      sel.innerHTML = '';
+
+      // ✅ Default option: show all players
+      var optAll = document.createElement('option');
+      optAll.value = '';
+      optAll.textContent = 'All Players';
+      sel.appendChild(optAll);
+
+      (teams||[]).forEach(function(t){
+        var opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        sel.appendChild(opt);
+      });
+
+      // ✅ Default on page visit: All Players
+      sel.value = '';
+
+      // Always allow selection (All Players is always valid)
+      sel.disabled = false;
+
+
+      // datalist for free-typed team
+      var dl = $('teamList');
+      dl.innerHTML = '';
+      (teams||[]).forEach(function(t){
+        var o = document.createElement('option');
+        o.value = t;
+        dl.appendChild(o);
+      });
+    }
+
+    function updateAcesExtrasVisibility(){
+      var team = norm($('formTeam').value || $('teamSelect').value);
+      $('acesExtras').style.display = isAces(team) ? 'flex' : 'none';
+      $('nonAcesBtns').style.display = isAces(team) ? 'none' : 'flex';
+    }
+
+    function refresh(){
+      toast('Loading…');
+      var showInactive = $('showInactive').checked;
+      google.script.run
+        .withSuccessHandler(function(res){
+          ALL = (res && (res.players || res.rows || res.data)) ? (res.players || res.rows || res.data) : [];
+          
+          if (res && res.meta && res.meta.error){
+            toast(res.meta.error);
+            ALL = [];
+            setTeamOptions(['Flying Aces']);
+            renderTable();
+            return;
+          }
+var teams = (res && (res.teams || res.teamList) && (res.teams||res.teamList).length) ? (res.teams||res.teamList) : ['Flying Aces'];
+          // Ensure Flying Aces always present
+          if (teams.map(function(x){return norm(x).toLowerCase();}).indexOf('flying aces')<0) teams.unshift('Flying Aces');
+
+          setTeamOptions(teams);
+
+          // Keep selected team stable if possible
+          if (ACTIVE_TEAM){
+            var sel = $('teamSelect');
+            var has = teams.map(function(x){return norm(x).toLowerCase();}).indexOf(norm(ACTIVE_TEAM).toLowerCase())>=0;
+            if (has) sel.value = ACTIVE_TEAM;
+          }
+          ACTIVE_TEAM = $('teamSelect').value;
+
+          renderTable();
+          if (ALL.length){
+          toast(
+  'Loaded ' + ALL.length + ' players ' +
+  '(ss "' + (res.meta && res.meta.spreadsheetName || '?') + '", ' +
+  'id ' + (res.meta && res.meta.spreadsheetId || '?') + ', ' +
+  'usedId ' + (res.meta && res.meta.usedId || '?') + ', ' +
+  'sheet "' + (res.meta && res.meta.sheetName || '?') + '", ' +
+  'headerRow ' + (res.meta && res.meta.headerRow || '?') + ', ' +
+  'lastRow ' + (res.meta && res.meta.lastRow || '?') + ', ' +
+  'by ' + (res.meta && res.meta.foundBy || '?') + ')'
+);
+        } else {
+          res = res || {}; res.meta = res.meta || {};
+          var lr = (res && res.meta && (res.meta.lastRow!=null)) ? res.meta.lastRow : '?';
+          var sn = (res && res.meta && res.meta.sheetName) ? res.meta.sheetName : 'PlayersDB';
+          var err = (res && res.meta && res.meta.error) ? (' — ' + res.meta.error) : '';
+          toast('Loaded 0 players (ss "' + (res.meta.spreadsheetName||'?') + '", id ' + (res.meta.spreadsheetId||'?') + ', usedId ' + (res.meta.usedId||'?') + ', sheet "' + sn + '", lastRow ' + lr + ', by ' + (res.meta.foundBy||'?') + ')' + (res.meta.ssError ? (' — ssError: ' + res.meta.ssError) : '') + err);
+        }
+        })
+        .withFailureHandler(function(err){
+          toast('Error: ' + (err && err.message ? err.message : err));
+        })
+        .faAdminPlayersDbList_v20260206({ includeInactive: !!showInactive, spreadsheetId: '1GXmT-6SOx0VoKxEPmQAaYKH_WCPcuU2zzs0P6RfSfXE' });
+    }
+
+    function renderTable(){
+      var team = norm($('teamSelect').value);
+      ACTIVE_TEAM = team;
+      var showInactive = $('showInactive').checked;
+
+      var rows = ALL.filter(function(p){
+        if (!p) return false;
+        if (team && norm(p.team).toLowerCase() !== team.toLowerCase()) return false;
+        if (!showInactive && !p.active) return false;
+        return true;
+      });
+
+            // ✅ Always sort alphabetically by player name (All Players or Team filter)
+      rows.sort(function(a,b){
+        var an = norm(a && a.name ? a.name : '').toLowerCase();
+        var bn = norm(b && b.name ? b.name : '').toLowerCase();
+        if (an < bn) return -1;
+        if (an > bn) return 1;
+        // stable fallback (id if present)
+        var ai = String(a && (a.id||a.pid||a.playerId||''));
+        var bi = String(b && (b.id||b.pid||b.playerId||''));
+        return ai.localeCompare(bi);
+      });
+
+$('countLabel').textContent = rows.length + ' shown';
+
+      var tb = $('playersTable').querySelector('tbody');
+      tb.innerHTML = '';
+      rows.forEach(function(p){
+  var tr = document.createElement('tr');
+
+  // --- Name cell (Name + Active pill) ---
+  var td1 = document.createElement('td');
+
+  var nameWrap = document.createElement('div');
+  nameWrap.className = 'nameCell';
+
+  var nm = document.createElement('div');
+  nm.className = 'nm';
+  nm.textContent = p.name || '';
+
+  var pill = document.createElement('span');
+  pill.className = 'pill ' + (p.active ? 'on':'off');
+  pill.textContent = p.active ? 'Active' : 'Inactive';
+
+  nameWrap.appendChild(nm);
+  nameWrap.appendChild(pill);
+  td1.appendChild(nameWrap);
+
+  // --- Rank / Rating ---
+  var td2 = document.createElement('td'); td2.textContent = (p.rank || '');
+  var td3 = document.createElement('td'); td3.textContent = (p.rating ? p.rating : '');
+
+  // --- Actions ---
+  var td4 = document.createElement('td');
+  var act = document.createElement('div'); act.className = 'actions';
+
+  var editBtn = document.createElement('button');
+  editBtn.className = 'btn ghost';
+  editBtn.textContent = 'Edit';
+  editBtn.onclick = function(){ loadIntoForm(p); };
+
+  var toggleBtn = document.createElement('button');
+  toggleBtn.className = 'btn ' + (p.active ? 'secondary' : '');
+  // shorter labels so mobile never clips
+  toggleBtn.textContent = p.active ? 'Off' : 'On';
+  toggleBtn.onclick = function(){ setActive(p.id, !p.active); };
+
+  act.appendChild(editBtn);
+  act.appendChild(toggleBtn);
+  td4.appendChild(act);
+
+  tr.appendChild(td1);
+  tr.appendChild(td2);
+  tr.appendChild(td3);
+  tr.appendChild(td4);
+  tb.appendChild(tr);
+});
+
+
+      updateAcesExtrasVisibility();
+    }
+
+    function loadIntoForm(p){
+      EDITING_ID = p.id || null;
+      $('formTeam').value = p.team || $('teamSelect').value || 'Flying Aces';
+      $('formName').value = p.name || '';
+      $('formRank').value = p.rank || '';
+      $('formRating').value = (p.rating ? p.rating : '');
+      $('formCaptainRank').value = (p.captainRank ? p.captainRank : '');
+      $('formLeagueAvg').value = (p.leagueAvg ? p.leagueAvg : '');
+      $('editHint').textContent = 'Editing: ' + (p.name||'') + ' (' + (p.team||'') + ')';
+      updateAcesExtrasVisibility();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearForm(){
+      EDITING_ID = null;
+      $('formTeam').value = $('teamSelect').value || 'Flying Aces';
+      $('formName').value = '';
+      $('formRank').value = '';
+      $('formRating').value = '';
+      $('formCaptainRank').value = '';
+      $('formLeagueAvg').value = '';
+      $('editHint').textContent = '';
+      updateAcesExtrasVisibility();
+    }
+
+    function save(){
+      var team = norm($('formTeam').value) || 'Flying Aces';
+      var name = norm($('formName').value);
+      if (!name){ toast('Name is required'); return; }
+
+      var payload = {
+        id: EDITING_ID,
+        team: team,
+        name: name,
+        rank: norm($('formRank').value),
+        rating: norm($('formRating').value),
+        captainRank: norm($('formCaptainRank').value),
+        leagueAvg: norm($('formLeagueAvg').value)
+      };
+
+      $('saveBtn').disabled = true;
+      $('saveBtn2').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(res){
+          toast('Saved');
+          clearForm();
+          refresh();
+        })
+        .withFailureHandler(function(err){
+          toast('Error: ' + (err && err.message ? err.message : err));
+          $('saveBtn').disabled = false;
+          $('saveBtn2').disabled = false;
+        })
+        .faPlayersDbUpsert(payload);
+    }
+
+    function setActive(id, active){
+      if (!id) return;
+      google.script.run
+        .withSuccessHandler(function(){
+          toast(active ? 'Restored' : 'Deactivated');
+          refresh();
+        })
+        .withFailureHandler(function(err){
+          toast('Error: ' + (err && err.message ? err.message : err));
+        })
+        .faPlayersDbSetActive(id, active);
+    }
+
+    
+    $('refreshBtn').onclick = refresh;
+    $('teamSelect').onchange = renderTable;
+    $('showInactive').onchange = renderTable;    $('saveBtn').onclick = save;
+    $('saveBtn2').onclick = save;
+
+    $('clearBtn').onclick = clearForm;
+    $('clearBtn2').onclick = clearForm;
+
+    $('formTeam').oninput = updateAcesExtrasVisibility;
+    $('teamSelect').addEventListener('change', function(){
+      $('formTeam').value = $('teamSelect').value || 'Flying Aces';
+      updateAcesExtrasVisibility();
+    });
+
+    
+    /* ===========================
+       LEAGUE MATCH ENTRY (moved from Stats)
+       =========================== */
+
+    const FA_LEAGUELOG_CTX_KEY = "FA_ADMIN_LEAGUELOG_CTX_V1";
+    const MATCHPLAY_SCORES = [
+      "PUSH",
+      "1 UP","2 UP",
+      "2 & 1","3 & 1","3 & 2","4 & 2","4 & 3","5 & 3","5 & 4","6 & 4","6 & 5","7 & 5","7 & 6","8 & 6","8 & 7","9 & 7","9 & 8","10 & 8"
+    ];
+
+    function _key(s){ return String(s||"").trim().toLowerCase(); }
+    function esc(s){
+      return String(s==null?"":s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+    }
+    function fillSelectSimple(id, items, placeholder, selectedVal, labelFn){
+      const el = $(id);
+      if (!el) return;
+      el.innerHTML = "";
+      if (placeholder != null){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        el.appendChild(opt);
+      }
+      (items || []).forEach(v => {
+        const val = String(v ?? "").trim();
+        if (!val) return;
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = labelFn ? labelFn(val) : val;
+        el.appendChild(opt);
+      });
+      if (selectedVal != null) el.value = selectedVal;
+    }
+    function dispTeamName(s){ return (s||"").toString().replace(/^OPP\s*-\s*/i,"").trim(); }
+    function fillSelectExact(elId, items, selected){
+      const el = (typeof elId === "string") ? $(elId) : elId;
+      if (!el) return;
+      const aces = "Flying Aces";
+      items = (items || []).map(s => String(s||"").trim()).filter(Boolean);
+      items = items.slice().sort((a,b)=>a.localeCompare(b));
+      const idx = items.findIndex(x => _key(x) === _key(aces));
+      if (idx >= 0){ items.splice(idx,1); items.unshift(aces); }
+      el.innerHTML = items.map(s => `<option value="${esc(s)}">${esc(dispTeamName(s))}</option>`).join("");
+      if (selected && items.some(x => _key(x) === _key(selected))) el.value = selected;
+    }
+
+    function _getLeagueLogCtx(){
+      return {
+        matchDate: $("lmDate") ? ($("lmDate").value || "") : "",
+        mode: $("lmMode") ? ($("lmMode").value || "") : "",
+        teamA: $("lmTeamA") ? ($("lmTeamA").value || "") : "",
+        teamB: $("lmTeamB") ? ($("lmTeamB").value || "") : "",
+        scoreMode: $("lmScoreMode") ? ($("lmScoreMode").value || "") : "",
+        result: $("lmResult") ? ($("lmResult").value || "") : ""
+      };
+    }
+    function persistLeagueLogCtx(){
+      try{ localStorage.setItem(FA_LEAGUELOG_CTX_KEY, JSON.stringify(_getLeagueLogCtx())); }catch(_){}
+    }
+    function restoreLeagueLogCtx(){
+      if (!$("lmDate") || !$("lmMode") || !$("lmTeamA") || !$("lmTeamB")) return;
+      let ctx = null;
+      try{ ctx = JSON.parse(localStorage.getItem(FA_LEAGUELOG_CTX_KEY) || "null"); }catch(_){}
+      if (!ctx || typeof ctx !== "object") return;
+      if (ctx.matchDate) $("lmDate").value = ctx.matchDate;
+      if (ctx.mode === "singles" || ctx.mode === "doubles" || ctx.mode === "triples") $("lmMode").value = ctx.mode;
+      if ($("lmScoreMode") && ctx.scoreMode){
+        const hasSM = Array.from($("lmScoreMode").options).some(o => o.value === ctx.scoreMode);
+        if (hasSM) $("lmScoreMode").value = ctx.scoreMode;
+      }
+      if ($("lmResult") && ctx.result){
+        const hasR = Array.from($("lmResult").options).some(o => o.value === ctx.result);
+        if (hasR) $("lmResult").value = ctx.result;
+      }
+      if (ctx.teamA) $("lmTeamA").value = ctx.teamA;
+      if (ctx.teamB) $("lmTeamB").value = ctx.teamB;
+    }
+
+    function openLeagueModal(){
+      if (!$("leagueMatchModal")) return;
+      $("leagueMatchModal").classList.add("show");
+      $("leagueMatchModal").setAttribute("aria-hidden","false");
+
+      // Ensure team lists are loaded once
+      loadLeagueTeams(() => {
+        try{ restoreLeagueLogCtx(); }catch(_){}
+        try{
+          if ($("lmDate") && !$("lmDate").value) $("lmDate").valueAsDate = new Date();
+        }catch(_){}
+
+        try{
+          loadLeagueTeamRoster($("lmTeamA").value, "A");
+          loadLeagueTeamRoster($("lmTeamB").value, "B");
+        }catch(_){}
+
+        showLeagueMode();
+        showLeagueScoreMode();
+        maybeAutoLeagueResultFromScores();
+        try{ $("lmA1") && $("lmA1").focus(); }catch(_){}
+      });
+    }
+    function closeLeagueModal(){
+      if (!$("leagueMatchModal")) return;
+      $("leagueMatchModal").classList.remove("show");
+      $("leagueMatchModal").setAttribute("aria-hidden","true");
+    }
+
+    let _leagueTeamsLoaded = false;
+    function loadLeagueTeams(cb){
+      cb = (typeof cb === "function") ? cb : function(){};
+      if (_leagueTeamsLoaded && $("lmTeamA") && $("lmTeamA").options.length > 0){ cb(); return; }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (typeof res === "string"){ try{ res = JSON.parse(res); }catch(_){ } }
+          const teams = (res && Array.isArray(res.teams)) ? res.teams : (Array.isArray(res) ? res : []);
+          fillSelectExact("lmTeamA", teams || [], $("lmTeamA") ? $("lmTeamA").value : "");
+          fillSelectExact("lmTeamB", teams || [], $("lmTeamB") ? $("lmTeamB").value : "");
+          _leagueTeamsLoaded = true;
+          cb();
+        })
+        .withFailureHandler(err => {
+          toast("Team load failed", 2200);
+          cb();
+        })
+        .faGetLeagueTeams_v2();
+    }
+
+    function showLeagueMode(){
+      const mode = ($("lmMode") && $("lmMode").value) ? $("lmMode").value : "singles";
+      const isS = (mode === "singles");
+      const isT = (mode === "triples");
+
+      if ($("lmA2Field")) $("lmA2Field").style.display = isS ? "none" : "";
+      if ($("lmB2Field")) $("lmB2Field").style.display = isS ? "none" : "";
+
+      if ($("lmA3Field")) $("lmA3Field").style.display = isT ? "" : "none";
+      if ($("lmB3Field")) $("lmB3Field").style.display = isT ? "" : "none";
+
+      // Force stroke play for doubles/triples
+      const scoreMode = $("lmScoreMode");
+      if (scoreMode){
+        if (isS){
+          scoreMode.disabled = false;
+        } else {
+          scoreMode.value = "stroke";
+          scoreMode.disabled = true;
+        }
+      }
+      showLeagueScoreMode();
+      maybeAutoLeagueResultFromScores();
+    }
+
+    function showLeagueScoreMode(){
+      const mode = ($("lmMode") && $("lmMode").value) ? $("lmMode").value.toLowerCase() : "singles";
+      const sm = ($("lmScoreMode") && $("lmScoreMode").value) ? $("lmScoreMode").value.toLowerCase() : "match";
+      const isStroke = (mode === "doubles" || mode === "triples") || (sm === "stroke");
+
+      if ($("lmMpField")) $("lmMpField").style.display = isStroke ? "none" : "";
+      if ($("lmStrokeFieldA")) $("lmStrokeFieldA").style.display = isStroke ? "" : "none";
+      if ($("lmStrokeFieldB")) $("lmStrokeFieldB").style.display = isStroke ? "" : "none";
+
+      // init match play scores (singles only)
+      if (!isStroke && $("lmMpScore") && $("lmMpScore").options.length <= 1){
+        fillSelectSimple("lmMpScore", MATCHPLAY_SCORES, "Select…");
+        $("lmMpScore").value = "PUSH";
+      }
+
+      maybeAutoLeagueResultFromScores();
+      persistLeagueLogCtx();
+    }
+
+    function maybeAutoLeagueResultFromScores(){
+      const mode = ($("lmMode") && $("lmMode").value) ? $("lmMode").value.toLowerCase() : "singles";
+      const sm = ($("lmScoreMode") && $("lmScoreMode").value) ? $("lmScoreMode").value.toLowerCase() : "match";
+      const isStroke = (mode === "doubles" || mode === "triples") || (sm === "stroke");
+      if (!isStroke) return;
+
+      const a = Number($("lmAScore") ? $("lmAScore").value : NaN);
+      const b = Number($("lmBScore") ? $("lmBScore").value : NaN);
+      if (!isFinite(a) || !isFinite(b)) return;
+
+      if ($("lmResult")){
+        if (a === b) $("lmResult").value = "T";
+        else if (a < b) $("lmResult").value = "W"; // lower score wins
+        else $("lmResult").value = "L";
+      }
+    }
+
+    function loadLeagueTeamRoster(teamId, which){
+      if ((teamId === "A" || teamId === "B") && !which){
+        which = teamId;
+        teamId = (which === "A") ? ($("lmTeamA") ? $("lmTeamA").value : "") : ($("lmTeamB") ? $("lmTeamB").value : "");
+      }
+      which = (which === "A" || which === "B") ? which : "B";
+
+      const sel1 = (which === "A") ? "lmA1" : "lmB1";
+      const sel2 = (which === "A") ? "lmA2" : "lmB2";
+      const sel3 = (which === "A") ? "lmA3" : "lmB3";
+
+      fillSelectSimple(sel1, [], "Select…");
+      fillSelectSimple(sel2, [], "Select…");
+      if ($(sel3)) fillSelectSimple(sel3, [], "Select…");
+
+      if (!teamId) return;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (typeof res === "string"){ try{ res = JSON.parse(res); }catch(_){ } }
+          let players = [];
+          if (Array.isArray(res)) players = res;
+          else if (res && Array.isArray(res.players)) players = res.players;
+          else if (res && res.ok && Array.isArray(res.players)) players = res.players;
+
+          players = (players||[]).map(x => (x==null ? "" : String(x))).filter(Boolean);
+
+          fillSelectSimple(sel1, players, "Select…");
+          fillSelectSimple(sel2, players, "Select…");
+          if ($(sel3)) fillSelectSimple(sel3, players, "Select…");
+        })
+        .withFailureHandler(err => toast("Roster load failed", 2200))
+        .faGetTeamPlayers_v2(teamId);
+    }
+
+    function clearLeagueEntryFields(){
+      // Keep: date/mode/teams/score mode/result
+      // Clear: players + scores
+      ["lmA1","lmA2","lmA3","lmB1","lmB2","lmB3"].forEach(id => { if ($(id)) $(id).value = ""; });
+      if ($("lmMpScore")) $("lmMpScore").value = "";
+      if ($("lmAScore")) $("lmAScore").value = "";
+      if ($("lmBScore")) $("lmBScore").value = "";
+    }
+
+    function submitLeagueMatch(){
+      const mode = ($("lmMode") && $("lmMode").value) ? $("lmMode").value.toLowerCase() : "singles";
+      const teamA = $("lmTeamA") ? ($("lmTeamA").value || "") : "";
+      const teamB = $("lmTeamB") ? ($("lmTeamB").value || "") : "";
+      const scoreMode = ($("lmScoreMode") && $("lmScoreMode").value) ? $("lmScoreMode").value.toLowerCase() : "match";
+      const result = $("lmResult") ? ($("lmResult").value || "W") : "W";
+
+      persistLeagueLogCtx();
+
+      const entry = {
+        matchDate: $("lmDate") ? ($("lmDate").value || "") : "",
+        mode: mode,
+        teamA: teamA,
+        teamB: teamB,
+        result: result,
+        scoreMode: scoreMode,
+        a1: $("lmA1") ? ($("lmA1").value || "") : "",
+        a2: $("lmA2") ? ($("lmA2").value || "") : "",
+        b1: $("lmB1") ? ($("lmB1").value || "") : "",
+        b2: $("lmB2") ? ($("lmB2").value || "") : "",
+        a3: (mode === "triples" && $("lmA3")) ? ($("lmA3").value || "") : "",
+        b3: (mode === "triples" && $("lmB3")) ? ($("lmB3").value || "") : ""
+      };
+
+      if (mode === "doubles" || scoreMode === "stroke"){
+        entry.aScore = $("lmAScore") ? ($("lmAScore").value || "") : "";
+        entry.bScore = $("lmBScore") ? ($("lmBScore").value || "") : "";
+      } else {
+        entry.mpScore = $("lmMpScore") ? ($("lmMpScore").value || "") : "";
+      }
+
+      if ($("submitLeagueBtn")) $("submitLeagueBtn").disabled = true;
+
+      google.script.run
+        .withSuccessHandler(data => {
+          if ($("submitLeagueBtn")) $("submitLeagueBtn").disabled = false;
+          if (typeof data === "string"){ try{ data = JSON.parse(data); }catch(_){ } }
+          if (!data){ toast("Save failed (no response)", 2200); return; }
+          if (data.ok === false){ toast(String(data.error || "Save failed"), 2600); return; }
+
+          toast("Saved — enter next match", 1400);
+          clearLeagueEntryFields();
+        })
+        .withFailureHandler(err => {
+          if ($("submitLeagueBtn")) $("submitLeagueBtn").disabled = false;
+          toast("Save failed", 2200);
+        })
+        .faAddLeagueMatchLogEntry_v2(entry);
+    }
+
+    // Wire Admin league modal
+    if ($("openLeagueLogBtn")) $("openLeagueLogBtn").addEventListener("click", openLeagueModal);
+    if ($("closeLeagueModalBtn")) $("closeLeagueModalBtn").addEventListener("click", closeLeagueModal);
+    if ($("cancelLeagueBtn")) $("cancelLeagueBtn").addEventListener("click", closeLeagueModal);
+    if ($("submitLeagueBtn")) $("submitLeagueBtn").addEventListener("click", submitLeagueMatch);
+
+    if ($("lmTeamA")) $("lmTeamA").addEventListener("change", () => { persistLeagueLogCtx(); loadLeagueTeamRoster($("lmTeamA").value, "A"); });
+    if ($("lmTeamB")) $("lmTeamB").addEventListener("change", () => { persistLeagueLogCtx(); loadLeagueTeamRoster($("lmTeamB").value, "B"); });
+    if ($("lmMode"))  $("lmMode").addEventListener("change", () => { persistLeagueLogCtx(); showLeagueMode(); });
+    if ($("lmScoreMode")) $("lmScoreMode").addEventListener("change", () => { persistLeagueLogCtx(); showLeagueScoreMode(); });
+    if ($("lmDate")) $("lmDate").addEventListener("change", persistLeagueLogCtx);
+    if ($("lmResult")) $("lmResult").addEventListener("change", persistLeagueLogCtx);
+    if ($("lmAScore")) $("lmAScore").addEventListener("input", () => { maybeAutoLeagueResultFromScores(); persistLeagueLogCtx(); });
+    if ($("lmBScore")) $("lmBScore").addEventListener("input", () => { maybeAutoLeagueResultFromScores(); persistLeagueLogCtx(); });
+
+    // Close by tapping outside card
+    if ($("leagueMatchModal")){
+      $("leagueMatchModal").addEventListener("click", (e) => { if (e.target === $("leagueMatchModal")) closeLeagueModal(); });
+    }
+
+
+    // Ensure header highlights correctly for the ADMIN route (supports both admin + legacy players)
+    (function(){
+      try{
+        if (typeof setActiveByPage === "function"){
+          var hasAdmin = document.querySelector('[data-page="admin"], a[href*="p=admin"], button[onclick*="admin"]');
+          setActiveByPage(hasAdmin ? "admin" : "players");
+        }
+      }catch(_){}
+    })();
+
+    /* ---------- Matchups sort (Elo) ---------- */
+    function loadMatchupsSortConfig(){
+      google.script.run
+        .withSuccessHandler(function(cfg){
+          try{
+            if (typeof cfg === 'string') cfg = JSON.parse(cfg);
+          }catch(_){}
+          var cbAll = $('matchupsSortElo');
+          var cbOpp = $('matchupsSortEloOpp');
+          if (cbAll) cbAll.checked = !!(cfg && cfg.useEloSort);
+          if (cbOpp) cbOpp.checked = !!(cfg && cfg.useOppEloSort);
+        })
+        .withFailureHandler(function(err){
+          toast('Matchups setting load error: ' + (err && err.message ? err.message : err));
+        })
+        .faGetMatchupsSortConfig();
+    }
+
+    function bindMatchupsSortControls(){
+      var cbAll = $('matchupsSortElo');
+      var cbOpp = $('matchupsSortEloOpp');
+
+      function saveNow(){
+        var payload = {
+          useEloSort: !!(cbAll && cbAll.checked),
+          useOppEloSort: !!(cbOpp && cbOpp.checked)
+        };
+
+        google.script.run
+          .withSuccessHandler(function(){
+            toast('Saved');
+          })
+          .withFailureHandler(function(err){
+            toast('Save error: ' + (err && err.message ? err.message : err));
+            // revert to server value
+            loadMatchupsSortConfig();
+          })
+          .faSetMatchupsSortConfig(payload);
+      }
+
+      if (cbAll) cbAll.addEventListener('change', saveNow);
+      if (cbOpp) cbOpp.addEventListener('change', saveNow);
+    }
+
+
+    // init
+    bindSeasonControls();
+    loadSeasonConfig();
+    bindMatchupsSortControls();
+    loadMatchupsSortConfig();
+    clearForm();
+    refresh();
+  </script>
+</body>
+</html>

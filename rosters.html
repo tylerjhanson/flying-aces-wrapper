@@ -1,0 +1,2714 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Rosters</title>
+
+<style>
+  :root { font-size: 12.5px; --fa-header-offset: 88px; }
+  @media (max-width: 420px){ :root { --fa-header-offset: 80px; font-size: 11.5px; } }
+
+
+  html, body {
+      -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+margin: 0; padding: 0;
+    background: #f7f8fa; color: #222;
+    font-family:"Segoe UI", Roboto, Arial, sans-serif;
+  }
+  body { padding: 10px; padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+
+  .set-switcher{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important;
+  /* Match Header.html tab row insets so widths line up perfectly */
+  padding: 8px 0 !important;
+  margin: 0 0 6px 0 !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 420px){
+  .set-switcher{ padding: 6px 0 !important; }
+}
+
+/* ===== Roster Set Buttons: match Header menu buttons ===== */
+.set-btn{
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  box-sizing: border-box !important;
+
+  font-family: "Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight: 900 !important;
+  font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: 0.2px !important;
+  line-height: 1 !important;
+
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 6px !important;
+
+  border-radius: 8px !important;
+  border: none !important;
+
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
+
+  color: #222 !important;
+  cursor: pointer;
+
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* IMPORTANT: don't force uppercase; Header buttons don't */
+  text-transform: none !important;
+  opacity: .95;
+}
+.set-btn:active{ transform: scale(0.99); }
+
+.set-btn:not(.active):hover{
+  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
+}
+
+/* Your roster code uses ".active" */
+.set-btn.active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+  opacity: 1;
+}
+
+@media (max-width: 420px){
+  .set-btn{
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 6px !important;
+  }
+}
+.panel{
+    display:block;
+    background:#fff;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,0.08);
+    padding:14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+  }
+
+  .row{ display:flex; margin:0 !important; }
+  .tile, .slot-empty{
+    display:flex; align-items:center; justify-content:center;
+    width:100%;
+    padding: 0.9px 3px !important;
+    min-height: 28px !important;
+    line-height: 1.0 !important;
+    border-width:1px !important;
+    border-radius:10px;
+    font-size: 1.20rem;
+    font-weight: 850;
+    text-align:center;
+    user-select:none;
+  }
+  .tile{
+    background:#fff;
+    border:1px solid #ccc;
+    box-shadow:0 1px 4px rgba(0,0,0,.12);
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+.tile:active{ cursor: grabbing; opacity:.85; }
+
+  .tile.unavailable{
+    background:#f2f2f2 !important;
+    border-color:#d0d0d0 !important;
+    color:#444 !important;
+    text-decoration: line-through;
+    opacity: .85;
+  }
+  .tile.matched:not(.unavailable){
+    background:#d9d9d9 !important;
+    border-color:#cfcfcf !important;
+    color:#000 !important;
+    text-decoration: line-through !important;
+    opacity: .95;
+  }
+
+  .slot-empty{
+    border:1px dashed #ccc;
+    color:#999;
+    background:#fff;
+  }
+
+  .drop-target-tile{ outline:2px dashed #0d6efd; outline-offset:2px; }
+  .drop-target{ outline:2px dashed #0d6efd; outline-offset:2px; }
+
+  /* Android touch drag: show selected tile + floating clone */
+  .drag-source{ outline:2px dashed #0d6efd !important; outline-offset:2px; }
+  .drag-clone{
+    position: fixed;
+    left: 0; top: 0;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(-50%, -50%);
+    outline:2px dashed #0d6efd;
+    outline-offset:2px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.18);
+    opacity: .98;
+  }
+.col{
+    background:#fafafa;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:12px;
+    min-height: 260px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  /* =========================
+     DOUBLES/MIXED PAIRING VISUAL
+     - One unified card with a center divider (no connectors / no striping)
+     - Pure CSS; no functionality changes
+     ========================= */
+
+  /* Make the doubles grid a single shared card */
+  .roster-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+
+    background:#fafafa;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:12px;
+    position:relative;
+  }
+
+  /* Remove the individual column cards *inside* doubles */
+  .roster-grid .col{
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  /* Center divider for left vs right teammates */
+  .roster-grid::after{
+    content:"";
+    position:absolute;
+    top:12px;
+    bottom:12px;
+    left:50%;
+    width:1px;
+    background: rgba(0,0,0,.10);
+    transform: translateX(-50%);
+    pointer-events:none;
+  }
+
+  .aux-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+    margin-top: 14px;
+  }
+  .aux-col{
+    background:#fafafa;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:10px 12px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-height: 120px;
+  }
+  .aux-label{
+    font-size: 0.95rem;
+    font-weight: 900;
+    color:#666;
+    letter-spacing:.2px;
+    text-transform: uppercase;
+  }
+  .aux-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    min-height: 60px;
+  }
+
+    .singles-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+    align-items:start;
+  }
+  .singles-right{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+    /* Keep Bench/Unavailable visible while scrolling the roster */
+    position: sticky;
+    top: var(--fa-header-offset);
+    align-self: start;
+  }
+
+  @media (max-width: 420px){
+    .singles-right{ top: calc(var(--fa-header-offset) + 6px); }
+  }
+
+  .status{
+    margin-top: 10px;
+    font-size: 1rem;
+    color:#666;
+  }
+  .status.ok { color:#2f7a2f; font-weight: 800; }
+  .status.err{ color:#b00020; font-weight: 800; }
+</style>
+</head>
+
+<body>
+<style>
+:root{ --fa-header-offset: 0px; }
+
+/* Header container */
+.fa-header{
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #f7f8fa;
+  border-bottom: none;
+  padding: 0 !important;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ✅ Help block pinch/zoom gestures inside iframe (browser-dependent) */
+html, body { touch-action: pan-x pan-y; }
+
+/* ============ TOP TABS (4) ============ */
+.fa-header .fa-tabs{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Shared button base for top tabs + submenu buttons */
+.fa-header .fa-tabs button,
+.fa-header .fa-submenu button{
+  -webkit-appearance:none !important;
+  appearance:none !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important;
+  font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important;
+  line-height: 1 !important;
+
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 6px !important;
+
+  border-radius: 8px !important;
+  border: 0 !important;
+  outline: none !important;
+
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
+
+  color: #222 !important;
+  cursor: pointer !important;
+
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+.fa-header .fa-tabs button:not(.active):hover,
+.fa-header .fa-submenu button:not(.sub-active):hover{
+  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
+}
+
+/* Active tab */
+.fa-header .fa-tabs button.active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+/* Tap flash */
+.fa-header .fa-tabs button.fa-press,
+.fa-header .fa-submenu button.fa-press{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+.fa-header .fa-tabs button:active,
+.fa-header .fa-submenu button:active{
+  transform: scale(0.99);
+}
+
+/* ======= Hamburger button + logo ======= */
+#nav-menu{
+  padding: 0 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+#nav-menu .menu-logo{
+  height: 18px;
+  width: auto;
+  display: block;
+}
+
+#nav-menu .hamburger-icon{
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+#nav-menu .hamburger-icon{
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+/* ============ DROPDOWN MENU (hamburger) ============ */
+.fa-submenu-wrap{ position: relative; }
+
+.fa-submenu{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 8px 0 0;
+  z-index: 1001;
+
+  opacity: 0;
+  transform: translateY(-6px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+.fa-submenu.show{
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 8px;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Slightly taller menu rows feels more “iOS” without changing your top tabs */
+.fa-header .fa-submenu button{
+  height: 42px !important;
+  min-height: 42px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
+.fa-header .fa-submenu button.sub-active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color:#fff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.04);
+}
+
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 6px !important;
+  }
+  .fa-header .fa-submenu button{
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 12.5px !important;
+  }
+  #nav-menu .hamburger-icon{
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (max-width: 420px){
+  #nav-menu .menu-logo{ height: 16px; }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+}
+/* =========================================================
+   Pull-to-refresh toast (spinner-only pill)
+   ========================================================= */
+#fa-ptr{
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 10px);
+  transform: translate(-50%, -14px);
+  opacity: 0;
+  z-index: 99999;
+  pointer-events: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+
+  transition: opacity 140ms ease, transform 140ms ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+#fa-ptr.show{ opacity: 1; transform: translate(-50%, 0); }
+#fa-ptr .spin{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,.18);
+  border-top-color: rgba(0,0,0,.55);
+  animation: faSpin 800ms linear infinite;
+}
+@keyframes faSpin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="fa-header fa-submenu-wrap">
+<nav class="fa-tabs">
+<button data-page="scoring" id="nav-scoring" type="button">SCORING</button>
+<button data-page="rosters" id="nav-rosters" type="button">ROSTERS</button>
+<button data-page="matchups" id="nav-matchups" type="button">MATCHUPS</button>
+<!-- Hamburger -->
+<button aria-expanded="false" aria-label="More" data-key="menu" id="nav-menu" type="button">
+<img alt="" aria-hidden="true" class="menu-logo" decoding="async" loading="eager" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&amp;h=32"/>
+<svg aria-hidden="true" class="hamburger-icon" viewbox="0 0 24 24">
+<path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"></path>
+</svg>
+</button>
+</nav>
+<!-- Dropdown (anchored under hamburger) -->
+<div aria-hidden="true" class="fa-submenu" id="faMoreMenu">
+<div class="inner">
+<button data-page="rankings">RANKINGS</button>
+<button data-page="stats">STATS</button>
+<button data-page="elo">ELO</button>
+<button data-page="standings">STANDINGS</button>
+<button data-page="admin">ADMIN</button>
+</div>
+</div>
+</div>
+<script>
+/* ===========================
+   0) Disable pinch/zoom inside iframe (iOS Safari fallback)
+   =========================== */
+(function(){
+  ['gesturestart','gesturechange','gestureend'].forEach(function(evt){
+    document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
+  });
+
+  var lastTouchEnd = 0;
+
+  function _faIsIOS_(){
+    try{
+      var ua = navigator.userAgent || "";
+      var plat = navigator.platform || "";
+      var isIPhoneIPadIPod = /iPad|iPhone|iPod/.test(ua);
+      var isIPadOS = (plat === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+      return isIPhoneIPadIPod || isIPadOS;
+    }catch(_){ return false; }
+  }
+  function _faIsInteractive_(t){
+    try{
+      return !!(t && t.closest && t.closest("button,a,input,select,textarea,label,[role='button'],[contenteditable='true']"));
+    }catch(_){ return false; }
+  }
+
+  document.addEventListener('touchend', function(e){
+    if (!_faIsIOS_()) return;
+    if (_faIsInteractive_(e.target)) return;
+
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+})();
+
+/* ===========================
+   1) Header nav + menu + active state
+   =========================== */
+(function(){
+  function qs() {
+    try { return new URLSearchParams(window.location.search || ""); }
+    catch (e) { return new URLSearchParams(""); }
+  }
+
+  function currentPage(){
+    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
+
+    // Support hash routing (GitHub wrapper uses #scoring, #matchups, etc.)
+    if (!p){
+      var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
+      h = h.replace(/^\/+/, "");
+      if (h.indexOf("?") !== -1) h = h.split("?")[0];
+      if (h.indexOf("&") !== -1) h = h.split("&")[0];
+      p = h;
+    }
+
+    // Support clean-path routing (/rosters, /matchups, etc.)
+    if (!p){
+      var path = (window.location.pathname || "").toLowerCase();
+      path = path.replace(/\/+$/, ""); // trim trailing slash
+      if (path && path !== "/"){
+        var seg = path.split("/").filter(Boolean).pop() || "";
+        seg = seg.replace(/\.html$/, "");
+        p = seg;
+      }
+    }
+
+    if (!p) return "matchups";
+    if (p === "doubles") p = "rosters";
+    return p;
+  }
+
+  function isEmbedded(){
+    try { if (window.top !== window) return true; } catch(e){ return true; }
+    var embed = (qs().get("embed") || "").toLowerCase();
+    return (embed === "1" || embed === "true" || embed === "yes");
+  }
+
+  // Pages that live under the hamburger menu
+  const menuPages = ['rankings','stats','standings','elo','admin','players'];
+
+  function setActiveByPage(page){
+    page = String(page||"").toLowerCase();
+
+    // top tabs
+    document.querySelectorAll(".fa-tabs button").forEach(function(b){
+      var key = b.dataset.key || b.dataset.page || "";
+      var active = false;
+      if (key === "menu") active = (menuPages.indexOf(page) !== -1);
+      else active = (b.dataset.page === page);
+      b.classList.toggle("active", !!active);
+    });
+
+    // dropdown buttons
+    var menu = document.getElementById("faMoreMenu");
+    if (menu){
+      menu.querySelectorAll("button[data-page]").forEach(function(btn){
+        btn.classList.toggle("sub-active", (btn.dataset.page === page));
+      });
+    }
+  }
+
+  function detectActive(){
+    try{
+      var p = currentPage();
+      if (menuPages.indexOf(p) !== -1 || ["scoring","rosters","matchups"].indexOf(p) !== -1){
+        setActiveByPage(p);
+        return;
+      }
+      
+      // STATS title marker (helps when Stats page also contains roster/link sections)
+      var titleBar = document.querySelector(".pageTitlePanel .panel-titlebar, .panel.pageTitlePanel .panel-titlebar, .panel-titlebar");
+      if (titleBar && /stats/i.test((titleBar.textContent || "").trim())){
+        setActiveByPage("stats");
+        return;
+      }
+
+// ELO markers
+      if (
+        document.getElementById("kBase") ||
+        document.getElementById("overallBody") ||
+        document.getElementById("pairsBody") ||
+        /(^|\s)elo(\s|$)/i.test(document.title || "")
+      ){
+        setActiveByPage("elo");
+        return;
+      }
+
+      // DOM heuristics
+      if (document.getElementById("singlesBody") || document.getElementById("recentCards")) { setActiveByPage("stats"); return; }
+      if (document.getElementById("table-body")) { setActiveByPage("rankings"); return; }
+      if (document.getElementById("b1") || document.getElementById("b2") || document.getElementById("b9")) { setActiveByPage("scoring"); return; }
+      if (document.getElementById("panel-CURRENT")) { setActiveByPage("rosters"); return; }
+      if (document.getElementById("playersTable") || document.getElementById("teamSelect")) { setActiveByPage("admin"); return; }
+      if (document.getElementById("team1Table") || document.getElementById("team2Table")) { setActiveByPage("matchups"); return; }
+      // Standings markers
+      if (document.getElementById("matchResults") || document.getElementById("adjWrap") || document.getElementById("simMatchup")) { setActiveByPage("standings"); return; }
+
+      // title fallback
+      var t = (document.title || "").toLowerCase();
+      if (t.indexOf("stat") !== -1) { setActiveByPage("stats"); return; }
+      if (t.indexOf("ranking") !== -1) { setActiveByPage("rankings"); return; }
+      if (t.indexOf("scor") !== -1) { setActiveByPage("scoring"); return; }
+      if (t.indexOf("roster") !== -1 || t.indexOf("double") !== -1) { setActiveByPage("rosters"); return; }
+
+      setActiveByPage("matchups");
+    }catch(e){
+      setActiveByPage("matchups");
+    }
+  }
+
+  function extraQS(opts){
+    opts = opts || {};
+    var s = qs();
+    var parts = [];
+    var scale = s.get("scale");
+    var v = s.get("v");
+    if (opts.embed) parts.push("embed=1");
+    if (scale) parts.push("scale=" + encodeURIComponent(scale));
+    if (v) parts.push("v=" + encodeURIComponent(v));
+    return parts.join("&");
+  }
+
+  function buildHref(page){ return page + ".html"; });
+      var parts = ["p=" + encodeURIComponent(page)];
+      if (q) parts.push(q);
+      return "?" + parts.join("&");
+    } else {
+      var base = "/" + encodeURIComponent(page);
+      var q2 = extraQS({ embed:false });
+      return q2 ? (base + "?" + q2) : base;
+    }
+  }
+
+  function maybeRedirectLegacyParams(){
+    if (isEmbedded()) return;
+    var s = qs();
+    var p = (s.get("p") || s.get("page") || "").toLowerCase();
+    if (!p) return;
+
+    // If someone lands on /something?p=rosters, send them to /rosters
+    var target = "/" + encodeURIComponent(p);
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+    if (!cur) cur = "/";
+    if (cur === target) return;
+
+    var q2 = extraQS({ embed:false });
+    try{
+      window.location.replace(q2 ? (target + "?" + q2) : target);
+    }catch(e){
+      window.location.href = q2 ? (target + "?" + q2) : target;
+    }
+  }
+
+  
+
+  function sendToWrapper(page){
+    var msg = { type: "FA_NAV", page: page };
+    var sent = false;
+    try { window.top.postMessage(msg, "*"); sent = true; } catch(e){}
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(msg, "*");
+        sent = true;
+      }
+    } catch(e){}
+    return sent;
+  }
+
+  // ---- menu open/close ----
+  var menuBtn  = document.getElementById("nav-menu");
+  var menuEl   = document.getElementById("faMoreMenu");
+
+  function setMenuAria(open){
+    if (!menuBtn) return;
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function positionMenu(){
+    if (!menuEl || !menuBtn) return;
+    var wrap = document.querySelector(".fa-submenu-wrap");
+    if (!wrap) return;
+
+    var wrapRect = wrap.getBoundingClientRect();
+    var btnRect  = menuBtn.getBoundingClientRect();
+
+    // Wider than the button for a “real site” menu feel
+    var width = Math.max(btnRect.width + 12, 200);
+    width = Math.min(width, Math.floor(wrapRect.width - 8));
+
+    // Right-align under the hamburger (more typical)
+    var left = (btnRect.right - wrapRect.left) - width;
+
+    // Clamp within wrap bounds
+    var maxLeft = Math.max(0, wrapRect.width - width);
+    left = Math.max(0, Math.min(left, maxLeft));
+
+    menuEl.style.left = left + "px";
+    menuEl.style.right = "auto";
+    menuEl.style.width = width + "px";
+  }
+
+  function openMenu(){
+    if (!menuEl) return;
+    positionMenu();
+    menuEl.classList.add("show");
+    menuEl.setAttribute("aria-hidden","false");
+    setMenuAria(true);
+  }
+
+  function closeMenu(){
+    if (!menuEl) return;
+    menuEl.classList.remove("show");
+    menuEl.setAttribute("aria-hidden","true");
+    setMenuAria(false);
+  }
+
+  function toggleMenu(){
+    if (!menuEl) return;
+    if (menuEl.classList.contains("show")) closeMenu();
+    else openMenu();
+  }
+
+  function navigate(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return;
+
+    closeMenu();
+
+    // Active immediately so tap feels responsive
+    setActiveByPage(page);
+
+    var embedded = isEmbedded();
+    if (embedded){
+      var ok = sendToWrapper(page);
+      if (!ok) window.location.href = buildHref(page);
+    }else{
+      window.location.href = buildHref(page);
+    }
+  }
+
+  // Close on outside click
+  document.addEventListener("click", function(e){
+    if (!menuEl || !menuEl.classList.contains("show")) return;
+    var t = e.target;
+    if (t === menuBtn || (menuBtn && menuBtn.contains(t))) return;
+    if (menuEl.contains(t)) return;
+    closeMenu();
+  }, true);
+
+  // Keep menu anchored on resize/orientation changes
+  window.addEventListener("resize", function(){
+    if (menuEl && menuEl.classList.contains("show")) positionMenu();
+  }, { passive:true });
+
+  // ESC closes
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") closeMenu();
+  });
+
+  // Tap flash
+  function flash(btn){
+    if (!btn) return;
+    btn.classList.add("fa-press");
+    window.setTimeout(function(){ btn.classList.remove("fa-press"); }, 140);
+  }
+  function wireFlash(root){
+    if (!root) return;
+    root.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("touchstart", function(){ flash(btn); }, { passive:true });
+      btn.addEventListener("mousedown",  function(){ flash(btn); }, { passive:true });
+    });
+  }
+  wireFlash(document.querySelector(".fa-tabs"));
+  wireFlash(menuEl);
+
+  // Wire top tabs
+  document.querySelectorAll(".fa-tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      if (btn.id === "nav-menu"){ toggleMenu(); return; }
+      var page = btn.dataset.page;
+      if (page) navigate(page);
+    });
+  });
+
+  // Wire dropdown
+  if (menuEl){
+    menuEl.querySelectorAll("button[data-page]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        navigate(btn.dataset.page);
+      });
+    });
+  }
+
+  // Expose helpers
+  try { window.faNavigate = navigate; } catch(e){}
+  try { window.navigate = navigate; } catch(e){}
+  try { window.faSetActiveByPage = setActiveByPage; } catch(e){}
+  try { window.faDetectActive = detectActive; } catch(e){}
+
+  // Keep active tab in sync for hash-routed / SPA navigation
+  window.addEventListener("hashchange", function(){ setTimeout(detectActive, 0); }, { passive:true });
+  window.addEventListener("popstate",  function(){ setTimeout(detectActive, 0); }, { passive:true });
+  try{
+    ["pushState","replaceState"].forEach(function(fn){
+      var orig = history[fn];
+      if (!orig) return;
+      history[fn] = function(){
+        var r = orig.apply(this, arguments);
+        setTimeout(detectActive, 0);
+        return r;
+      };
+    });
+  }catch(_){ }
+
+  maybeRedirectLegacyParams();
+  detectActive();
+  setMenuAria(false);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(detectActive, 0); });
+  } else {
+    setTimeout(detectActive, 0);
+  }
+})();
+
+/* ===========================
+   2) Pull-to-refresh (unchanged)
+   =========================== */
+(function(){
+  function isEmbedded(){
+    try { return window.top !== window; } catch(e){ return true; }
+  }
+
+  function scrollTop(){
+    var se = document.scrollingElement || document.documentElement || document.body;
+    return se ? (se.scrollTop || 0) : 0;
+  }
+
+  function headerBottom(){
+    var h = document.querySelector(".fa-header");
+    if (!h) return 0;
+    var r = h.getBoundingClientRect();
+    return r ? (r.bottom || r.height || 0) : 0;
+  }
+
+  function isInteractiveTarget(el){
+    if (!el) return false;
+    return !!el.closest("button,a,input,select,textarea,label,[role='button'],[contenteditable='true'],[data-no-ptr]");
+  }
+
+  function _isVisible_(el){
+    try{
+      if (!el) return false;
+      var cs = getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden") return false;
+      if (parseFloat(cs.opacity || "1") === 0) return false;
+      var r = el.getBoundingClientRect();
+      return !!(r && r.width > 0 && r.height > 0);
+    }catch(_){ return false; }
+  }
+
+  function inModalOrOverlay(el){
+    try{
+      return !!(el && el.closest && el.closest(
+        "[data-no-ptr],[aria-modal='true'],[role='dialog'],[role='alertdialog'],dialog,.modal,.dialog,.overlay"
+      ));
+    }catch(_){ return false; }
+  }
+
+  function isModalOpen(){
+    try{
+      if (document.body && document.body.classList && document.body.classList.contains("modal-open")) return true;
+
+      // Any visible dialog/modal/overlay element that is positioned above content
+      var nodes = document.querySelectorAll("[aria-modal='true'],dialog[open],[role='dialog'],[role='alertdialog'],.modal,.dialog,.overlay");
+      for (var i=0; i<nodes.length; i++){
+        var n = nodes[i];
+        if (!n || (n.classList && n.classList.contains("fa-header"))) continue;
+        if (!_isVisible_(n)) continue;
+        var cs = getComputedStyle(n);
+        if (cs.position === "fixed" || cs.position === "absolute") return true;
+      }
+    }catch(_){}
+    return false;
+  }
+
+  var toast;
+
+  function ensureToast(){
+    if (toast) return true;
+    if (!document.body) return false;
+    toast = document.createElement("div");
+    toast.id = "fa-ptr";
+    toast.innerHTML = '<span class="spin"></span>';
+    document.body.appendChild(toast);
+    return true;
+  }
+
+  function showToast(){
+    if (!ensureToast()) return;
+    toast.classList.add("show");
+  }
+
+  function hideToast(){
+    if (!toast) return;
+    toast.classList.remove("show");
+  }
+
+  function postRefresh(nonce){
+    var msg = { type: "FA_REFRESH", nonce: nonce };
+    try { window.top.postMessage(msg, "*"); } catch(e){}
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*");
+    } catch(e){}
+  }
+
+  function hardReloadSelf(){
+    try {
+      var u = new URL(location.href);
+      u.searchParams.set("r", String(Date.now()));
+      u.searchParams.set("fresh", "1");
+      location.replace(u.toString());
+    } catch(e) {
+      location.reload();
+    }
+  }
+
+  function requestRefresh(){
+    var nonce = Date.now();
+    var didUnload = false;
+    window.addEventListener("beforeunload", function(){ didUnload = true; }, { once:true });
+
+    if (isEmbedded()) postRefresh(nonce);
+    else hardReloadSelf();
+
+    setTimeout(function(){
+      if (!didUnload) hardReloadSelf();
+    }, 350);
+  }
+
+  var startY = 0, startX = 0, lastDy = 0;
+  var armed = false;
+
+  // Make accidental refreshes harder, but still easy enough when intentional
+  var THRESH = 120;   // was 90
+  var SHOW_AT = 18;   // was 12
+  var MAX_SLOP_X = 80;
+  var VERTICAL_RATIO = 2.0;
+
+  window.addEventListener("touchstart", function(e){
+    if (!e.touches || e.touches.length !== 1) { armed = false; return; }
+
+    // Only arm when the MAIN page is truly at the top
+    if (scrollTop() > 0) { armed = false; return; }
+
+    // Never arm while a modal/overlay is open (prevents modal-top bounce triggering refresh)
+    if (isModalOpen() || inModalOrOverlay(e.target)) { armed = false; return; }
+
+    // Never arm on buttons/inputs/explicit no-ptr zones
+    if (isInteractiveTarget(e.target)) { armed = false; return; }
+
+    var t = e.touches[0];
+    startY = t.clientY;
+    startX = t.clientX;
+    lastDy = 0;
+
+    // Allow pull-to-refresh starting anywhere below the sticky header
+    armed = (startY >= (headerBottom() + 6));
+  }, { passive:true });
+
+  window.addEventListener("touchmove", function(e){
+    if (!armed || !e.touches || e.touches.length !== 1) return;
+
+    var t = e.touches[0];
+    var dy = t.clientY - startY;
+    var dx = t.clientX - startX;
+
+    if (dy <= 0){
+      lastDy = 0;
+      hideToast();
+      return;
+    }
+
+    var adx = Math.abs(dx);
+    if (adx > MAX_SLOP_X || dy < adx * VERTICAL_RATIO){
+      lastDy = 0;
+      hideToast();
+      return;
+    }
+
+    if (dy > SHOW_AT){
+      lastDy = dy;
+      showToast();
+    }
+  }, { passive:true });
+
+  window.addEventListener("touchend", function(){
+    if (!armed){ hideToast(); return; }
+
+    if (lastDy >= THRESH){
+      showToast();
+      setTimeout(requestRefresh, 60);
+    } else {
+      hideToast();
+    }
+
+    armed = false;
+    lastDy = 0;
+  }, { passive:true });
+
+  window.addEventListener("touchcancel", function(){
+    armed = false;
+    lastDy = 0;
+    hideToast();
+  }, { passive:true });
+})();
+</script>
+
+
+<script>
+/* =========================
+   google.script.run → fetch() bridge (Native Fetch Polyfill)
+   - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
+   ========================= */
+(function(){
+  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
+  window.GAS_API_URL = GAS_API_URL;
+
+  function createProxy(s, f){
+    return new Proxy({}, {
+      get: (t, prop) => {
+        if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+        if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+        return (...args) => fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: prop, args: args })
+        })
+        .then(r => r.json())
+        .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
+        .catch(e => { if (f) f(e); });
+      }
+    });
+  }
+
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  if (!window.google.script.run){
+    window.google.script.run = new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] });
+  }
+})();
+</script>
+
+<div id="bootDebug" style="display:none; margin:10px 0; padding:10px; border-radius:12px; background:#fff3cd; color:#5c3b00; font-weight:700; line-height:1.3;">
+  Rosters failed to load players. This usually means the server bootstrap returned an empty list.
+  <div id="bootDebugDetail" style="margin-top:6px; font-weight:600; font-family:monospace; white-space:pre-wrap;"></div>
+</div>
+<div id="emptyBanner" style="display:none; margin:10px 0; padding:10px; border-radius:12px; background:#fff; color:#b00020; font-weight:800;"></div>
+
+
+<script>window.EXEC_BASE = window.GAS_API_URL || '';</script>
+<div class="set-switcher">
+  <button class="set-btn" data-set="SINGLES" id="btn-SINGLES">SINGLES</button>
+  <button class="set-btn" data-set="DEFAULT" id="btn-DEFAULT">DOUBLES</button>
+  <button class="set-btn" data-set="WEAK"    id="btn-WEAK">MIXED 1</button>
+  <button class="set-btn" data-set="STRONG"  id="btn-STRONG">MIXED 2</button>
+</div>
+
+<div class="panel" id="panel-CURRENT"></div>
+
+<script>
+/** BOOTSTRAP */
+window.__BOOTSTRAP = (function () {
+  try { return null; }
+  catch (e) { console.error("BOOTSTRAP parse failed", e); return null; }
+})();
+
+/** STATE */
+let STATE = {
+  masterAces: [],
+  singles: { roster:[], bench:[], unavailable:[] },
+  sets: {
+    DEFAULT: { rows:[], bench:[], unavailable:[] },
+    WEAK:    { rows:[], bench:[], unavailable:[] },
+    STRONG:  { rows:[], bench:[], unavailable:[] }
+  },
+  meta: { ranks:{}, ratings:{} },
+  metaLower: { ranks:{}, ratings:{} },
+  matchedDoublesPlayers: []
+};
+
+// Cross-device sync
+let __autoSyncTimer = null;
+let __syncBusy = false;
+
+
+let MATCHED_DOUBLES = new Set();
+function norm(v){ return String(v ?? '').trim(); }
+function canonName(n){ return norm(n).toLowerCase(); }
+
+function displayName(id){
+  const pid = norm(id);
+  if (!pid) return '';
+  const p = STATE.playersById && STATE.playersById[pid];
+  const nm = p && p.name ? String(p.name) : pid;
+  return nm;
+}
+function canonDisplay(id){
+  return String(displayName(id) || '').trim().toLowerCase();
+}
+
+
+// Touch behavior: native HTML5 drag/drop is unreliable on Android (especially in iframes)
+const IS_ANDROID = /Android/i.test(navigator.userAgent || '');
+const IS_TOUCH = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+function rebuildMatchedDoubles(){
+  MATCHED_DOUBLES = new Set((STATE.matchedDoublesPlayers || []).map(canonName).filter(Boolean));
+}
+function isMatchedDoubles(name){
+  return MATCHED_DOUBLES.has(canonName(name));
+}
+
+let currentSet = "DEFAULT";
+const LAST_SET_KEY = "fa_rosters_last_set_vTEST";
+const VALID_SETS = new Set(["SINGLES","DEFAULT","WEAK","STRONG"]);
+
+function loadLastSet(){
+  try {
+    const v = String(localStorage.getItem(LAST_SET_KEY) || "").toUpperCase().trim();
+    return VALID_SETS.has(v) ? v : null;
+  } catch(e){ return null; }
+}
+function saveLastSet(setName){
+  try {
+    const v = String(setName || "").toUpperCase().trim();
+    if (VALID_SETS.has(v)) localStorage.setItem(LAST_SET_KEY, v);
+  } catch(e){}
+}
+
+/** SAVE (FAST + QUEUED) */
+const SAVE_DELAY_MS = 900;
+const saveTimers = {};
+const saveInFlight = {};
+const pendingSnap = {};
+
+function buildSaveSnapshot(set) {
+  set = String(set || currentSet).toUpperCase();
+
+  if (set === 'SINGLES') {
+    const S = STATE.singles || { roster:[], bench:[], unavailable:[] };
+    return {
+      callSet: 'SINGLES',
+      rows: (S.roster || []).map(norm).filter(Boolean),
+      bench: (S.bench || []).map(norm).filter(Boolean),
+      unav: (S.unavailable || []).map(norm).filter(Boolean)
+    };
+  }
+
+  const S = STATE.sets[set] || { rows:[], bench:[], unavailable:[] };
+  let rows = normalizeSinglesLeftOnly(S.rows || []);
+  rows = trimTrailingEmptyRows(rows);
+
+  return {
+    callSet: set,
+    rows,
+    bench: (S.bench || []).map(norm).filter(Boolean),
+    unav: (S.unavailable || []).map(norm).filter(Boolean)
+  };
+}
+
+function scheduleSave(setName){
+  const set = String(setName || currentSet).toUpperCase();
+  if (saveTimers[set]) clearTimeout(saveTimers[set]);
+
+  showStatus(set, 'Unsaved…', false, false);
+
+  saveTimers[set] = setTimeout(() => {
+    saveTimers[set] = null;
+    pendingSnap[set] = buildSaveSnapshot(set);
+    if (!saveInFlight[set]) startQueuedSave(set);
+    else showStatus(set, 'Queued…', false, false);
+  }, SAVE_DELAY_MS);
+}
+
+function startQueuedSave(set){
+  const snap = pendingSnap[set];
+  if (!snap) return;
+
+  pendingSnap[set] = null;
+  saveInFlight[set] = true;
+
+  showStatus(set, 'Saving…', false, false);
+
+  google.script.run
+    .withSuccessHandler(() => {
+      saveInFlight[set] = false;
+      showStatus(set, 'Saved ✓', true, true);
+      if (pendingSnap[set]) startQueuedSave(set);
+    })
+    .withFailureHandler((err) => {
+      saveInFlight[set] = false;
+      showStatus(set, 'Save failed', true, false, err);
+      if (pendingSnap[set]) startQueuedSave(set);
+    })
+    .saveRosterState(snap.callSet, snap.rows, snap.bench, snap.unav);
+}
+
+/** META helpers */
+const RANK_WEIGHT = { 'A':4,'B':3,'C':2,'D':1,'AF':4,'BF':3,'CF':2 };
+function normRank(v){
+  let s = String(v||'').toUpperCase().trim();
+  s = s.replace(/\s+/g,'');
+  s = s.replace(/[‐‑‒–—−]/g,'-');
+  const m = s.match(/^([ABC])\-?F$/);
+  if (m) return m[1] + 'F'; // AF/BF/CF
+  return s;
+}
+function rankStrength(v){
+  const r = normRank(v);
+  return (r in RANK_WEIGHT) ? RANK_WEIGHT[r] : 0;
+}
+function isWomanRank(v){
+  const r = normRank(v);
+  return r === 'AF' || r === 'BF' || r === 'CF';
+}
+
+function getRank(id){
+  const pid = norm(id);
+  if (!pid) return '';
+  // prefer playersById
+  const p = STATE.playersById && STATE.playersById[pid];
+  if (p && p.rank) return String(p.rank);
+  // fallback meta map
+  const k = pid.toLowerCase();
+  return (STATE.metaLower && STATE.metaLower.ranks && STATE.metaLower.ranks[k]) ? String(STATE.metaLower.ranks[k]) : '';
+}
+
+
+function getRating(id){
+  const pid = norm(id);
+  if (!pid) return 0;
+  const p = STATE.playersById && STATE.playersById[pid];
+  if (p && typeof p.rating === 'number') return p.rating;
+  const k = pid.toLowerCase();
+  const v = (STATE.metaLower && STATE.metaLower.ratings && STATE.metaLower.ratings[k]) ? STATE.metaLower.ratings[k] : 0;
+  return Number(v || 0) || 0;
+}
+
+
+/** SORT-ON-REFRESH rules */
+
+function sortSinglesOnRefresh(){
+  // Keep singles lists alphabetized by display name
+  const lists = [STATE.singles.roster, STATE.singles.bench, STATE.singles.unavailable];
+  lists.forEach(arr => {
+    arr.sort((a,b) => {
+      const aa = canonDisplay(a), bb = canonDisplay(b);
+      return aa < bb ? -1 : (aa > bb ? 1 : 0);
+    });
+  });
+}
+
+
+function sortDoublesRowsOnRefresh(setName){
+  const S = STATE.sets[setName];
+  if (!S) return;
+
+  // Normalize shape
+  let rows = normalizeSinglesLeftOnly(S.rows || []);
+
+  // Only sort meaningful rows; renderer will show "one extra blank" row automatically
+  const nonEmpty = rows.filter(r => norm(r?.[0]) || norm(r?.[1]));
+
+  const keyName = (n) => canonName(n || '');
+  const rowNameSig = (L, R) => `${keyName(L)}|${keyName(R)}`;
+
+  const hasWomanRow = (L, R) => {
+    const lr = getRank(L), rr = getRank(R);
+    return isWomanRank(lr) || isWomanRank(rr);
+  };
+
+  const isSingleNoPartner = (L, R) => !!norm(L) && !norm(R);
+
+  // Avg rank/rating for PAIRS only (caller ensures this isn't used for singles-vs-singles)
+  const rowAvgRankPair = (L, R) => {
+    const l = rankStrength(getRank(L));
+    const r = rankStrength(getRank(R));
+    return (l + r) / 2;
+  };
+
+  const rowAvgRatingPair = (L, R) => {
+    const l = getRating(L);
+    const r = getRating(R);
+    return (l + r) / 2;
+  };
+
+  nonEmpty.sort((a, b) => {
+    const aL = norm(a?.[0]), aR = norm(a?.[1]);
+    const bL = norm(b?.[0]), bR = norm(b?.[1]);
+
+    // 1) Women rows first
+    const aw = hasWomanRow(aL, aR) ? 0 : 1;
+    const bw = hasWomanRow(bL, bR) ? 0 : 1;
+    if (aw !== bw) return aw - bw;
+
+    // 2) Pairs always before singles (right blank)
+    const aPaired = !!norm(aR);
+    const bPaired = !!norm(bR);
+    if (aPaired !== bPaired) return aPaired ? -1 : 1;
+
+    // 3) Singles (both) -> rank desc, then rating desc
+    const aSingle = isSingleNoPartner(aL, aR);
+    const bSingle = isSingleNoPartner(bL, bR);
+    if (aSingle && bSingle) {
+      const ar = rankStrength(getRank(aL));
+      const br = rankStrength(getRank(bL));
+      if (ar !== br) return br - ar;
+
+      const at = getRating(aL);
+      const bt = getRating(bL);
+      if (at !== bt) return bt - at;
+
+      return rowNameSig(aL, aR).localeCompare(rowNameSig(bL, bR));
+    }
+
+    // 4) Pairs (both) -> avg rank desc, then avg rating desc
+    const aRankAvg = rowAvgRankPair(aL, aR);
+    const bRankAvg = rowAvgRankPair(bL, bR);
+    if (aRankAvg !== bRankAvg) return bRankAvg - aRankAvg;
+
+    const aRatAvg = rowAvgRatingPair(aL, aR);
+    const bRatAvg = rowAvgRatingPair(bL, bR);
+    if (aRatAvg !== bRatAvg) return bRatAvg - aRatAvg;
+
+    return rowNameSig(aL, aR).localeCompare(rowNameSig(bL, bR));
+  });
+
+  // Save back (compact on refresh)
+  S.rows = nonEmpty;
+}
+
+
+// Apply roster sort rules ONLY when explicitly requested (e.g., page refresh / initial load)
+function applySortRules(){
+  try{ sortSinglesOnRefresh(); }catch(e){}
+  try{ ['DEFAULT','WEAK','STRONG'].forEach(sortDoublesRowsOnRefresh); }catch(e){}
+}
+
+/** INIT / APPLY BOOTSTRAP */
+const FA_ROSTERS_BOOT_CACHE_KEY = "FA_ROSTERS_BOOT_CACHE_V1";
+
+window.onload = function(){
+  // Instant paint from cache (stale-while-revalidate)
+  try{
+    const cached = localStorage.getItem(FA_ROSTERS_BOOT_CACHE_KEY);
+    if (cached){
+      const boot = JSON.parse(cached);
+      if (boot) applyBootstrap(boot, { resort:true });
+    }
+  }catch(_){}
+
+  if (window.__BOOTSTRAP) {
+    applyBootstrap(window.__BOOTSTRAP);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler((boot)=> {
+      try{ localStorage.setItem(FA_ROSTERS_BOOT_CACHE_KEY, JSON.stringify(boot||null)); }catch(_){}
+      applyBootstrap(boot);
+    })
+    .withFailureHandler((err)=> {
+      console.warn("getRostersBootstrap failed", err);
+      wireButtons();
+      switchTo(loadLastSet() || "DEFAULT");
+      // Defer drag/drop wiring so the roster paints ASAP on first load
+  (window.requestAnimationFrame || function(fn){ setTimeout(fn, 0); })(function(){
+    setTimeout(function(){ wireDnDOnce(); wireTouchDnDOnce(); }, 0);
+  });
+    })
+    .withFailureHandler(function(err){
+      try{
+        var el=document.getElementById('bootDebug');
+        var det=document.getElementById('bootDebugDetail');
+        if(el){ el.style.display='block'; }
+        if(det){ det.textContent = "FAIL: "+String(err && (err.message||err) || err); }
+      }catch(_){}
+      console.log("getRostersBootstrap FAIL", err);
+    })
+    .getRostersBootstrap({ fresh:false });
+};
+
+
+function applyBootstrap(boot, opt){
+  boot = boot || {};
+
+  opt = opt || {};
+  const doResort = (opt.resort === undefined) ? true : !!opt.resort;
+
+
+  // masterAces is now an array of player objects from PlayersDB: {id,name,rank,rating,...}
+  const players = Array.isArray(boot.masterAces) ? boot.masterAces : [];
+
+  STATE.playersById = {};
+  STATE.masterAces = [];
+  STATE.metaLower = { ranks:{}, ratings:{} };
+
+  players.forEach(p => {
+    if (p && typeof p === 'object') {
+      const id = norm(p.id);
+      if (!id) return;
+      const name = String(p.name || '').trim();
+      const rank = String(p.rank || '').trim();
+      const rating = Number(p.rating || 0) || 0;
+
+      STATE.playersById[id] = { id, name, rank, rating };
+      STATE.masterAces.push(id);
+
+      STATE.metaLower.ranks[id.toLowerCase()] = rank;
+      STATE.metaLower.ratings[id.toLowerCase()] = rating;
+    } else {
+      // Back-compat if server ever sends strings
+      const id = norm(p);
+      if (!id) return;
+      STATE.playersById[id] = STATE.playersById[id] || { id, name: id, rank: '', rating: 0 };
+      STATE.masterAces.push(id);
+      STATE.metaLower.ranks[id.toLowerCase()] = '';
+      STATE.metaLower.ratings[id.toLowerCase()] = 0;
+    }
+  });
+
+  // Optional metaById (merge)
+  if (boot.metaById){
+    const r = boot.metaById.ranks || {};
+    const t = boot.metaById.ratings || {};
+    Object.keys(r).forEach(k => { STATE.metaLower.ranks[String(k).toLowerCase()] = String(r[k]||'').trim(); });
+    Object.keys(t).forEach(k => { STATE.metaLower.ratings[String(k).toLowerCase()] = Number(t[k]||0) || 0; });
+  }
+
+  // Debug banner if we have no players
+  const empty = document.getElementById('emptyBanner');
+  if (STATE.masterAces.length === 0) {
+    if (empty){
+      empty.style.display = 'block';
+      empty.textContent = "No active Flying Aces players found in PlayersDB (team='Flying Aces' AND Active=TRUE).";
+    }
+  } else {
+    if (empty) empty.style.display = 'none';
+  }
+
+  // Singles (IDs)
+
+  const s = boot.singles || {};
+  STATE.singles.roster = Array.isArray(s.roster) ? s.roster.map(norm).filter(Boolean) : [];
+  STATE.singles.bench = Array.isArray(s.bench) ? s.bench.map(norm).filter(Boolean) : [];
+  STATE.singles.unavailable = Array.isArray(s.unavailable) ? s.unavailable.map(norm).filter(Boolean) : [];
+
+  // Doubles sets (IDs)
+  const sets = boot.sets || {};
+  ['DEFAULT','WEAK','STRONG'].forEach(k => {
+    const src = sets[k] || {};
+    STATE.sets[k].rows = Array.isArray(src.rows) ? normalizeSinglesLeftOnly(src.rows) : [];
+    STATE.sets[k].bench = Array.isArray(src.bench) ? src.bench.map(norm).filter(Boolean) : [];
+    STATE.sets[k].unavailable = Array.isArray(src.unavailable) ? src.unavailable.map(norm).filter(Boolean) : [];
+  });
+
+  STATE.matchedDoublesPlayers = Array.isArray(boot.matchedDoublesPlayers)
+    ? boot.matchedDoublesPlayers.map(norm).filter(Boolean)
+    : [];
+
+  STATE.matchSettings = boot.matchSettings || {};
+
+  rebuildMatchedDoubles();
+  healAllBuckets();
+  // Resort only when explicitly requested (initial page load / manual refresh)
+  if (doResort) applySortRules();
+
+  wireButtons();
+  switchTo(loadLastSet() || "DEFAULT");
+  // Defer drag/drop wiring so the roster paints ASAP on first load
+  (window.requestAnimationFrame || function(fn){ setTimeout(fn, 0); })(function(){
+    setTimeout(function(){ wireDnDOnce(); wireTouchDnDOnce(); }, 0);
+  });
+  if (typeof startBootstrapSync === "function") startBootstrapSync();
+
+  setStatus("Loaded " + STATE.masterAces.length + " players from PlayersDB");
+}
+
+
+
+/** AUTO-SYNC (Rosters) */
+function startAutoSync(){
+  if (__autoSyncTimer) return;
+  __autoSyncTimer = setInterval(() => {
+    if (__syncBusy) return;
+
+    const v = (STATE && STATE.v) ? String(STATE.v) : "";
+    if (!v) return;
+
+    // Don't disrupt local edits / queued saves
+    try{
+      const anyTimer = Object.values(saveTimers || {}).some(Boolean);
+      const anyInFlight = Object.values(saveInFlight || {}).some(Boolean);
+      const anyQueued = Object.values(pendingSnap || {}).some(Boolean);
+      if (anyTimer || anyInFlight || anyQueued) return;
+    }catch(_){}
+
+    __syncBusy = true;
+    google.script.run
+      .withSuccessHandler((boot) => {
+        __syncBusy = false;
+        if (boot) applyBootstrap(boot, { resort:false });
+      })
+      .withFailureHandler((err) => {
+        __syncBusy = false;
+        console.warn("Rosters auto-sync failed", err);
+      })
+      .getRostersBootstrapIfNewer(v);
+  }, 8000);
+}
+
+
+/** BUTTONS / SWITCH */
+function wireButtons(){
+  document.querySelectorAll('.set-btn').forEach(btn=>{
+    btn.onclick = () => switchTo(btn.dataset.set);
+  });
+}
+function switchTo(setName){
+  currentSet = String(setName || 'DEFAULT').toUpperCase();
+  if (!VALID_SETS.has(currentSet)) currentSet = 'DEFAULT';
+  saveLastSet(currentSet);
+
+  document.querySelectorAll('.set-btn').forEach(b=>b.classList.remove('active'));
+  const a = document.getElementById('btn-'+currentSet);
+  if (a) a.classList.add('active');
+
+  renderCurrent();
+}
+
+/** RENDER */
+function renderCurrent(){
+  const panel = document.getElementById('panel-CURRENT');
+  if (!panel) return;
+
+  if (currentSet === "SINGLES") renderSingles(panel);
+  else renderDoubles(panel, currentSet);
+}
+
+function renderDoubles(panel, setName){
+  const S = STATE.sets[setName] || { rows:[], bench:[], unavailable:[] };
+  const rows = normalizeSinglesLeftOnly(S.rows || []);
+  const bench = (S.bench || []).map(norm).filter(Boolean);
+  const unav  = (S.unavailable || []).map(norm).filter(Boolean);
+
+  panel.innerHTML = `
+    <div class="roster-grid">
+      <div class="col" id="${setName}-left"  data-set="${setName}" data-zone="left"></div>
+      <div class="col" id="${setName}-right" data-set="${setName}" data-zone="right"></div>
+    </div>
+
+    <div class="aux-grid">
+      <div class="aux-col">
+        <div class="aux-label">Bench</div>
+        <div class="aux-list" id="${setName}-bench" data-set="${setName}" data-zone="bench"></div>
+      </div>
+      <div class="aux-col">
+        <div class="aux-label">Unavailable</div>
+        <div class="aux-list" id="${setName}-unavail" data-set="${setName}" data-zone="unavail"></div>
+      </div>
+    </div>
+
+    <div class="status" id="${setName}-status"></div>
+  `;
+
+  const left  = document.getElementById(`${setName}-left`);
+  const right = document.getElementById(`${setName}-right`);
+  const benchEl = document.getElementById(`${setName}-bench`);
+  const unavEl  = document.getElementById(`${setName}-unavail`);
+
+  const paintLen = computePaintLen(rows);
+
+  const lf = document.createDocumentFragment();
+  const rf = document.createDocumentFragment();
+  for (let i=0;i<paintLen;i++){
+    const pair = rows[i] || ['',''];
+    lf.appendChild(makeRosterCell(setName, 'left',  i, pair[0]));
+    rf.appendChild(makeRosterCell(setName, 'right', i, pair[1]));
+  }
+  left.appendChild(lf);
+  right.appendChild(rf);
+
+  const bf = document.createDocumentFragment();
+  bench.forEach((name, i)=> bf.appendChild(makeListRow(setName, 'bench', i, name, false)));
+  bf.appendChild(makeListPlaceholder(setName, 'bench', bench.length));
+  benchEl.appendChild(bf);
+
+  const uf = document.createDocumentFragment();
+  unav.forEach((name, i)=> uf.appendChild(makeListRow(setName, 'unavail', i, name, true)));
+  uf.appendChild(makeListPlaceholder(setName, 'unavail', unav.length));
+  unavEl.appendChild(uf);
+}
+
+function renderSingles(panel){
+  const S = STATE.singles || { roster:[], bench:[], unavailable:[] };
+  const roster = (S.roster || []).map(norm).filter(Boolean);
+  const bench  = (S.bench  || []).map(norm).filter(Boolean);
+  const unav   = (S.unavailable || []).map(norm).filter(Boolean);
+
+  panel.innerHTML = `
+    <div class="singles-grid">
+      <div class="col">
+        <div class="aux-list" id="SINGLES-roster" data-set="SINGLES" data-zone="roster"></div>
+      </div>
+      <div class="singles-right">
+        <div class="aux-col">
+          <div class="aux-label">Bench</div>
+          <div class="aux-list" id="SINGLES-bench" data-set="SINGLES" data-zone="bench"></div>
+        </div>
+        <div class="aux-col">
+          <div class="aux-label">Unavailable</div>
+          <div class="aux-list" id="SINGLES-unavail" data-set="SINGLES" data-zone="unavail"></div>
+        </div>
+      </div>
+    </div>
+    <div class="status" id="SINGLES-status"></div>
+  `;
+
+  const rosterEl = document.getElementById('SINGLES-roster');
+  const benchEl  = document.getElementById('SINGLES-bench');
+  const unavEl   = document.getElementById('SINGLES-unavail');
+
+  const rf = document.createDocumentFragment();
+  roster.forEach((name, i)=> rf.appendChild(makeListRow('SINGLES', 'roster', i, name, false)));
+  rf.appendChild(makeListPlaceholder('SINGLES', 'roster', roster.length));
+  rosterEl.appendChild(rf);
+
+  const bf = document.createDocumentFragment();
+  bench.forEach((name, i)=> bf.appendChild(makeListRow('SINGLES', 'bench', i, name, false)));
+  bf.appendChild(makeListPlaceholder('SINGLES', 'bench', bench.length));
+  benchEl.appendChild(bf);
+
+  const uf = document.createDocumentFragment();
+  unav.forEach((name, i)=> uf.appendChild(makeListRow('SINGLES', 'unavail', i, name, true)));
+  uf.appendChild(makeListPlaceholder('SINGLES', 'unavail', unav.length));
+  unavEl.appendChild(uf);
+}
+
+function makeRosterCell(setName, side, rowIdx, val){
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const cell = document.createElement('div');
+  cell.dataset.set  = setName;
+  cell.dataset.zone = side;
+  cell.dataset.row  = String(rowIdx);
+
+  const v = norm(val);
+  if (v) {
+    cell.className = 'tile';
+    cell.textContent = displayName(v);
+    cell.dataset.playerId = v;
+    cell.draggable = !IS_TOUCH;  } else {
+    cell.className = 'slot-empty';
+    cell.textContent = '—';
+    cell.dataset.playerId = '';
+    cell.draggable = false;
+  }
+
+  row.appendChild(cell);
+  return row;
+}
+
+function makeListRow(setName, zone, index, name, isUnavailable){
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const cell = document.createElement('div');
+  cell.dataset.set   = setName;
+  cell.dataset.zone  = zone;
+  cell.dataset.index = String(index);
+
+  const v = norm(name);
+  if (v) {
+    cell.className = 'tile' + (isUnavailable ? ' unavailable' : '');
+    cell.textContent = displayName(v);
+    cell.dataset.playerId = v;
+    cell.draggable = !IS_TOUCH;  } else {
+    cell.className = 'slot-empty';
+    cell.textContent = '—';
+    cell.dataset.playerId = '';
+    cell.draggable = false;
+  }
+
+  row.appendChild(cell);
+  return row;
+}
+
+function makeListPlaceholder(setName, zone, indexForAppend){
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const cell = document.createElement('div');
+  cell.className = 'slot-empty';
+  cell.textContent = '—';
+  cell.dataset.set = setName;
+  cell.dataset.zone = zone;
+  cell.dataset.index = String(Number.isFinite(indexForAppend) ? indexForAppend : 0);
+  cell.dataset.playerId = '';
+  cell.draggable = false;
+
+  row.appendChild(cell);
+  return row;
+}
+
+function computePaintLen(rows){
+  let last = -1;
+  for (let i=0;i<(rows||[]).length;i++){
+    const L = norm(rows[i]?.[0]);
+    const R = norm(rows[i]?.[1]);
+    if (L || R) last = i;
+  }
+  return Math.max(1, last + 2);
+}
+
+/** NORMALIZATION / HEALING */
+function normalizeSinglesLeftOnly(rows){
+  return (rows || []).map(p => {
+    let L = norm(p?.[0]), R = norm(p?.[1]);
+    if (!L && R) { L = R; R = ''; }
+    return [L, R];
+  });
+}
+function trimTrailingEmptyRows(rows){
+  rows = normalizeSinglesLeftOnly(rows || []);
+  let end = rows.length;
+  while (end > 0) {
+    const r = rows[end-1] || ['',''];
+    if (norm(r[0]) || norm(r[1])) break;
+    end--;
+  }
+  return rows.slice(0, end);
+}
+function uniqueCanon(list){
+  const out = [];
+  const seen = new Set();
+  (list||[]).forEach(x=>{
+    const v = norm(x);
+    const k = canonName(v);
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    out.push(v);
+  });
+  return out;
+}
+
+function getGlobalBench(){
+  // Universal doubles bench = union across all doubles sets
+  const sets = ['DEFAULT','WEAK','STRONG'];
+  let out = [];
+  sets.forEach(k => {
+    const b = (STATE.sets && STATE.sets[k] && STATE.sets[k].bench) ? STATE.sets[k].bench : [];
+    out = out.concat(b||[]);
+  });
+  return uniqueCanon(out.map(norm).filter(Boolean));
+}
+function setGlobalBench(list){
+  const g = uniqueCanon((list||[]).map(norm).filter(Boolean));
+  ['DEFAULT','WEAK','STRONG'].forEach(k => {
+    if (!STATE.sets[k]) STATE.sets[k] = { rows:[], bench:[], unavailable:[] };
+    STATE.sets[k].bench = g.slice();
+  });
+  return g;
+}
+
+function getGlobalUnav(){
+  // Unavailable is GLOBAL across Singles + all Doubles sets.
+  const a = [];
+  if (Array.isArray(STATE.globalUnav)) a.push(...STATE.globalUnav);
+  if (STATE.singles && Array.isArray(STATE.singles.unavailable)) a.push(...STATE.singles.unavailable);
+  ['DEFAULT','WEAK','STRONG'].forEach(k => {
+    const S = (STATE.sets && STATE.sets[k]) ? STATE.sets[k] : null;
+    if (S && Array.isArray(S.unavailable)) a.push(...S.unavailable);
+  });
+  return uniqueCanon(a.map(norm).filter(Boolean));
+}
+function setGlobalUnav(list){
+  const g = uniqueCanon((list || []).map(norm).filter(Boolean));
+  STATE.globalUnav = g.slice();
+
+  // Mirror into each set + singles so the rest of the code can just read S.unavailable
+  if (STATE.singles) STATE.singles.unavailable = g.slice();
+  ['DEFAULT','WEAK','STRONG'].forEach(k => {
+    if (!STATE.sets[k]) STATE.sets[k] = { rows:[], bench:[], unavailable:[] };
+    STATE.sets[k].unavailable = g.slice();
+  });
+}
+
+function healAllBuckets(){
+  const master = uniqueCanon((STATE.masterAces || []).map(norm).filter(Boolean));
+  if (!master.length) return;
+
+  // GLOBAL unavailable across everything
+  const gUnav = getGlobalUnav();
+  setGlobalUnav(gUnav);
+
+  // ---------- Singles ----------
+  const S = STATE.singles;
+
+  S.roster = uniqueCanon((S.roster || []).map(norm).filter(Boolean)).filter(id => !gUnav.includes(id));
+  S.bench  = uniqueCanon((S.bench  || []).map(norm).filter(Boolean)).filter(id => !gUnav.includes(id) && !S.roster.includes(id));
+  // Ensure all available players are present (append missing to BENCH to avoid disrupting roster order)
+  master.forEach(id => {
+    if (gUnav.includes(id)) return;
+    if (S.roster.includes(id)) return;
+    if (S.bench.includes(id)) return;
+    S.bench.push(id);
+  });
+
+  // ---------- Doubles (UNIVERSAL bench; unavailable is GLOBAL) ----------
+  const sets = ['DEFAULT','WEAK','STRONG'];
+
+  sets.forEach(k => {
+    const D = STATE.sets[k] || (STATE.sets[k] = { rows:[], bench:[], unavailable:[] });
+
+    // Normalize rows -> left-only and remove unavailable
+    let rows = normalizeSinglesLeftOnly(D.rows || []);
+    rows = rows.map(r => [norm(r[0]), norm(r[1])]).map(([L,R]) => {
+      if (gUnav.includes(L)) L = '';
+      if (gUnav.includes(R)) R = '';
+      if (!L && R) { L = R; R = ''; }
+      return [L,R];
+    }).filter(r => r[0] || r[1]);
+
+    // De-dupe within rows (row wins)
+    const used = new Set();
+    rows = rows.map(([L,R]) => {
+      if (L && used.has(L)) L = '';
+      if (R && used.has(R)) R = '';
+      if (!L && R) { L = R; R = ''; }
+      if (L) used.add(L);
+      if (R) used.add(R);
+      return [L,R];
+    }).filter(r => r[0] || r[1]);
+
+    // UNIVERSAL bench: union across sets, filtered not unavailable
+    const gBench = setGlobalBench(getGlobalBench()).filter(id => !gUnav.includes(id));
+    // Remove benched from rows
+    rows = rows.map(([L,R]) => {
+      if (L && gBench.includes(L)) L = '';
+      if (R && gBench.includes(R)) R = '';
+      if (!L && R) { L = R; R = ''; }
+      return [L,R];
+    }).filter(r => r[0] || r[1]);
+
+    // Recompute used after stripping benched
+    const used2 = new Set();
+    rows.forEach(r => { if (r[0]) used2.add(r[0]); if (r[1]) used2.add(r[1]); });
+
+    // Ensure all available players exist in this set:
+    // if not in rows and not benched, append as left-only row (keeps bench truly global)
+    master.forEach(id => {
+      if (gUnav.includes(id)) return;
+      if (gBench.includes(id)) return;
+      if (used2.has(id)) return;
+      rows.push([id,'']);
+      used2.add(id);
+    });
+
+    D.rows = rows;
+    D.bench = gBench.slice();
+    D.unavailable = gUnav.slice();
+});
+}
+
+/** DnD */
+let DND_WIRED = false;
+let IS_DRAGGING = false;
+
+
+function buildPayloadFromData(data){
+  // Support multiple payload shapes (new + older)
+  if (!data) return null;
+
+  const id = norm(data.playerId || data.id || data.name || '');
+  if (!id) return null;
+
+  // Some payloads use srcSet/srcZone/srcRow/srcIndex (legacy)
+  const setRaw  = data.set || data.callSet || data.srcSet || currentSet;
+  const zoneRaw = data.zone || data.srcZone || '';
+
+  const rRaw = (data.r != null ? data.r : (data.row != null ? data.row : (data.srcRow != null ? data.srcRow : null)));
+  const iRaw = (data.i != null ? data.i : (data.index != null ? data.index : (data.srcIndex != null ? data.srcIndex : null)));
+
+  return {
+    set: String(setRaw).toUpperCase(),
+    zone: String(zoneRaw || '').toLowerCase(),
+    r: (rRaw != null ? Number(rRaw) : null),
+    i: (iRaw != null ? Number(iRaw) : null),
+    name: id
+  };
+}
+
+function resolveAppendDest(dest){
+  if (!dest) return null;
+  if (dest.mode !== 'append') return dest;
+
+  const set = (dest.set || currentSet);
+  const zone = dest.zone || '';
+
+  // Append into status lists
+  if (zone === 'bench' || zone === 'unavail' || zone === 'roster') {
+    const list = (set === 'SINGLES')
+      ? (zone === 'bench' ? STATE.singles.bench : zone === 'unavail' ? STATE.singles.unavailable : STATE.singles.roster)
+      : (zone === 'bench' ? STATE.sets[set].bench : STATE.sets[set].unavailable);
+
+    return { set, zone, i: (list ? list.length : 0), mode:'place' };
+  }
+
+  // Append into grid columns: drop to first empty row in that column
+  if (zone === 'left' || zone === 'right') {
+    const rows = (STATE.sets[set] && STATE.sets[set].rows) ? STATE.sets[set].rows : [];
+    let r = 0;
+    for (; r < rows.length; r++){
+      const cell = (zone === 'left') ? rows[r][0] : rows[r][1];
+      if (!norm(cell)) break;
+    }
+    return { set, zone, r, mode:'place' };
+  }
+
+  return dest;
+}
+function wireDnDOnce(){
+  if (DND_WIRED) return;
+  DND_WIRED = true;
+  if (IS_TOUCH) return; // use pointer-based DnD on touch devices
+
+  document.addEventListener('dragstart', (e)=>{
+    const el = e.target;
+    if (!el?.classList?.contains('tile')) return;
+
+    const playerId = norm(el.dataset.playerId);
+    if (!playerId) return;
+
+    IS_DRAGGING = true;
+
+    const payload = {
+      playerId,
+      srcSet: el.dataset.set || currentSet,
+      srcZone: el.dataset.zone || '',
+      srcRow: el.dataset.row != null ? Number(el.dataset.row) : null,
+      srcIndex: el.dataset.index != null ? Number(el.dataset.index) : null
+    };
+
+    try {
+      e.dataTransfer.setData('text/plain', JSON.stringify(payload));
+      e.dataTransfer.effectAllowed = 'move';
+    } catch(_) {}
+  });
+
+  document.addEventListener('dragover', (e)=>{
+    if (IS_DRAGGING) updateDragAutoScroll(e);
+
+    const t = closestDropTarget(e.target);
+    if (!t) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    highlightTarget(t);
+  });
+
+  document.addEventListener('dragleave', ()=> clearHighlights());
+
+  document.addEventListener('dragend', ()=> {
+    IS_DRAGGING = false;
+    clearDragScroll();
+    clearHighlights();
+  });
+
+  document.addEventListener('drop', (e)=>{
+    const t = closestDropTarget(e.target);
+    if (!t) return;
+    e.preventDefault();
+    clearDragScroll();
+    clearHighlights();
+
+    let data = null;
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain') || 'null'); } catch(_) {}
+    if (!data) return;
+    const src = buildPayloadFromData(data);
+    if (!src || !src.name) return;
+
+    const dest = resolveAppendDest(readDestFromTarget(t));
+    if (!dest) return;
+
+    if ((dest.set || currentSet) !== currentSet) return;
+
+    applyMove(src, dest);
+  });
+}
+
+
+
+/** Touch DnD (pointer-events based; works on iOS/Android; keeps classic visuals) */
+let ANDROID_DND_WIRED = false;
+function wireTouchDnDOnce(){
+  if (ANDROID_DND_WIRED || !IS_TOUCH) return;
+  ANDROID_DND_WIRED = true;
+
+  let dragging = false;
+  let started = false;
+  let srcEl = null;
+  let cloneEl = null;
+  let dragData = null;
+  let startX = 0, startY = 0;
+  let lastTarget = null;
+  let ptrId = null;
+
+  const THRESH = 6; // px before we treat as a drag
+
+  function cleanup(){
+    dragging = false;
+    started = false;
+    if (srcEl){
+      try { if (srcEl.releasePointerCapture && ptrId != null) srcEl.releasePointerCapture(ptrId); } catch(_){}
+      srcEl.classList.remove('drag-source');
+    }
+    srcEl = null;
+    dragData = null;
+    ptrId = null;
+
+    if (cloneEl && cloneEl.parentNode) cloneEl.parentNode.removeChild(cloneEl);
+    cloneEl = null;
+
+    clearHighlights();
+    clearDragScroll();
+    document.body.classList.remove('fa-dragging');
+  }
+
+  function buildPayloadFromTile(el){
+    const id = norm(el.dataset.playerId);
+    if (!id) return null;
+    return {
+      // shape expected by applyMove()
+      set: (el.dataset.set || currentSet),
+      zone: (el.dataset.zone || ''),
+      row: (el.dataset.row != null ? Number(el.dataset.row) : null),
+      index: (el.dataset.index != null ? Number(el.dataset.index) : null),
+      name: id
+    };
+  }
+
+  function makeClone(el, x, y){
+    const r = el.getBoundingClientRect();
+    const c = el.cloneNode(true);
+    c.classList.add('drag-clone');
+    c.style.width = r.width + "px";
+    c.style.height = r.height + "px";
+    c.style.left = x + "px";
+    c.style.top  = y + "px";
+    // Ensure the clone doesn't accidentally carry "drop-target" from earlier
+    c.classList.remove('drop-target', 'drop-target-tile');
+    return c;
+  }
+
+  function moveClone(x, y){
+    if (!cloneEl) return;
+    cloneEl.style.left = x + "px";
+    cloneEl.style.top  = y + "px";
+  }
+
+  function nearestCellInContainer(container, x, y){
+    const cells = container.querySelectorAll('.tile, .slot-empty');
+    let best = null, bestD = Infinity;
+    for (const el of cells){
+      const r = el.getBoundingClientRect();
+      // distance to center
+      const cx = r.left + r.width/2;
+      const cy = r.top + r.height/2;
+      const dx = cx - x;
+      const dy = cy - y;
+      const d = dx*dx + dy*dy;
+      if (d < bestD){
+        bestD = d; best = el;
+      }
+    }
+    return best;
+  }
+
+  function pickBestTarget(x, y){
+    let el = document.elementFromPoint(x, y);
+    if (!el) return null;
+
+    const direct = el.closest && el.closest('.tile, .slot-empty');
+    if (direct) return direct;
+
+    const container = el.closest && el.closest('.aux-list, .col');
+    if (container){
+      // Find nearest tile/slot inside container instead of outlining the whole container
+      return nearestCellInContainer(container, x, y) || container;
+    }
+    return null;
+  }
+
+  function updateHighlightForPoint(x, y){
+    const t = pickBestTarget(x, y);
+    if (!t) { clearHighlights(); lastTarget = null; return; }
+    if (t !== lastTarget){
+      // Only highlight tiles/slots; never highlight containers on Android touch (feels "wrong")
+      clearHighlights();
+      if (t.classList.contains('tile') || t.classList.contains('slot-empty')){
+        t.classList.add('drop-target-tile');
+      }
+      lastTarget = t;
+    }
+  }
+
+  function commitDropAtPoint(x, y){
+    const t = pickBestTarget(x, y);
+    if (!t) return;
+
+    // If container somehow returned, fall back to "append" behavior
+    let dest = resolveAppendDest(readDestFromTarget(t));
+    if (!dest) return;
+
+    applyMove(dragData, dest);
+  }
+
+  document.addEventListener('pointerdown', function(e){
+    if (!IS_TOUCH) return;
+    // only primary touch pointers
+    if (e.pointerType !== 'touch') return;
+
+    const tile = e.target && e.target.closest && e.target.closest('.tile');
+    if (!tile) return;
+    const pid = norm(tile.dataset.playerId);
+    if (!pid) return;
+
+    // Do NOT start on matched/unavailable restrictions; allow all
+    dragging = true;
+    started = false;
+    srcEl = tile;
+    dragData = buildPayloadFromTile(tile);
+    startX = e.clientX;
+    startY = e.clientY;
+    ptrId = e.pointerId;
+
+    // Prevent long-press callout / scroll while we decide
+    e.preventDefault();
+
+    try { tile.setPointerCapture && tile.setPointerCapture(e.pointerId); } catch(_){}
+  }, { passive:false });
+
+  document.addEventListener('pointermove', function(e){
+    if (!dragging || e.pointerType !== 'touch') return;
+
+    const x = e.clientX, y = e.clientY;
+    const dx = x - startX, dy = y - startY;
+
+    if (!started){
+      if ((dx*dx + dy*dy) < (THRESH*THRESH)) return;
+      started = true;
+
+      if (srcEl){
+        srcEl.classList.add('drag-source');
+        cloneEl = makeClone(srcEl, x, y);
+        document.body.appendChild(cloneEl);
+        document.body.classList.add('fa-dragging');
+      }
+    }
+
+    // While dragging: prevent page scroll
+    e.preventDefault();
+
+    moveClone(x, y);
+    updateHighlightForPoint(x, y);
+
+    // Auto-scroll using existing logic
+    updateDragAutoScroll({ clientY: y, target: (lastTarget || e.target) });
+  }, { passive:false });
+
+  document.addEventListener('pointerup', function(e){
+    if (!dragging || e.pointerType !== 'touch') return;
+    const x = e.clientX, y = e.clientY;
+
+    if (started && dragData){
+      commitDropAtPoint(x, y);
+    }
+    cleanup();
+  }, { passive:true });
+
+  document.addEventListener('pointercancel', function(e){
+    if (!dragging) return;
+    cleanup();
+  }, { passive:true });
+
+  window.addEventListener('blur', cleanup, { passive:true });
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) cleanup(); }, { passive:true });
+}
+
+
+// ===== Drag auto-scroll (page + scrollable panels) =====
+let DRAG_SCROLL = { el: null, vy: 0, raf: 0 };
+
+function findScrollContainer(node){
+  let el = (node && node.nodeType === 1) ? node : (node?.parentElement || null);
+  while (el && el !== document.body){
+    const cs = getComputedStyle(el);
+    const oy = cs.overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 2) return el;
+    el = el.parentElement;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+
+function updateDragAutoScroll(e){
+  const edge = 90;
+  const step = 22;
+  const y = e.clientY || 0;
+
+  const scroller = findScrollContainer(e.target);
+  const isWindowScroller = !scroller || scroller === document.scrollingElement || scroller === document.documentElement || scroller === document.body;
+
+  const rect = isWindowScroller
+    ? { top: 0, bottom: (window.innerHeight || 0) }
+    : scroller.getBoundingClientRect();
+
+  let vy = 0;
+  if (y > rect.bottom - edge) vy = step;
+  else if (y < rect.top + edge) vy = -step;
+
+  if (!vy){ clearDragScroll(); return; }
+
+  DRAG_SCROLL.el = scroller;
+  DRAG_SCROLL.vy = vy;
+  if (!DRAG_SCROLL.raf) DRAG_SCROLL.raf = requestAnimationFrame(dragScrollTick);
+}
+
+function dragScrollTick(){
+  if (!DRAG_SCROLL.vy){ DRAG_SCROLL.raf = 0; return; }
+
+  const el = DRAG_SCROLL.el;
+  const vy = DRAG_SCROLL.vy;
+
+  const isWindowScroller = !el || el === document.scrollingElement || el === document.documentElement || el === document.body;
+  if (isWindowScroller) window.scrollBy(0, vy);
+  else el.scrollTop += vy;
+
+  DRAG_SCROLL.raf = requestAnimationFrame(dragScrollTick);
+}
+
+function clearDragScroll(){
+  DRAG_SCROLL.vy = 0;
+  DRAG_SCROLL.el = null;
+  if (DRAG_SCROLL.raf){
+    cancelAnimationFrame(DRAG_SCROLL.raf);
+    DRAG_SCROLL.raf = 0;
+  }
+}
+
+function closestDropTarget(node){
+  if (!node) return null;
+  return node.closest?.('.tile, .slot-empty, .aux-list, .col') || null;
+}
+function highlightTarget(el){
+  clearHighlights();
+  if (!el) return;
+  if (el.classList.contains('tile') || el.classList.contains('slot-empty')) el.classList.add('drop-target-tile');
+  else el.classList.add('drop-target');
+}
+function clearHighlights(){
+  document.querySelectorAll('.drop-target, .drop-target-tile').forEach(x=>{
+    x.classList.remove('drop-target');
+    x.classList.remove('drop-target-tile');
+  });
+}
+
+function readDestFromTarget(el){
+  if (!el) return null;
+
+  // Containers: append behavior (lists) or column drop (grid) handled later by resolver
+  if (el.classList.contains('aux-list') || el.classList.contains('col')) {
+    return { set: el.dataset.set || currentSet, zone: el.dataset.zone || '', mode: 'append' };
+  }
+
+  const set = el.dataset.set || currentSet;
+  const zone = el.dataset.zone || '';
+  const r = (el.dataset.row != null) ? Number(el.dataset.row) : null;
+  const i = (el.dataset.index != null) ? Number(el.dataset.index) : null;
+  const occupiedPlayer = norm(el.dataset.playerId);
+
+  return { set, zone, r, i, row:r, index:i, mode: 'place', occupiedPlayer };
+}
+
+/** MOVE HELPERS */
+function removeFromSinglesEverywhere(player){
+  const p = canonName(player);
+  const S = STATE.singles;
+  S.roster = (S.roster||[]).filter(x=>canonName(x)!==p);
+  S.bench  = (S.bench||[]).filter(x=>canonName(x)!==p);
+  S.unavailable = (S.unavailable||[]).filter(x=>canonName(x)!==p);
+}
+
+function removeFromGridOnly(setName, player){
+  const S = STATE.sets[setName];
+  if (!S) return;
+  const p = canonName(player);
+
+  S.rows = normalizeSinglesLeftOnly(S.rows || []);
+  for (let i=0;i<S.rows.length;i++){
+    let [L,R] = S.rows[i] || ['',''];
+    if (canonName(L) === p) L = '';
+    if (canonName(R) === p) R = '';
+    if (!L && R) { L = R; R = ''; }
+    S.rows[i] = [norm(L), norm(R)];
+  }
+}
+
+function removeFromAllGrids(player){
+  ['DEFAULT','WEAK','STRONG'].forEach(s => removeFromGridOnly(s, player));
+}
+
+function removeFromBench(setName, player){
+  const p = canonName(player);
+  if (!p) return;
+
+  if (String(setName).toUpperCase() === 'SINGLES') {
+    STATE.singles.bench = (STATE.singles.bench||[]).filter(x=>canonName(x)!==p);
+    return;
+  }
+
+  // UNIVERSAL doubles bench: remove from all sets
+  ['DEFAULT','WEAK','STRONG'].forEach(k=>{
+    const D = STATE.sets[k];
+    D.bench = (D.bench||[]).filter(x=>canonName(x)!==p);
+  });
+}
+function removeFromAllBenches(player){
+  const p = canonName(player);
+  ['DEFAULT','WEAK','STRONG'].forEach(k => {
+    const D = STATE.sets[k];
+    if (!D) return;
+    D.bench = (D.bench || []).filter(x => canonName(x) !== p);
+  });
+}
+function removeFromGlobalUnavail(player){
+  const p = canonName(player);
+  const g = getGlobalUnav().filter(x => canonName(x) !== p);
+  setGlobalUnav(g);
+}
+function addToBench(setName, player){
+  const p = canonName(player);
+  if (!p) return;
+
+  // Singles bench is independent
+  if (String(setName).toUpperCase() === 'SINGLES') {
+    const S = STATE.singles;
+    if (!S.bench.some(x=>canonName(x)===p)) S.bench.push(player);
+    return;
+  }
+
+  // Doubles bench is UNIVERSAL across DEFAULT/WEAK/STRONG
+  ['DEFAULT','WEAK','STRONG'].forEach(k=>{
+    const D = STATE.sets[k];
+    D.bench = (D.bench || []).filter(x=>canonName(x)!==p);
+    D.bench.push(player);
+  });
+
+  // Remove from all doubles grids when benched
+  ['DEFAULT','WEAK','STRONG'].forEach(k=> removeFromGridOnly(k, player));
+}
+function addToGlobalUnav(player){
+  const id = norm(player);
+  if (!id) return;
+
+  // Global unavailable: remove from ALL doubles rows + benches, and from singles roster/bench
+  removeFromAllGrids(id);
+  removeFromAllBenches(id);
+  removeFromSinglesEverywhere(id);
+
+  const g = getGlobalUnav();
+  g.push(id);
+  setGlobalUnav(g);
+}
+
+function removeFromGlobalStatus(player){
+  // Back-compat: treat this as removing from GLOBAL unavailable
+  removeFromGlobalUnavail(player);
+}
+
+function addToGlobalBench(player){
+  // Back-compat (old code treated bench as global). Bench is PER-SET now, so
+  // add to the currently viewed set.
+  addToBench(currentSet, player);
+}
+function addToGlobalUnavail(player){
+  addToGlobalUnav(player);
+}
+function moveToGlobalStatus(player, zone){
+  // Back-compat signature: (player, 'bench'|'unavail')
+  if (zone === 'unavail') addToGlobalUnav(player);
+  else addToBench(currentSet, player);
+}
+
+function ensureRowExists(setName, rowIdx){
+  const S = STATE.sets[setName];
+  if (!S) return;
+  S.rows = normalizeSinglesLeftOnly(S.rows || []);
+  while (S.rows.length <= rowIdx) S.rows.push(['','']);
+}
+
+function placeSingles(zone, dest, player){
+  const id = norm(player);
+  if (!id) return;
+
+  // Global unavailable across all sets
+  if (zone === 'unavail') {
+    addToGlobalUnav(id);
+    return;
+  }
+
+  // If making them available again, remove from global unavailable
+  removeFromGlobalUnavail(id);
+
+  const list = (zone === 'bench') ? STATE.singles.bench : STATE.singles.roster;
+  const idx = Math.max(0, Math.min(list.length, dest.i));
+  list.splice(idx, 0, id);
+  // de-dupe + strip unavailable
+  STATE.singles.roster = uniqueCanon(STATE.singles.roster.map(norm).filter(Boolean)).filter(x => !STATE.singles.unavailable.includes(x));
+  STATE.singles.bench  = uniqueCanon(STATE.singles.bench.map(norm).filter(Boolean)).filter(x => !STATE.singles.unavailable.includes(x) && !STATE.singles.roster.includes(x));
+}
+
+/** PURE SWAP: swap only two involved cells (no extra logic) */
+function applyMove(src, dest, doSwap){
+  // Accept both {r,i} and {row,index} shapes
+  src = src || {};
+  dest = dest || {};
+  if (src.r == null && src.row != null) src.r = src.row;
+  if (src.i == null && src.index != null) src.i = src.index;
+  if (dest.r == null && dest.row != null) dest.r = dest.row;
+  if (dest.i == null && dest.index != null) dest.i = dest.index;
+  const srcSet = (src && src.set) ? String(src.set).toUpperCase() : currentSet;
+  const srcZone = src && src.zone;
+  const player = src && src.name;
+
+  const destSet = (dest && dest.set) ? String(dest.set).toUpperCase() : currentSet;
+  const destZone = dest && dest.zone;
+
+  if (!player) return;
+
+  // Only allow dropping into the currently viewed doubles set (avoid accidental cross-set edits)
+  if (destSet !== 'SINGLES' && destSet !== currentSet) return;
+
+  // --- SINGLES target (independent from doubles, except GLOBAL unavailable) ---
+  if (destSet === 'SINGLES') {
+    const list = (destZone === 'bench') ? STATE.singles.bench
+              : (destZone === 'unavail') ? STATE.singles.unavailable
+              : STATE.singles.roster;
+
+    const occupied = (list && list[dest.i]) ? list[dest.i] : null;
+
+    if (doSwap && occupied && occupied !== player) {
+      // swap inside singles lists
+      const sListSrc = (srcSet === 'SINGLES')
+        ? ((srcZone === 'bench') ? STATE.singles.bench
+          : (srcZone === 'unavail') ? STATE.singles.unavailable
+          : STATE.singles.roster)
+        : null;
+
+      // remove from singles positions
+      removeFromSinglesEverywhere(player);
+      removeFromSinglesEverywhere(occupied);
+
+      placeSingles(destZone, dest, player);
+
+      if (srcSet === 'SINGLES' && sListSrc) {
+        placeSingles(srcZone, src, occupied);
+      } else {
+        // if source wasn't singles, put occupied back where it came from by appending to bench
+        placeSingles('bench', {i: STATE.singles.bench.length}, occupied);
+      }
+    } else {
+      removeFromSinglesEverywhere(player);
+      placeSingles(destZone, dest, player);
+    }
+
+    healAllBuckets();
+    renderCurrent();
+    scheduleSave('SINGLES');
+    return;
+  }
+
+  // --- DOUBLES target ---
+  const D = STATE.sets[destSet];
+
+  // Destination is a STATUS list (bench / unavailable)
+  if (destZone === 'bench' || destZone === 'unavail') {
+    // Determine occupied from destination list
+    const list = (destZone === 'bench') ? (D.bench || [])
+               : (D.unavailable || []);
+    const occupied = (list && list[dest.i]) ? list[dest.i] : null;
+
+    // Remove player from source position in THIS set only (bench) / global (unavail) / grid
+    if (srcSet === currentSet) {
+      if (srcZone === 'bench') removeFromBench(srcSet, player);
+      if (srcZone === 'unavail') removeFromGlobalUnavail(player);
+      if (srcZone === 'left' || srcZone === 'right') removeFromGridOnly(srcSet, player);
+    } else if (srcSet === 'SINGLES') {
+      // Do not remove from singles when editing doubles (independent)
+    } else {
+      // If source is another doubles set, ignore (we disallow cross-set drops)
+    }
+
+    if (doSwap && occupied && occupied !== player) {
+      // Remove occupied from destination status
+      if (destZone === 'bench') removeFromBench(destSet, occupied);
+      else removeFromGlobalUnavail(occupied);
+
+      // Place player into destination status
+      if (destZone === 'bench') addToBench(destSet, player);
+      else addToGlobalUnav(player);
+
+      // Put occupied back to source position
+      if (srcSet === currentSet) {
+        if (srcZone === 'bench') addToBench(srcSet, occupied);
+        else if (srcZone === 'unavail') addToGlobalUnav(occupied);
+        else if (srcZone === 'left' || srcZone === 'right') {
+          // put back into the same grid cell
+          ensureRowExists(srcSet, src.r);
+          if (srcZone === 'left') STATE.sets[srcSet].rows[src.r][0] = occupied;
+          else STATE.sets[srcSet].rows[src.r][1] = occupied;
+        } else {
+          addToBench(srcSet, occupied);
+        }
+      } else {
+        addToBench(destSet, occupied);
+      }
+    } else {
+      // Simple move
+      if (destZone === 'bench') addToBench(destSet, player);
+      else addToGlobalUnav(player);
+    }
+
+    healAllBuckets();
+    renderCurrent();
+    scheduleSave(destSet);
+    return;
+  }
+
+  // Destination is a GRID cell
+  ensureRowExists(destSet, dest.r);
+
+  const row = STATE.sets[destSet].rows[dest.r] || ['', ''];
+  const occupied = (destZone === 'left') ? row[0] : row[1];
+
+  // Remove player from its source location (grid/bench/unavail) for THIS set or GLOBAL unavail
+  if (srcSet === currentSet) {
+    if (srcZone === 'bench') removeFromBench(srcSet, player);
+    else if (srcZone === 'unavail') removeFromGlobalUnavail(player);
+    else if (srcZone === 'left' || srcZone === 'right') removeFromGridOnly(srcSet, player);
+  } else if (srcSet === 'SINGLES') {
+    // Do not remove from singles
+  }
+
+  // If moving into grid, they must be available
+  removeFromGlobalUnavail(player);
+  removeFromBench(destSet, player);
+
+  if (doSwap && occupied && occupied !== player) {
+    // Remove occupied from destination cell
+    removeFromGridOnly(destSet, occupied);
+
+    // Place player into destination cell
+    if (destZone === 'left') STATE.sets[destSet].rows[dest.r][0] = player;
+    else STATE.sets[destSet].rows[dest.r][1] = player;
+
+    // Put occupied back to source
+    if (srcSet === currentSet) {
+      if (srcZone === 'left' || srcZone === 'right') {
+        ensureRowExists(srcSet, src.r);
+        if (srcZone === 'left') STATE.sets[srcSet].rows[src.r][0] = occupied;
+        else STATE.sets[srcSet].rows[src.r][1] = occupied;
+      } else if (srcZone === 'bench') {
+        addToBench(srcSet, occupied);
+      } else if (srcZone === 'unavail') {
+        addToGlobalUnav(occupied);
+      } else {
+        addToBench(srcSet, occupied);
+      }
+    } else {
+      addToBench(destSet, occupied);
+    }
+  } else {
+    // Simple place
+    if (destZone === 'left') STATE.sets[destSet].rows[dest.r][0] = player;
+    else STATE.sets[destSet].rows[dest.r][1] = player;
+  }
+
+  healAllBuckets();
+  renderCurrent();
+  scheduleSave(destSet);
+}
+
+/** STATUS */
+function showStatus(setName, msg, final=false, ok=true, errObj=null){
+  const id = `${setName}-status`;
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  el.classList.remove('ok','err');
+  if (final) el.classList.add(ok ? 'ok' : 'err');
+
+  el.textContent = msg + (errObj ? ` (${String(errObj?.message || errObj)})` : '');
+
+  if (final && ok) {
+    setTimeout(()=>{
+      const el2 = document.getElementById(id);
+      if (el2) { el2.textContent = ''; el2.classList.remove('ok','err'); }
+    }, 1200);
+  }
+}
+</script>
+
+  <div id="fa-end-spacer" style="height: 140px;"></div>
+</body>
+</html>

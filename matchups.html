@@ -1,0 +1,2629 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Matchups</title>
+
+<style>
+/* =========================
+   Matchups styles (UPDATED)
+   - Unified button gradient angle (135deg) for Round + all bottom controls
+   - BENCH button uses the exact Round active red
+   - Controls keep same colors, just same "feel" + angle
+   ========================= */
+
+:root{
+  font-size: 12.5px;
+
+  /* unified gradient angle */
+  --btn-angle: 135deg;
+
+  /* Round active red (single source of truth) */
+  --red1: #ff3b3b;
+  --red2: #e40000;
+
+  /* Control button color pairs (unchanged colors) */
+  --green1:#31c271; --green2:#28a745;
+  --yellow1:#ffd65a; --yellow2:#ffc107;
+  --blue1:#3a86ff;   --blue2:#0d6efd;
+  --gray1:#a8b1bd;   --gray2:#6c757d;
+  --teal1:#36d1dc;   --teal2:#17a2b8;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f7f8fa;
+  color: #222;
+}
+
+body { padding: 10px; }
+html, body{
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.roundToggle{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roundBtn{
+  border: none;
+  border-radius: 10px;
+  height: 32px;
+  font-size: 1.30rem;
+  font-weight: 900;
+  letter-spacing: .8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  transition: transform .08s ease, filter .15s ease, opacity .15s ease, box-shadow .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.roundBtn:active { transform: scale(0.99); }
+
+.roundBtn.isActive{
+  background: linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+.roundBtn:not(.isActive){
+  /* angle updated to match everything */
+  background: linear-gradient(var(--btn-angle), #f9f9f9 0%, #ededed 100%);
+  color: #222;
+  opacity: .95;
+}
+
+/* removed elo sort toggle ui */
+.eloSortRow{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin: 6px 0 12px;
+}
+.eloSortChk{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 12px;
+  background:#fff;
+  border-radius:999px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  user-select:none;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.eloSortChk input{
+  width:18px;
+  height:18px;
+}
+
+/* ===== Teams layout ===== */
+.teams{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.team{
+  min-width: 0;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+  padding: 0;
+  border: none;
+}
+
+/* SMALL COLORED HEADERS - NO TEXT */
+.team h3{
+  margin: 0;
+  padding: 0;
+  height: 5px;
+  line-height: 0;
+  font-size: 0;
+  border-radius: 10px 10px 0 0;
+}
+
+/* left team = red strip */
+.team-left h3{
+  background: linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%);
+}
+
+/* right team = black strip */
+.team-right h3{
+  background: linear-gradient(var(--btn-angle), #111 0%, #000 100%);
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 1.34rem;
+}
+thead th{
+  background: #f0f0f0;
+  cursor: default;
+  user-select: none;
+  padding: 6px 6px;
+  line-height: 1.02;
+  font-weight: 600;
+  font-size: 0.95em;
+}
+thead th.sortable{ cursor: pointer; }
+
+#team1Table thead th:nth-child(1), #team2Table thead th:nth-child(1){ text-align: left; }
+
+tbody td{
+  padding: 3.5px 4px;
+  line-height: .85;
+  font-weight: 400;
+}
+#team1Table tbody td:nth-child(1), #team2Table tbody td:nth-child(1){ text-align: left; }
+
+#team1Table tbody td:nth-child(2), #team1Table tbody td:nth-child(3),
+#team2Table tbody td:nth-child(2), #team2Table tbody td:nth-child(3){
+  font-weight: 400 !important;
+}
+
+#team1Table th:nth-child(1), #team1Table td:nth-child(1),
+#team2Table th:nth-child(1), #team2Table td:nth-child(1){
+  width: 65%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#team1Table th:nth-child(2), #team1Table td:nth-child(2),
+#team2Table th:nth-child(2), #team2Table td:nth-child(2){
+  width: 15%;
+  text-align: center;
+}
+#team1Table th:nth-child(3), #team1Table td:nth-child(3),
+#team2Table th:nth-child(3), #team2Table td:nth-child(3){
+  width: 20%;
+  text-align: center;
+}
+
+#team1Table thead th:first-child, #team2Table thead th:first-child{
+  font-family: "Roboto Condensed","Arial Narrow","Inter Tight","Segoe UI",system-ui,sans-serif;
+  font-stretch: condensed;
+  font-weight: 400 !important;
+  text-align: left !important;
+}
+#team1Table tbody td:first-child, #team2Table tbody td:first-child{
+  font-family: "Roboto Condensed","Arial Narrow","Inter Tight","Segoe UI",system-ui,sans-serif;
+  font-stretch: condensed;
+  font-weight: 400 !important;
+  text-align: left !important;
+}
+
+tr.player-row{ cursor: pointer; }
+.selected    { background-color: #add8e6 !important; color: #000 !important; }
+.matched     { background-color: #d9d9d9 !important; color: #000 !important; text-decoration: line-through !important; }
+.unavailable { background-color: #000 !important;     color: #fff !important; text-decoration: line-through !important; }
+.bench       { background-color: #5a5a5a !important; color: #fff !important; }
+
+
+/* ===== Roster edit mode (preview styles, no orange) ===== */
+.player-row.pending-bench{
+  background-color: #5a5a5a !important;
+  color: #fff !important;
+}
+.player-row.pending-unavail{
+  background-color: #000 !important;
+  color: #fff !important;
+  text-decoration: line-through !important;
+}
+.player-row.pending-remove{
+  background-color: #fff !important;
+  color: #222 !important;
+  text-decoration: none !important;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.35);
+}
+
+/* When editing roster: blur + disable other bottom buttons */
+.controls.roster-lock .ctrlBtn:not(#notAvailableBtn){
+  filter: blur(1.2px);
+  opacity: .28;
+}
+.controls.roster-lock .ctrlBtn:not(#notAvailableBtn):disabled{
+  pointer-events: none;
+}
+
+/* ROSTER button becomes CONFIRM with mode color */
+#notAvailableBtn.confirm-bench{
+  background: linear-gradient(var(--btn-angle), var(--gray1) 0%, var(--gray2) 100%) !important;
+}
+#notAvailableBtn.confirm-unavail{
+  background: linear-gradient(var(--btn-angle), #111 0%, #000 100%) !important;
+}
+.highlight-temp { background-color: #f0750f !important; color: #fff !important; }
+
+/* ===== Bottom controls ===== */
+.controls{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+button.ctrlBtn{
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: .2px;
+  cursor: pointer;
+  padding: 24px 0;
+  font-size: 1.10rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* unified feel */
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  transition: transform .08s ease, filter .15s ease, opacity .15s ease, box-shadow .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+button.ctrlBtn:hover{
+  box-shadow: 0 1px 6px rgba(0,0,0,.18);
+  filter: brightness(1.06);
+}
+button.ctrlBtn:active{
+  transform: scale(0.99);
+  filter: brightness(1.03);
+}
+button.ctrlBtn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.35);
+}
+button.ctrlBtn:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* button colors (same colors, unified angle) */
+#confirmBtn { background: linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%); }
+#undoBtn    { background: linear-gradient(var(--btn-angle), var(--yellow1) 0%, var(--yellow2) 100%); color:#36454F; }
+#resetBtn   { background: linear-gradient(var(--btn-angle), var(--blue1) 0%, var(--blue2) 100%); }
+
+/* ✅ BENCH button: EXACT Round active red */
+#notAvailableBtn{
+  background: linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%);
+}
+
+#doublesBtn{
+  background: linear-gradient(var(--btn-angle), var(--gray1) 0%, var(--gray2) 100%);
+}
+#doublesBtn.active{
+  background: linear-gradient(var(--btn-angle), var(--teal1) 0%, var(--teal2) 100%);
+  box-shadow: 0 1px 6px rgba(0,0,0,.18);
+  filter: brightness(1.06);
+}
+
+/* ===== Matches list ===== */
+#confirmedMatches{
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  padding: 10px;
+  text-align: center;
+}
+.match-entry{
+  border-bottom: 1px dashed #e5e7eb;
+  padding: 9px 6px;
+  font-weight: 800;
+  color: #000;
+  font-size: 1.25rem;
+}
+.match-entry:last-child{ border-bottom: none; }
+.match-entry.doubles{
+  line-height: 1.35;
+  margin: 8px auto;
+  border-radius: 10px;
+  padding: 8px;
+  width: 90%;
+  background: #fff;
+}
+.match-entry.doubles.alt-bg{ background: #f0f0f0; }
+
+/* ===== Loading overlay ===== */
+#loadingOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .3s ease, visibility .3s ease;
+}
+#loadingOverlay.active{ visibility: visible; opacity: 1; }
+.loadingPulse{
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #0d6efd;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(1);opacity:.9}
+  50%{transform:scale(1.08);opacity:1}
+  100%{transform:scale(1);opacity:.9}
+}
+
+@media (max-width: 600px){
+  .teams { gap: 7px; }
+  thead th, tbody td { padding: 5px 5px; }
+  .roundBtn { height: 32px; font-size: 1.35rem; }
+}
+
+@keyframes smoothFlashGreen{0%{background:#c8e6c9;opacity:1}50%{background:#a5d6a7;opacity:.9}100%{background:inherit;opacity:1}}
+@keyframes smoothFlashYellow{0%{background:#fff9c4;opacity:1}50%{background:#fff59d;opacity:.9}100%{background:inherit;opacity:1}}
+.flash-green{animation:smoothFlashGreen .18s ease-in-out}
+.flash-yellow{animation:smoothFlashYellow .18s ease-in-out}
+
+@media (max-width: 430px){
+  :root{ font-size: 11.5px; }
+  table{ font-size: 1.10rem; }
+  .match-entry{ font-size: 1.30rem; }
+  .ctrlBtn{ padding: 10px 0; font-size: 0.95rem; border-radius: 9px; }
+  .roundBtn{ height: 32px; font-size: 1.15rem; }
+}
+
+</style>
+</head>
+
+<body>
+<div id="syncBanner" style="display:none; background: linear-gradient(135deg, #ffd65a 0%, #ffc107 100%); color: #000; text-align: center; padding: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 9999;">
+  <span style="display:inline-block; animation: fa-spin 1s linear infinite;">↻</span>
+</div>
+<style>@keyframes fa-spin { 100% { transform: rotate(360deg); } }</style>
+
+<style>
+:root{ --fa-header-offset: 0px; }
+
+/* Header container */
+.fa-header{
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #f7f8fa;
+  border-bottom: none;
+  padding: 0 !important;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ✅ Help block pinch/zoom gestures inside iframe (browser-dependent) */
+html, body { touch-action: pan-x pan-y; }
+
+/* ============ TOP TABS (4) ============ */
+.fa-header .fa-tabs{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Shared button base for top tabs + submenu buttons */
+.fa-header .fa-tabs button,
+.fa-header .fa-submenu button{
+  -webkit-appearance:none !important;
+  appearance:none !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important;
+  font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important;
+  line-height: 1 !important;
+
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 6px !important;
+
+  border-radius: 8px !important;
+  border: 0 !important;
+  outline: none !important;
+
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
+
+  color: #222 !important;
+  cursor: pointer !important;
+
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+.fa-header .fa-tabs button:not(.active):hover,
+.fa-header .fa-submenu button:not(.sub-active):hover{
+  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
+}
+
+/* Active tab */
+.fa-header .fa-tabs button.active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+/* Tap flash */
+.fa-header .fa-tabs button.fa-press,
+.fa-header .fa-submenu button.fa-press{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+.fa-header .fa-tabs button:active,
+.fa-header .fa-submenu button:active{
+  transform: scale(0.99);
+}
+
+/* ======= Hamburger button + logo ======= */
+#nav-menu{
+  padding: 0 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+#nav-menu .menu-logo{
+  height: 18px;
+  width: auto;
+  display: block;
+}
+
+#nav-menu .hamburger-icon{
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+/* ============ DROPDOWN MENU (hamburger) ============ */
+.fa-submenu-wrap{ position: relative; }
+
+.fa-submenu{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 8px 0 0;
+  z-index: 1001;
+
+  opacity: 0;
+  transform: translateY(-6px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+.fa-submenu.show{
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 8px;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Slightly taller menu rows feels more “iOS” without changing your top tabs */
+.fa-header .fa-submenu button{
+  height: 42px !important;
+  min-height: 42px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
+.fa-header .fa-submenu button.sub-active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color:#fff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.04);
+}
+
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 6px !important;
+  }
+  .fa-header .fa-submenu button{
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 12.5px !important;
+  }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+  #nav-menu .menu-logo{ height: 16px; }
+}
+
+/* =========================================================
+   Pull-to-refresh toast (spinner-only pill)
+   ========================================================= */
+#fa-ptr{
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 10px);
+  transform: translate(-50%, -14px);
+  opacity: 0;
+  z-index: 99999;
+  pointer-events: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+
+  transition: opacity 140ms ease, transform 140ms ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+#fa-ptr.show{ opacity: 1; transform: translate(-50%, 0); }
+#fa-ptr .spin{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,.18);
+  border-top-color: rgba(0,0,0,.55);
+  animation: faSpin 800ms linear infinite;
+}
+@keyframes faSpin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="fa-header fa-submenu-wrap">
+  <nav class="fa-tabs">
+    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
+    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
+    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
+
+    <button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
+      <img
+        class="menu-logo"
+        src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32"
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+      />
+      <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </nav>
+
+  <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
+    <div class="inner">
+      <button data-page="rankings">RANKINGS</button>
+      <button data-page="stats">STATS</button>
+      <button data-page="elo">ELO</button>
+      <button data-page="standings">STANDINGS</button>
+      <button data-page="admin">ADMIN</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================
+   0) Disable pinch/zoom inside iframe (iOS Safari fallback)
+   =========================== */
+(function(){
+  ['gesturestart','gesturechange','gestureend'].forEach(function(evt){
+    document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
+  });
+
+  var lastTouchEnd = 0;
+
+  function _faIsIOS_(){
+    try{
+      var ua = navigator.userAgent || "";
+      var plat = navigator.platform || "";
+      var isIPhoneIPadIPod = /iPad|iPhone|iPod/.test(ua);
+      var isIPadOS = (plat === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+      return isIPhoneIPadIPod || isIPadOS;
+    }catch(_){ return false; }
+  }
+  function _faIsInteractive_(t){
+    try{
+      return !!(t && t.closest && t.closest("button,a,input,select,textarea,label,[role='button'],[contenteditable='true']"));
+    }catch(_){ return false; }
+  }
+
+  document.addEventListener('touchend', function(e){
+    if (!_faIsIOS_()) return;
+    if (_faIsInteractive_(e.target)) return;
+
+    var now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+})();
+
+/* ===========================
+   1) Header nav + menu + active state
+   =========================== */
+(function(){
+  function qs() {
+    try { return new URLSearchParams(window.location.search || ""); }
+    catch (e) { return new URLSearchParams(""); }
+  }
+
+  function currentPage(){
+    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
+
+    // Support hash routing (GitHub wrapper uses #scoring, #matchups, etc.)
+    if (!p){
+      var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
+      h = h.replace(/^\/+/, "");
+      if (h.indexOf("?") !== -1) h = h.split("?")[0];
+      if (h.indexOf("&") !== -1) h = h.split("&")[0];
+      p = h;
+    }
+
+    if (!p) return "";
+    if (p === "doubles") p = "rosters";
+    if (p === "scores") p = "scoring";
+    if (p === "players") p = "admin";
+    return p;
+  }
+
+  function isEmbedded(){
+    try { if (window.top !== window) return true; } catch(e){ return true; }
+    var embed = (qs().get("embed") || "").toLowerCase();
+    return (embed === "1" || embed === "true" || embed === "yes");
+  }
+
+  // Pages that live under the hamburger menu
+  const menuPages = ['rankings','stats','standings','elo','admin','players'];
+
+  function setActiveByPage(page){
+    page = String(page||"").toLowerCase();
+
+    // top tabs
+    document.querySelectorAll(".fa-tabs button").forEach(function(b){
+      var key = b.dataset.key || b.dataset.page || "";
+      var active = false;
+      if (key === "menu") active = (menuPages.indexOf(page) !== -1);
+      else active = (b.dataset.page === page);
+      b.classList.toggle("active", !!active);
+    });
+
+    // dropdown buttons
+    var menu = document.getElementById("faMoreMenu");
+    if (menu){
+      menu.querySelectorAll("button[data-page]").forEach(function(btn){
+        btn.classList.toggle("sub-active", (btn.dataset.page === page));
+      });
+    }
+  }
+
+  function detectActive(){
+    try{
+      var p = currentPage();
+      if (menuPages.indexOf(p) !== -1 || ["scoring","rosters","matchups"].indexOf(p) !== -1){
+        setActiveByPage(p);
+        return;
+      }
+      
+      // STATS title marker (helps when Stats page also contains roster/link sections)
+      var titleBar = document.querySelector(".pageTitlePanel .panel-titlebar, .panel.pageTitlePanel .panel-titlebar, .panel-titlebar");
+      if (titleBar && /stats/i.test((titleBar.textContent || "").trim())){
+        setActiveByPage("stats");
+        return;
+      }
+
+      // ELO markers
+      if (
+        document.getElementById("kBase") ||
+        document.getElementById("overallBody") ||
+        document.getElementById("pairsBody") ||
+        /(^|\s)elo(\s|$)/i.test(document.title || "")
+      ){
+        setActiveByPage("elo");
+        return;
+      }
+
+      // DOM heuristics
+      if (document.getElementById("singlesBody") || document.getElementById("recentCards")) { setActiveByPage("stats"); return; }
+      if (document.getElementById("table-body")) { setActiveByPage("rankings"); return; }
+      if (document.getElementById("b1") || document.getElementById("b2") || document.getElementById("b9")) { setActiveByPage("scoring"); return; }
+      if (document.getElementById("panel-CURRENT")) { setActiveByPage("rosters"); return; }
+      if (document.getElementById("playersTable") || document.getElementById("teamSelect")) { setActiveByPage("admin"); return; }
+      if (document.getElementById("team1Table") || document.getElementById("team2Table")) { setActiveByPage("matchups"); return; }
+      // Standings markers
+      if (document.getElementById("matchResults") || document.getElementById("adjWrap") || document.getElementById("simMatchup")) { setActiveByPage("standings"); return; }
+
+      // title fallback
+      var t = (document.title || "").toLowerCase();
+      if (t.indexOf("stat") !== -1) { setActiveByPage("stats"); return; }
+      if (t.indexOf("ranking") !== -1) { setActiveByPage("rankings"); return; }
+      if (t.indexOf("scor") !== -1) { setActiveByPage("scoring"); return; }
+      if (t.indexOf("roster") !== -1 || t.indexOf("double") !== -1) { setActiveByPage("rosters"); return; }
+
+      setActiveByPage("matchups");
+    }catch(e){
+      setActiveByPage("matchups");
+    }
+  }
+
+  function extraQS(){ return ""; }
+
+  function buildHref(page){ return page + ".html"; }
+
+  function sendToWrapper(page){
+    var msg = { type: "FA_NAV", page: page };
+    var sent = false;
+    try { window.top.postMessage(msg, "*"); sent = true; } catch(e){}
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(msg, "*");
+        sent = true;
+      }
+    } catch(e){}
+    return sent;
+  }
+
+  // ---- menu open/close ----
+  var menuBtn  = document.getElementById("nav-menu");
+  var menuEl   = document.getElementById("faMoreMenu");
+
+  function setMenuAria(open){
+    if (!menuBtn) return;
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function positionMenu(){
+    if (!menuEl || !menuBtn) return;
+    var wrap = document.querySelector(".fa-submenu-wrap");
+    if (!wrap) return;
+
+    var wrapRect = wrap.getBoundingClientRect();
+    var btnRect  = menuBtn.getBoundingClientRect();
+
+    // Wider than the button for a “real site” menu feel
+    var width = Math.max(btnRect.width + 12, 200);
+    width = Math.min(width, Math.floor(wrapRect.width - 8));
+
+    // Right-align under the hamburger (more typical)
+    var left = (btnRect.right - wrapRect.left) - width;
+
+    // Clamp within wrap bounds
+    var maxLeft = Math.max(0, wrapRect.width - width);
+    left = Math.max(0, Math.min(left, maxLeft));
+
+    menuEl.style.left = left + "px";
+    menuEl.style.right = "auto";
+    menuEl.style.width = width + "px";
+  }
+
+  function openMenu(){
+    if (!menuEl) return;
+    positionMenu();
+    menuEl.classList.add("show");
+    menuEl.setAttribute("aria-hidden","false");
+    setMenuAria(true);
+  }
+
+  function closeMenu(){
+    if (!menuEl) return;
+    menuEl.classList.remove("show");
+    menuEl.setAttribute("aria-hidden","true");
+    setMenuAria(false);
+  }
+
+  function toggleMenu(){
+    if (!menuEl) return;
+    if (menuEl.classList.contains("show")) closeMenu();
+    else openMenu();
+  }
+
+  function navigate(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return;
+
+    closeMenu();
+
+    // Active immediately so tap feels responsive
+    setActiveByPage(page);
+
+    var embedded = isEmbedded();
+    if (embedded){
+      var ok = sendToWrapper(page);
+      if (!ok) window.location.href = buildHref(page);
+    }else{
+      window.location.href = buildHref(page);
+    }
+  }
+
+  // Close on outside click
+  document.addEventListener("click", function(e){
+    if (!menuEl || !menuEl.classList.contains("show")) return;
+    var t = e.target;
+    if (t === menuBtn || (menuBtn && menuBtn.contains(t))) return;
+    if (menuEl.contains(t)) return;
+    closeMenu();
+  }, true);
+
+  // Keep menu anchored on resize/orientation changes
+  window.addEventListener("resize", function(){
+    if (menuEl && menuEl.classList.contains("show")) positionMenu();
+  }, { passive:true });
+
+  // ESC closes
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") closeMenu();
+  });
+
+  // Tap flash
+  function flash(btn){
+    if (!btn) return;
+    btn.classList.add("fa-press");
+    window.setTimeout(function(){ btn.classList.remove("fa-press"); }, 140);
+  }
+  function wireFlash(root){
+    if (!root) return;
+    root.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("touchstart", function(){ flash(btn); }, { passive:true });
+      btn.addEventListener("mousedown",  function(){ flash(btn); }, { passive:true });
+    });
+  }
+  wireFlash(document.querySelector(".fa-tabs"));
+  wireFlash(menuEl);
+
+  // Wire top tabs
+  document.querySelectorAll(".fa-tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      if (btn.id === "nav-menu"){ toggleMenu(); return; }
+      var page = btn.dataset.page;
+      if (page) navigate(page);
+    });
+  });
+
+  // Wire dropdown
+  if (menuEl){
+    menuEl.querySelectorAll("button[data-page]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        navigate(btn.dataset.page);
+      });
+    });
+  }
+
+  // Expose helpers
+  try { window.faNavigate = navigate; } catch(e){}
+  try { window.navigate = navigate; } catch(e){}
+  try { window.faSetActiveByPage = setActiveByPage; } catch(e){}
+  try { window.faDetectActive = detectActive; } catch(e){}
+
+  // Keep active tab in sync for hash-routed / SPA navigation
+  window.addEventListener("hashchange", function(){ setTimeout(detectActive, 0); }, { passive:true });
+  window.addEventListener("popstate",  function(){ setTimeout(detectActive, 0); }, { passive:true });
+  try{
+    ["pushState","replaceState"].forEach(function(fn){
+      var orig = history[fn];
+      if (!orig) return;
+      history[fn] = function(){
+        var r = orig.apply(this, arguments);
+        setTimeout(detectActive, 0);
+        return r;
+      };
+    });
+  }catch(_){ }
+
+  detectActive();
+  setMenuAria(false);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(detectActive, 0); });
+  } else {
+    setTimeout(detectActive, 0);
+  }
+})();
+
+/* ===========================
+   2) Pull-to-refresh (unchanged)
+   =========================== */
+(function(){
+  function isEmbedded(){
+    try { return window.top !== window; } catch(e){ return true; }
+  }
+
+  function scrollTop(){
+    var se = document.scrollingElement || document.documentElement || document.body;
+    return se ? (se.scrollTop || 0) : 0;
+  }
+
+  function headerBottom(){
+    var h = document.querySelector(".fa-header");
+    if (!h) return 0;
+    var r = h.getBoundingClientRect();
+    return r ? (r.bottom || r.height || 0) : 0;
+  }
+
+  function isInteractiveTarget(el){
+    if (!el) return false;
+    return !!el.closest("button,a,input,select,textarea,label,[role='button'],[contenteditable='true'],[data-no-ptr]");
+  }
+
+  function _isVisible_(el){
+    try{
+      if (!el) return false;
+      var cs = getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden") return false;
+      if (parseFloat(cs.opacity || "1") === 0) return false;
+      var r = el.getBoundingClientRect();
+      return !!(r && r.width > 0 && r.height > 0);
+    }catch(_){ return false; }
+  }
+
+  function inModalOrOverlay(el){
+    try{
+      return !!(el && el.closest && el.closest(
+        "[data-no-ptr],[aria-modal='true'],[role='dialog'],[role='alertdialog'],dialog,.modal,.dialog,.overlay"
+      ));
+    }catch(_){ return false; }
+  }
+
+  function isModalOpen(){
+    try{
+      if (document.body && document.body.classList && document.body.classList.contains("modal-open")) return true;
+
+      // Any visible dialog/modal/overlay element that is positioned above content
+      var nodes = document.querySelectorAll("[aria-modal='true'],dialog[open],[role='dialog'],[role='alertdialog'],.modal,.dialog,.overlay");
+      for (var i=0; i<nodes.length; i++){
+        var n = nodes[i];
+        if (!n || (n.classList && n.classList.contains("fa-header"))) continue;
+        if (!_isVisible_(n)) continue;
+        var cs = getComputedStyle(n);
+        if (cs.position === "fixed" || cs.position === "absolute") return true;
+      }
+    }catch(_){}
+    return false;
+  }
+
+  var toast;
+
+  function ensureToast(){
+    if (toast) return true;
+    if (!document.body) return false;
+    toast = document.createElement("div");
+    toast.id = "fa-ptr";
+    toast.innerHTML = '<span class="spin"></span>';
+    document.body.appendChild(toast);
+    return true;
+  }
+
+  function showToast(){
+    if (!ensureToast()) return;
+    toast.classList.add("show");
+  }
+
+  function hideToast(){
+    if (!toast) return;
+    toast.classList.remove("show");
+  }
+
+  function postRefresh(nonce){
+    var msg = { type: "FA_REFRESH", nonce: nonce };
+    try { window.top.postMessage(msg, "*"); } catch(e){}
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*");
+    } catch(e){}
+  }
+
+  function hardReloadSelf(){
+    try {
+      var u = new URL(location.href);
+      u.searchParams.set("r", String(Date.now()));
+      u.searchParams.set("fresh", "1");
+      location.replace(u.toString());
+    } catch(e) {
+      location.reload();
+    }
+  }
+
+  function requestRefresh(){
+    var nonce = Date.now();
+    var didUnload = false;
+    window.addEventListener("beforeunload", function(){ didUnload = true; }, { once:true });
+
+    if (isEmbedded()) postRefresh(nonce);
+    else hardReloadSelf();
+
+    setTimeout(function(){
+      if (!didUnload) hardReloadSelf();
+    }, 350);
+  }
+
+  var startY = 0, startX = 0, lastDy = 0;
+  var armed = false;
+
+  // Make accidental refreshes harder, but still easy enough when intentional
+  var THRESH = 120;   // was 90
+  var SHOW_AT = 18;   // was 12
+  var MAX_SLOP_X = 80;
+  var VERTICAL_RATIO = 2.0;
+
+  window.addEventListener("touchstart", function(e){
+    if (!e.touches || e.touches.length !== 1) { armed = false; return; }
+
+    // Only arm when the MAIN page is truly at the top
+    if (scrollTop() > 0) { armed = false; return; }
+
+    // Never arm while a modal/overlay is open (prevents modal-top bounce triggering refresh)
+    if (isModalOpen() || inModalOrOverlay(e.target)) { armed = false; return; }
+
+    // Never arm on buttons/inputs/explicit no-ptr zones
+    if (isInteractiveTarget(e.target)) { armed = false; return; }
+
+    var t = e.touches[0];
+    startY = t.clientY;
+    startX = t.clientX;
+    lastDy = 0;
+
+    // Allow pull-to-refresh starting anywhere below the sticky header
+    armed = (startY >= (headerBottom() + 6));
+  }, { passive:true });
+
+  window.addEventListener("touchmove", function(e){
+    if (!armed || !e.touches || e.touches.length !== 1) return;
+
+    var t = e.touches[0];
+    var dy = t.clientY - startY;
+    var dx = t.clientX - startX;
+
+    if (dy <= 0){
+      lastDy = 0;
+      hideToast();
+      return;
+    }
+
+    var adx = Math.abs(dx);
+    if (adx > MAX_SLOP_X || dy < adx * VERTICAL_RATIO){
+      lastDy = 0;
+      hideToast();
+      return;
+    }
+
+    if (dy > SHOW_AT){
+      lastDy = dy;
+      showToast();
+    }
+  }, { passive:true });
+
+  window.addEventListener("touchend", function(){
+    if (!armed){ hideToast(); return; }
+
+    if (lastDy >= THRESH){
+      showToast();
+      setTimeout(requestRefresh, 60);
+    } else {
+      hideToast();
+    }
+
+    armed = false;
+    lastDy = 0;
+  }, { passive:true });
+
+  window.addEventListener("touchcancel", function(){
+    armed = false;
+    lastDy = 0;
+    hideToast();
+  }, { passive:true });
+})();
+</script>
+
+<div class="roundToggle" role="group" aria-label="Round">
+  <button id="btnRound1" class="roundBtn" aria-pressed="false" onclick="onTapRound('R1')">ROUND 1</button>
+  <button id="btnRound2" class="roundBtn" aria-pressed="false" onclick="onTapRound('R2')">ROUND 2</button>
+</div>
+
+<div class="teams">
+  <div class="team team-left" id="team1Container">
+    <h3 id="team1Header">TEAM 1</h3>
+    <table id="team1Table">
+      <tbody id="team1Players"></tbody>
+    </table>
+  </div>
+
+  <div class="team team-right" id="team2Container">
+    <h3 id="team2Header">TEAM 2</h3>
+    <table id="team2Table">
+      <tbody id="team2Players"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrlBtn" id="notAvailableBtn" onclick="availabilityButton()">ROSTER</button>
+  <button class="ctrlBtn" id="resetBtn" onclick="resetAll()">RESET</button>
+  <button class="ctrlBtn" id="confirmBtn" onclick="confirmMatch()">CONFIRM</button>
+  <button class="ctrlBtn" id="undoBtn" onclick="undoLast()">UNDO</button>
+  <button class="ctrlBtn" id="doublesBtn" onclick="toggleDoublesMode()">SINGLES</button>
+</div>
+
+<div id="confirmedMatches">
+  <div id="matchesList"></div>
+</div>
+
+<script>
+// =========================================================
+// THE MAGIC POLYFILL: Converts google.script.run to fetch()
+// =========================================================
+const GAS_API_URL = (localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec");
+
+window.google = {
+  script: {
+    run: new Proxy({}, { get: (target, prop) => createProxy(null, null)[prop] })
+  }
+};
+
+function createProxy(onSuccess, onFailure) {
+  return new Proxy({}, {
+    get: function(target, prop) {
+      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, onFailure);
+      if (prop === 'withFailureHandler') return (cb) => createProxy(onSuccess, cb);
+      
+      return function(...args) {
+        fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: prop, args: args })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) throw new Error(data.error);
+          if (onSuccess) onSuccess(data.result);
+        })
+        .catch(err => {
+          if (onFailure) onFailure(err);
+          else console.error("API Error in " + prop + ":", err);
+        });
+      };
+    }
+  });
+}
+
+/* ---------- Big dialog helpers ---------- */
+function openBigDialog(){
+  const overlay = document.createElement("div");
+  overlay.id = "overlay_big_dialog";
+  const qs = new URLSearchParams(location.search||"");
+  const embedded = qs.get("embed") === "1";
+  const ps = (embedded && typeof window.__FA_PARENT_SCALE === "number" && window.__FA_PARENT_SCALE>0) ? window.__FA_PARENT_SCALE : 1;
+  const py = (embedded && typeof window.__FA_PARENT_SCROLL_Y === "number") ? window.__FA_PARENT_SCROLL_Y : 0;
+  const pvh = (embedded && typeof window.__FA_PARENT_VH === "number" && window.__FA_PARENT_VH>0) ? window.__FA_PARENT_VH : window.innerHeight;
+  if (embedded) {
+    overlay.style.position = "absolute";
+    overlay.style.left = "0";
+    overlay.style.right = "0";
+    overlay.style.top = Math.max(0, Math.floor(py / ps)) + "px";
+    overlay.style.height = Math.max(320, Math.floor(pvh / ps)) + "px";
+  } else {
+    overlay.style.position = "fixed";
+    overlay.style.inset = "0";
+  }
+  overlay.style.background = "rgba(0,0,0,0.6)";
+  overlay.style.display = "flex"; overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center"; overlay.style.zIndex = "9999";
+  overlay.style.backdropFilter = "blur(2px)";
+
+  const box = document.createElement("div");
+  box.style.width = "96vw"; box.style.maxWidth = "700px";
+  if (embedded) {
+    box.style.maxHeight = Math.max(240, Math.floor((pvh / ps) * 0.82)) + "px";
+  } else {
+    box.style.maxHeight = "80vh";
+  }
+
+  box.style.overflow = "auto"; box.style.borderRadius = "20px"; box.style.background = "#fff";
+  box.style.padding = "28px"; box.style.boxShadow = "0 12px 40px rgba(0,0,0,0.35)"; box.style.fontSize = "1.8em";
+  box.style.touchAction = "manipulation"; box.style.transform = "scale(0.98)";
+  box.style.transition = "transform 120ms ease-out";
+  requestAnimationFrame(()=>{box.style.transform="scale(1)"});
+
+  let keyHandler = null;
+  const close = () => {
+    if (keyHandler) document.removeEventListener("keydown", keyHandler);
+    try { if (embedded) parent.postMessage({type:"FA_LOCK_SCROLL", lock:false}, "*"); } catch(e){}
+    overlay.remove();
+  };
+
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) close(); }, {passive:true});
+  keyHandler = (e) => { if(e.key==="Escape") close(); };
+  document.addEventListener("keydown", keyHandler);
+
+  box.setAttribute("role","dialog"); box.setAttribute("aria-modal","true");
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  try { if (embedded) parent.postMessage({type:"FA_LOCK_SCROLL", lock:true}, "*"); } catch(e){}
+  return { overlay, box, close };
+}
+
+function makeBigDialogButton(label,bg,fg="white"){
+  const b=document.createElement("button");
+  b.textContent=label; b.style.display="block"; b.style.width="100%";
+  b.style.padding="14px 14px"; b.style.minHeight="62px"; b.style.margin="8px 0";
+  b.style.fontSize="1.0em"; b.style.lineHeight="1.15"; b.style.fontWeight="800"; b.style.letterSpacing="0.3px";
+  b.style.border="none"; b.style.borderRadius="14px"; b.style.background=bg; b.style.color=fg; b.style.cursor="pointer";
+  b.style.webkitTapHighlightColor="transparent";
+  b.onpointerdown=()=>b.style.transform="scale(0.985)";
+  b.onpointerup  =()=>b.style.transform="";
+  b.onpointercancel=()=>b.style.transform="";
+  return b;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function openAddOpponentPlayerDialog(){
+  const dlg = openBigDialog();
+  const box = dlg.box;
+
+  box.innerHTML = `
+    <div style="padding:6px 4px 10px; font-weight:900; letter-spacing:.6px; font-size:1.05em; text-align:center;">
+      ADD OPPONENT PLAYER
+    </div>
+    <div style="display:grid; gap:10px;">
+      <input id="oppName" type="text" placeholder="Name" style="padding:12px; border-radius:12px; border:1px solid #ddd; font-size:1em;">
+      <select id="oppRank" style="padding:12px; border-radius:12px; border:1px solid #ddd; font-size:1em;">
+        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+        <option value="AF">AF</option><option value="BF">BF</option><option value="CF">CF</option>
+      </select>
+      <input id="oppRating" type="number" inputmode="numeric" placeholder="Rating" style="padding:12px; border-radius:12px; border:1px solid #ddd; font-size:1em;">
+    </div>
+  `;
+
+  const addBtn  = makeBigDialogButton("ADD", "linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%)", "#fff");
+  const cancel  = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+  addBtn.onclick = () => {
+    const name = (document.getElementById("oppName").value || "").trim();
+    const rank = (document.getElementById("oppRank").value || "A").trim();
+    const ratingRaw = (document.getElementById("oppRating").value || "").trim();
+    const rating = ratingRaw ? Number(ratingRaw) : "";
+
+    if(!name){ showPopup("Missing name", "Please enter a name.", "#dc3545"); return; }
+    if(ratingRaw && (!Number.isFinite(rating) || rating <= 0)){ showPopup("Invalid rating", "Rating must be a number.", "#dc3545"); return; }
+
+    addBtn.disabled = true; cancel.disabled = true;
+    const loading = document.getElementById("loadingOverlay");
+    if (loading) loading.classList.add("active");
+
+    google.script.run
+      .withSuccessHandler((data) => {
+        if (loading) loading.classList.remove("active");
+        dlg.close();
+        showToast("✅ Opponent added", "success");
+        if (data) renderData(data);
+      })
+      .withFailureHandler((err) => {
+      try {
+        const k2 = __matchKey(t1, t2);
+        t1.forEach(p => { const n = __normName(p); if (n) __optForceMatchedT1.delete(n); });
+        t2.forEach(p => { const n = __normName(p); if (n) __optForceMatchedT2.delete(n); });
+        __optMatchesAdd = (__optMatchesAdd||[]).filter(x => x.k !== k2);
+      } catch(_) {}
+        if (loading) loading.classList.remove("active");
+        addBtn.disabled = false; cancel.disabled = false;
+        showPopup("Action failed", (err && err.message) ? String(err.message) : String(err), "#dc3545");
+      })
+      .addOpponentPlayerAndSync({ name: name, rank: rank, rating: (ratingRaw ? rating : "") });
+  };
+
+  cancel.onclick = () => dlg.close();
+
+  box.appendChild(addBtn);
+  box.appendChild(cancel);
+}
+
+function openRemoveOpponentPlayerDialog(){
+  const roster = (__lastData && __lastData.team2Roster) ? __lastData.team2Roster : [];
+  const names = roster.map(r => r && r[0]).filter(Boolean);
+
+  const dlg = openBigDialog();
+  const box = dlg.box;
+
+  const opts = names.length
+    ? names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")
+    : `<option value="">(No opponent players found)</option>`;
+
+  box.innerHTML = `
+    <div style="padding:6px 4px 10px; font-weight:900; letter-spacing:.6px; font-size:1.05em; text-align:center;">
+      REMOVE OPPONENT PLAYER
+    </div>
+    <div style="display:grid; gap:10px;">
+      <select id="oppRemoveName" style="padding:12px; border-radius:12px; border:1px solid #ddd; font-size:1em;">
+        ${opts}
+      </select>
+    </div>
+  `;
+
+  const remBtn = makeBigDialogButton("REMOVE", "linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%)", "#fff");
+  const cancel = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+  remBtn.onclick = async () => {
+    const name = (document.getElementById("oppRemoveName").value || "").trim();
+    if(!name){ dlg.close(); return; }
+    const ok = await showConfirm("Confirm removal", `Remove <strong>${escapeHtml(name)}</strong> from opponent roster?`, { okText: "REMOVE", okColor: "linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%)", cancelText: "CANCEL" });
+    if(!ok) return;
+
+    remBtn.disabled = true; cancel.disabled = true;
+    const loading = document.getElementById("loadingOverlay");
+    if (loading) loading.classList.add("active");
+
+    google.script.run
+      .withSuccessHandler((data) => {
+        if (loading) loading.classList.remove("active");
+        dlg.close();
+        showToast(`🗑️ Removed ${name}`, "info");
+        if (data) renderData(data);
+      })
+      .withFailureHandler((err) => {
+        if (loading) loading.classList.remove("active");
+        remBtn.disabled = false; cancel.disabled = false;
+        showPopup("Action failed", (err && err.message) ? String(err.message) : String(err), "#dc3545");
+      })
+      .removeOpponentPlayerAndSync(name);
+  };
+
+  cancel.onclick = () => dlg.close();
+
+  box.appendChild(remBtn);
+  box.appendChild(cancel);
+}
+
+function openLoadOpponentRosterDialog(){
+  const dlg = openBigDialog();
+  const box = dlg.box;
+
+  box.innerHTML = `
+    <div style="padding:6px 4px 10px; font-weight:900; letter-spacing:.6px; font-size:1.05em; text-align:center;">
+      LOAD OPPONENT ROSTER
+    </div>
+    <div style="display:grid; gap:10px;">
+      <select id="oppRosterSelect" style="padding:12px; border-radius:12px; border:1px solid #ddd; font-size:1em;" disabled>
+        <option value="">Loading…</option>
+      </select>
+
+      <label style="display:flex; align-items:center; gap:10px; font-weight:800; font-size:0.95em; color:#111;">
+        <input id="oppRosterClearMatches" type="checkbox" style="width:18px; height:18px;">
+        Also clear current matches
+      </label>
+
+      </div>
+  `;
+
+  const loadBtn = makeBigDialogButton("LOAD", "linear-gradient(var(--btn-angle), var(--yellow1) 0%, var(--yellow2) 100%)", "#36454F");
+  const cancel  = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+  google.script.run
+    .withSuccessHandler((payload) => {
+      const sel = document.getElementById("oppRosterSelect");
+      if (!sel) return;
+
+      const arr = Array.isArray(payload) ? payload : (Array.isArray(payload?.list) ? payload.list : []);
+      const current = (!Array.isArray(payload) && payload && payload.currentSheetName) ? String(payload.currentSheetName) : "";
+      if (!arr.length) {
+        sel.innerHTML = `<option value="">(No opponent rosters found)</option>`;
+        sel.disabled = true;
+        return;
+      }
+
+      sel.innerHTML = arr.map(r => {
+        const sheet = (r && r.sheetName) ? String(r.sheetName) : "";
+        const team  = (r && r.teamName)  ? String(r.teamName)  : sheet;
+        return `<option value="${escapeHtml(sheet)}">${escapeHtml(team)}</option>`;
+      }).join("");
+
+      sel.disabled = false;
+
+      if (current) {
+        const opt = Array.from(sel.options || []).find(o => String(o.value) === current);
+        if (opt) sel.value = current;
+      }
+    })
+    .withFailureHandler((err) => {
+      const sel = document.getElementById("oppRosterSelect");
+      if (sel) {
+        sel.innerHTML = `<option value="">(Failed to load roster list)</option>`;
+        sel.disabled = true;
+      }
+      showPopup("Action failed", (err && err.message) ? String(err.message) : String(err), "#dc3545");
+    })
+    .listOpponentRostersWithCurrent();
+
+  loadBtn.onclick = async () => {
+    const sel = document.getElementById("oppRosterSelect");
+    const sheetName = sel ? String(sel.value || "").trim() : "";
+    const teamName  = sel && sel.selectedOptions && sel.selectedOptions[0]
+      ? String(sel.selectedOptions[0].textContent || "").trim()
+      : "";
+
+    if (!sheetName) {
+      showPopup("No opponent teams found", "No opponent teams were found in <strong>PlayersDB</strong>. Add at least one active player with a Team name (not Flying Aces), then reload this dialog.", "#0d6efd");
+      return;
+    }
+
+    const clearMatches = !!(document.getElementById("oppRosterClearMatches") && document.getElementById("oppRosterClearMatches").checked);
+
+    const warn = clearMatches
+      ? `<div style="margin-top:10px; color:#b00020; font-weight:900;">This will also clear ALL current matches.</div>`
+      : ``;
+
+    const ok = await showConfirm(
+      "Confirm load",
+      `Replace the current opponent roster with <strong>${escapeHtml(teamName || sheetName)}</strong>?${warn}`,
+      { okText: "LOAD", okColor: "linear-gradient(var(--btn-angle), var(--yellow1) 0%, var(--yellow2) 100%)", okTextColor: "#36454F", cancelText: "CANCEL" }
+    );
+    if (!ok) return;
+
+    loadBtn.disabled = true; cancel.disabled = true;
+    const loading = document.getElementById("loadingOverlay");
+    if (loading) loading.classList.add("active");
+
+    google.script.run
+      .withSuccessHandler((data) => {
+        if (loading) loading.classList.remove("active");
+        dlg.close();
+
+        const count2 = (data && Array.isArray(data.team2Roster)) ? data.team2Roster.filter(r => r && r[0]).length : 0;
+        const count1 = (data && Array.isArray(data.team1Roster)) ? data.team1Roster.filter(r => r && r[0]).length : 0;
+        const count  = Math.max(count2, count1);
+
+        showToast(`✅ Loaded ${teamName || "opponent roster"} (${count})`, "success");
+        if (data) renderData(data);
+      })
+      .withFailureHandler((err) => {
+        if (loading) loading.classList.remove("active");
+        loadBtn.disabled = false; cancel.disabled = false;
+        showPopup("Action failed", (err && err.message) ? String(err.message) : String(err), "#dc3545");
+      })
+      .loadOpponentRosterAndSync({ sheetName, clearMatches });
+  };
+
+  cancel.onclick = () => dlg.close();
+
+  box.appendChild(loadBtn);
+  box.appendChild(cancel);
+}
+
+/* ---------- UI guards ---------- */
+let __undoBusy=false, __confirmBusy=false, __resetBusy=false, __availBusy=false;
+function setDisabled(el,on){ if(!el) return; el.disabled=!!on; el.style.opacity=on?"0.6":""; el.style.cursor=on?"not-allowed":""; }
+
+function disableAllControls(on){
+  ["confirmBtn","undoBtn","notAvailableBtn","resetBtn","doublesBtn","btnRound1","btnRound2"]
+    .forEach(id => setDisabled(document.getElementById(id), on));
+}
+
+function forceBenchButtonLabel(){
+  const btn = document.getElementById("notAvailableBtn");
+  if(!btn) return;
+
+  if(!availabilityMode){
+    btn.textContent = "ROSTER";
+    btn.classList.remove("confirm-bench","confirm-unavail");
+  } else {
+    btn.textContent = "CONFIRM";
+    btn.classList.toggle("confirm-bench", availabilityMode === "bench");
+    btn.classList.toggle("confirm-unavail", availabilityMode === "unavailable");
+  }
+}
+
+/* ---------- State ---------- */
+let __lastData = null;
+let __syncBusy = false;
+let __autoSyncTimer = null;
+let selectedPlayers1=[], selectedPlayers2=[];
+let team1="", team2="";
+
+let __optForceMatchedT1 = new Set();
+let __optForceMatchedT2 = new Set();
+let __optForceUnmatchedT1 = new Set();
+let __optForceUnmatchedT2 = new Set();
+let __optMatchesAdd = []; 
+let __optMatchesHide = new Set(); 
+
+function __normName(s){ return (s ?? "").toString().trim(); }
+function __teamKey(arr){ return (arr||[]).map(__normName).filter(Boolean).sort().join("|"); }
+function __matchKey(t1, t2){ return __teamKey(t1) + "||" + __teamKey(t2); }
+function __matchKeyFromObj(m){
+  if (!m) return "";
+  if (m.type === "1v1") return __matchKey([m.team1],[m.team2]);
+  const t1 = [m.team1, m.team1_2].filter(Boolean);
+  const t2 = [m.team2, m.team2_2].filter(Boolean);
+  return __matchKey(t1, t2);
+}
+function __gcOpt(){
+  const now = Date.now();
+  __optMatchesAdd = (__optMatchesAdd||[]).filter(x => (now - (x.ts||0)) < 5*60*1000);
+}
+function __rankFor(name, isTeam1){
+  const row = document.querySelector(`${isTeam1 ? "#team1Players" : "#team2Players"} .player-row[data-player="${CSS.escape(name)}"]`);
+  return (row && row.dataset && row.dataset.rank) ? row.dataset.rank : "";
+}
+function __buildOptMatchObj(t1, t2){
+  const doubles = isDoublesMode();
+  if (!doubles){
+    const p1 = t1[0], p2 = t2[0];
+    return { type:"1v1", team1:p1, team1Rank:__rankFor(p1,true), team2:p2, team2Rank:__rankFor(p2,false) };
+  } else {
+    const a=t1[0], b=t1[1], c=t2[0], d=t2[1];
+    return {
+      type:"2v2",
+      team1:a, team1Rank:__rankFor(a,true),
+      team1_2:b, team1_2Rank:__rankFor(b,true),
+      team2:c, team2Rank:__rankFor(c,false),
+      team2_2:d, team2_2Rank:__rankFor(d,false)
+    };
+  }
+}
+
+let availabilityMode = null;
+let originalUnavailable1=[], originalUnavailable2=[];
+let originalBench1=[], originalBench2=[];
+let tempToggles1=[], tempToggles2=[];
+
+const RANK_WEIGHT = { 'A':4,'B':3,'C':2,'D':1,'AF':3,'BF':2,'CF':1 };
+const RANK_SORT   = { 'A':0,'B':1,'C':2,'D':3,'AF':4,'BF':5,'CF':6 };
+
+function normRank(val){
+  let v = String(val||'').toUpperCase().trim();
+  v = v.replace(/\s+/g,'');
+  v = v.replace(/[‐‑‒–—−]/g,'-');
+  const m = v.match(/^([ABC])\-?F$/);
+  if (m) return m[1] + 'F'; 
+  return v;
+}
+function rankStrength(val){
+  const v = normRank(val);
+  return (v in RANK_WEIGHT) ? RANK_WEIGHT[v] : 0;
+}
+function rankKey(val){
+  const v = normRank(val);
+  return (v in RANK_SORT) ? RANK_SORT[v] : 999;
+}
+
+let MATCH_SETTINGS = { round: "R1", doublesSet: "DEFAULT" };
+let manualDoublesMode = false;
+
+/* ---------- Round buttons ---------- */
+function paintRoundButtons(){
+  const r1 = document.getElementById('btnRound1');
+  const r2 = document.getElementById('btnRound2');
+  const isR1 = (MATCH_SETTINGS.round === 'R1');
+
+  if (r1) {
+    r1.classList.toggle('isActive', isR1);
+    r1.setAttribute('aria-pressed', isR1 ? 'true' : 'false');
+  }
+  if (r2) {
+    r2.classList.toggle('isActive', !isR1);
+    r2.setAttribute('aria-pressed', (!isR1) ? 'true' : 'false');
+  }
+}
+
+function onTapRound(target){
+  target = String(target || 'R1').toUpperCase();
+  if (target !== 'R2') target = 'R1';
+
+  if (__availBusy || __confirmBusy || __resetBusy || __undoBusy) return;
+
+  if (availabilityMode){
+    showPopup("⚠️ Availability Mode",
+      "Tap <strong>Bench</strong> to save/cancel availability mode before changing rounds.",
+      "#ffc107");
+    return;
+  }
+
+  if (target === MATCH_SETTINGS.round) return;
+
+  const switchingTo = (target === 'R2') ? "SWITCH TO ROUND 2?" : "SWITCH TO ROUND 1?";
+  const { box, close } = openBigDialog();
+
+  const yes = makeBigDialogButton("YES", "linear-gradient(135deg,#ff3b3b 0%, #e40000 100%)");
+  const no  = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+  yes.onclick = () => {
+    close();
+    if (target === 'R2') {
+      applyRoundSelection("R2", "DEFAULT");
+    } else {
+      manualDoublesMode = false;
+      setDoublesMode(false, false);
+      applyRoundSelection("R1", "DEFAULT");
+    }
+  };
+  no.onclick = close;
+
+  box.appendChild(yes);
+  box.appendChild(no);
+
+  const title = document.createElement("div");
+  title.textContent = switchingTo;
+  title.style.fontWeight = "900";
+  title.style.letterSpacing = "1px";
+  title.style.marginBottom = "6px";
+  title.style.textAlign = "center";
+  title.style.fontSize = "1.1em";
+  title.style.color = "#111";
+  box.prepend(title);
+}
+
+function applyRoundSelection(round, doublesSet){
+  round = String(round||'R1').toUpperCase();
+  if (round !== 'R2') round = 'R1';
+
+  doublesSet = "DEFAULT";
+
+  manualDoublesMode = false;
+  setDoublesMode(round === "R2", false);
+
+  disableAllControls(true);
+  const loading = document.getElementById("loadingOverlay");
+  if (loading) loading.classList.add("active");
+
+  google.script.run
+    .withSuccessHandler((data) => {
+      if (loading) loading.classList.remove("active");
+      disableAllControls(false);
+      renderData(data);
+    })
+    .withFailureHandler((err) => {
+      if (loading) loading.classList.remove("active");
+      disableAllControls(false);
+      const msg = (err && err.message) ? err.message : "Unknown error";
+      showPopup("Error", "Couldn’t load the round roster.<br><small>" + msg + "</small>", "#dc3545");
+    })
+    .setRoundAndLoadRoster(round, doublesSet);
+}
+
+/* ---------- Render ---------- */
+function renderData(data){
+  if (!data) return;
+  __lastData = data;
+
+  try{
+    __gcOpt();
+    const srvT1 = new Set((data.matchedTeam1 || []).map(__normName));
+    const srvT2 = new Set((data.matchedTeam2 || []).map(__normName));
+
+    __optForceMatchedT1.forEach(n => { if (srvT1.has(__normName(n))) __optForceMatchedT1.delete(n); });
+    __optForceMatchedT2.forEach(n => { if (srvT2.has(__normName(n))) __optForceMatchedT2.delete(n); });
+    __optForceUnmatchedT1.forEach(n => { if (!srvT1.has(__normName(n))) __optForceUnmatchedT1.delete(n); });
+    __optForceUnmatchedT2.forEach(n => { if (!srvT2.has(__normName(n))) __optForceUnmatchedT2.delete(n); });
+
+    const srvKeys = new Set((data.matches || []).map(__matchKeyFromObj));
+    __optMatchesHide.forEach(k => { if (!srvKeys.has(k)) __optMatchesHide.delete(k); });
+    __optMatchesAdd = (__optMatchesAdd||[]).filter(x => !srvKeys.has(x.k));
+  }catch(_){}
+
+  team1 = data.team1 || "Team 1";
+  team2 = data.team2 || "Team 2";
+
+  MATCH_SETTINGS.round = String(data.round || "R1").toUpperCase() === "R2" ? "R2" : "R1";
+  MATCH_SETTINGS.doublesSet = "DEFAULT";
+
+  paintRoundButtons();
+
+  if (!manualDoublesMode){
+    setDoublesMode(MATCH_SETTINGS.round === "R2", false);
+  }
+
+  document.getElementById("team1Header").textContent = String(team1).toUpperCase();
+  document.getElementById("team2Header").textContent = String(team2).toUpperCase();
+
+  renderPlayers("team1Players", data.team1Roster, data.matchedTeam1, data.benchTeam1, data.unavailableTeam1, true);
+  renderPlayers("team2Players", data.team2Roster, data.matchedTeam2, data.benchTeam2, data.unavailableTeam2, false);
+  
+  let mergedMatches = (data.matches || []).slice();
+  try {
+    const hide = __optMatchesHide || new Set();
+    mergedMatches = mergedMatches.filter(m => !hide.has(__matchKeyFromObj(m)));
+    const existing = new Set(mergedMatches.map(__matchKeyFromObj));
+    (__optMatchesAdd || []).forEach(x => { if (x && x.obj && !existing.has(x.k)) { mergedMatches.push(x.obj); existing.add(x.k); } });
+  } catch(_) {}
+  renderMatches(mergedMatches);
+
+  forceBenchButtonLabel();
+}
+
+function renderPlayers(containerId, players, matched, bench, unavailable, isTeam1) {
+  const container = document.getElementById(containerId);
+  const norm = s => (s ?? "").toString().trim();
+
+  const matchedSet = new Set((matched || []).map(norm));
+  try {
+    const addSet = isTeam1 ? __optForceMatchedT1 : __optForceMatchedT2;
+    const delSet = isTeam1 ? __optForceUnmatchedT1 : __optForceUnmatchedT2;
+    addSet && addSet.forEach(n => matchedSet.add(norm(n)));
+    delSet && delSet.forEach(n => matchedSet.delete(norm(n)));
+  } catch(_) {}
+  const benchSet = new Set((bench || []).map(norm));
+  const unavailableSet = new Set((unavailable || []).map(norm));
+
+  const frag = document.createDocumentFragment();
+
+  (players || []).forEach((row) => {
+    const name = row?.[0];
+    const rawRank = row?.[1];
+    const rank = normRank(rawRank || '');
+    const rating = row?.[2];
+
+    const n = norm(name);
+    if (!n) return;
+
+    const tr = document.createElement("tr");
+    tr.classList.add("player-row");
+
+    const isMatched = matchedSet.has(n);
+    const isBench = benchSet.has(n);
+    const isUnav = unavailableSet.has(n);
+
+    if (isMatched) tr.classList.add("matched");
+    else if (isUnav) tr.classList.add("unavailable");
+    else if (isBench) tr.classList.add("bench");
+
+    tr.dataset.player = n;
+    tr.dataset.rank = rank || "";
+    tr.dataset.rating = rating || "";
+    tr.innerHTML = `<td>${n}</td><td>${rank || ""}</td><td>${rating || ""}</td>`;
+
+    if (!isMatched) {
+      tr.addEventListener("click", () => {
+        if (availabilityMode) handleAvailabilityClick(tr, isTeam1);
+        else selectPlayer(tr, isTeam1);
+      });
+    }
+
+    frag.appendChild(tr);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(frag);
+}
+
+function renderMatches(matches) {
+  const container = document.getElementById("matchesList");
+  container.innerHTML = "";
+
+  let dblIndex = 0;
+
+  (matches || []).forEach((m) => {
+    const div = document.createElement("div");
+    div.classList.add("match-entry");
+
+    if (m.type === "1v1") {
+      const s1 = rankStrength(m.team1Rank);
+      const s2 = rankStrength(m.team2Rank);
+      div.style.color = (s1 > s2) ? "green" : (s1 === s2 ? "goldenrod" : "red");
+      div.textContent = `${m.team1} (${m.team1Rank || '-'}) vs ${m.team2} (${m.team2Rank || '-'})`;
+
+      div.dataset.team1 = JSON.stringify([m.team1]);
+      div.dataset.team2 = JSON.stringify([m.team2]);
+    } else {
+      const t1Names = [m.team1, m.team1_2].filter(Boolean);
+      const t2Names = [m.team2, m.team2_2].filter(Boolean);
+
+      const s1 = rankStrength(m.team1Rank) + rankStrength(m.team1_2Rank);
+      const s2 = rankStrength(m.team2Rank) + rankStrength(m.team2_2Rank);
+      div.style.color = (s1 > s2) ? "green" : (s1 === s2 ? "goldenrod" : "red");
+
+      const alt = (dblIndex % 2 === 1);
+      dblIndex++;
+      div.classList.add("doubles");
+      if (alt) div.classList.add("alt-bg");
+
+      const t1Text = `${m.team1} (${m.team1Rank || '-'}) & ${m.team1_2 || ''} (${m.team1_2Rank || '-'})`.replace(/\s+\(\-\)$/, '');
+      const t2Text = `${m.team2} (${m.team2Rank || '-'}) & ${m.team2_2 || ''} (${m.team2_2Rank || '-'})`.replace(/\s+\(\-\)$/, '');
+      div.innerHTML = `${t1Text} vs.<br>${t2Text}`;
+
+      div.dataset.team1 = JSON.stringify(t1Names);
+      div.dataset.team2 = JSON.stringify(t2Names);
+    }
+
+    container.appendChild(div);
+  });
+}
+
+/* ---------- Availability ---------- */
+function handleAvailabilityClick(tr, isTeam1){
+  if (!availabilityMode) return;
+  if (tr.classList.contains("matched")) return;
+
+  const name = tr.dataset.player;
+  if (!name) return;
+
+  const toggles = isTeam1 ? tempToggles1 : tempToggles2;
+  const idx = toggles.indexOf(name);
+  if (idx >= 0) toggles.splice(idx, 1);
+  else toggles.push(name);
+
+  const orig = isTeam1
+    ? (availabilityMode === "bench" ? originalBench1 : originalUnavailable1)
+    : (availabilityMode === "bench" ? originalBench2 : originalUnavailable2);
+
+  const origSet = new Set((orig || []).map(s => (s ?? "").toString().trim()));
+  const togSet  = new Set((toggles || []).map(s => (s ?? "").toString().trim()));
+
+  const willBeIn = origSet.has(name) ? !togSet.has(name) : togSet.has(name);
+
+  tr.classList.remove("highlight-temp","pending-bench","pending-unavail","pending-remove");
+  if (willBeIn) {
+    tr.classList.add(availabilityMode === "bench" ? "pending-bench" : "pending-unavail");
+  } else {
+    tr.classList.add("pending-remove");
+  }
+}
+
+function applyToggles(originalList, toggles){
+  const set = new Set(originalList || []);
+  (toggles || []).forEach(name => { if(set.has(name)) set.delete(name); else set.add(name); });
+  return Array.from(set);
+}
+
+function enterAvailabilityMode(mode){
+  availabilityMode = mode;
+  tempToggles1 = [];
+  tempToggles2 = [];
+
+  originalBench1 = (__lastData && __lastData.benchTeam1) ? (__lastData.benchTeam1.slice()) : [];
+  originalBench2 = (__lastData && __lastData.benchTeam2) ? (__lastData.benchTeam2.slice()) : [];
+  originalUnavailable1 = (__lastData && __lastData.unavailableTeam1) ? (__lastData.unavailableTeam1.slice()) : [];
+  originalUnavailable2 = (__lastData && __lastData.unavailableTeam2) ? (__lastData.unavailableTeam2.slice()) : [];
+
+  document.querySelectorAll(".player-row").forEach(r=>{
+    r.classList.remove("highlight-temp","pending-bench","pending-unavail","pending-remove");
+  });
+
+  const controls = document.querySelector(".controls");
+  if (controls) controls.classList.add("roster-lock");
+
+  ["resetBtn","confirmBtn","undoBtn","doublesBtn","btnRound1","btnRound2"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled = true;
+  });
+
+  forceBenchButtonLabel();
+}
+
+function exitAvailabilityMode(){
+  availabilityMode = null;
+  tempToggles1 = [];
+  tempToggles2 = [];
+
+  document.querySelectorAll(".player-row").forEach(r=>{
+    r.classList.remove("highlight-temp","pending-bench","pending-unavail","pending-remove");
+  });
+
+  const controls = document.querySelector(".controls");
+  if (controls) controls.classList.remove("roster-lock");
+
+  ["resetBtn","confirmBtn","undoBtn","doublesBtn","btnRound1","btnRound2"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled = false;
+  });
+
+  forceBenchButtonLabel();
+}
+
+function availabilityButton(){
+  if(__availBusy) return;
+
+  if(!availabilityMode){
+    const dlg = openBigDialog();
+    const box = dlg.box;
+    box.innerHTML = "";
+
+    const benchBtn = makeBigDialogButton("BENCH", "linear-gradient(135deg,#a8b1bd,#6c757d)", "#fff");
+    const unavBtn  = makeBigDialogButton("UNAVAILABLE", "linear-gradient(135deg,#111,#000)", "#fff");
+
+    const addOpp   = makeBigDialogButton("ADD OPPONENT PLAYER", "linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%)", "#fff");
+    const remOpp   = makeBigDialogButton("REMOVE OPPONENT PLAYER", "linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%)", "#fff");
+    const loadOpp  = makeBigDialogButton("LOAD OPPONENT ROSTER", "linear-gradient(var(--btn-angle), var(--yellow1) 0%, var(--yellow2) 100%)", "#36454F");
+
+    const cancel   = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+    benchBtn.onclick = () => { dlg.close(); enterAvailabilityMode("bench"); };
+    unavBtn.onclick  = () => { dlg.close(); enterAvailabilityMode("unavailable"); };
+
+    addOpp.onclick  = () => { dlg.close(); openAddOpponentPlayerDialog(); };
+    remOpp.onclick  = () => { dlg.close(); openRemoveOpponentPlayerDialog(); };
+    loadOpp.onclick = () => { dlg.close(); openLoadOpponentRosterDialog(); };
+
+    cancel.onclick = () => dlg.close();
+
+    box.appendChild(benchBtn);
+    box.appendChild(unavBtn);
+
+    const spacer1 = document.createElement("div"); spacer1.style.height = "6px";
+    box.appendChild(spacer1);
+
+    box.appendChild(addOpp);
+    box.appendChild(remOpp);
+    box.appendChild(loadOpp);
+
+    const spacer2 = document.createElement("div"); spacer2.style.height = "6px";
+    box.appendChild(spacer2);
+
+    box.appendChild(cancel);
+    return;
+  }
+
+  const nothingSelected = (tempToggles1.length + tempToggles2.length) === 0;
+  if(nothingSelected){
+    exitAvailabilityMode();
+    return;
+  }
+
+  __availBusy = true;
+  disableAllControls(true);
+
+  const loading = document.getElementById("loadingOverlay");
+  if (loading) loading.classList.add("active");
+
+  let finalT1 = [];
+  let finalT2 = [];
+
+  if (availabilityMode === "bench") {
+    const set1 = new Set(originalBench1 || []);
+    tempToggles1.forEach(n => set1.has(n) ? set1.delete(n) : set1.add(n));
+    finalT1 = Array.from(set1);
+
+    const set2 = new Set(originalBench2 || []);
+    tempToggles2.forEach(n => set2.has(n) ? set2.delete(n) : set2.add(n));
+    finalT2 = Array.from(set2);
+  } else {
+    const set1 = new Set(originalUnavailable1 || []);
+    tempToggles1.forEach(n => set1.has(n) ? set1.delete(n) : set1.add(n));
+    finalT1 = Array.from(set1);
+
+    const set2 = new Set(originalUnavailable2 || []);
+    tempToggles2.forEach(n => set2.has(n) ? set2.delete(n) : set2.add(n));
+    finalT2 = Array.from(set2);
+  }
+
+  google.script.run
+    .withSuccessHandler((data) => {
+      __availBusy = false;
+      if (loading) loading.classList.remove("active");
+      disableAllControls(false);
+      exitAvailabilityMode();
+      if (data) renderData(data);
+    })
+    .withFailureHandler((err) => {
+      __availBusy = false;
+      if (loading) loading.classList.remove("active");
+      disableAllControls(false);
+      showPopup("Action failed", (err && err.message) ? String(err.message) : String(err), "#dc3545");
+    })
+    .updateAvailability(availabilityMode, finalT1, finalT2);
+}
+
+/* ---------- Selection + Matches ---------- */
+function selectPlayer(tr,isTeam1){
+  if (availabilityMode) return;
+  if (tr.classList.contains("matched")) return;
+  if (tr.classList.contains("unavailable")) return;
+  if (tr.classList.contains("bench")) return;
+
+  if(!isDoublesMode()){
+    const tbodyId=isTeam1?"team1Players":"team2Players";
+    document.querySelectorAll(`#${tbodyId} .player-row`).forEach(r=>r.classList.remove("selected"));
+    tr.classList.add("selected");
+    if(isTeam1) selectedPlayers1=[tr.dataset.player]; else selectedPlayers2=[tr.dataset.player];
+    return;
+  }
+
+  const selectedArray = isTeam1 ? selectedPlayers1 : selectedPlayers2;
+  const idx = selectedArray.indexOf(tr.dataset.player);
+  if(idx===-1){
+    if(selectedArray.length<2){ selectedArray.push(tr.dataset.player); tr.classList.add("selected"); }
+  }else{
+    selectedArray.splice(idx,1); tr.classList.remove("selected");
+  }
+}
+
+function addMatchToList(t1, t2) {
+  const container = document.getElementById("matchesList");
+  const div = document.createElement("div");
+  div.classList.add("match-entry");
+
+  div.dataset.team1 = JSON.stringify(t1);
+  div.dataset.team2 = JSON.stringify(t2);
+
+  const nameWithRank = (selectorPrefix, name) => {
+    const row = document.querySelector(`${selectorPrefix} .player-row[data-player="${CSS.escape(name)}"]`);
+    const rank = row?.dataset.rank || '';
+    return { label: `${name} (${rank || '-'})`, rank };
+  };
+
+  const t1Parts = t1.map(n => nameWithRank('#team1Players', n));
+  const t2Parts = t2.map(n => nameWithRank('#team2Players', n));
+
+  const doubles = isDoublesMode();
+
+  const t1Text = t1Parts.map(p => p.label).join(doubles ? " & " : ", ");
+  const t2Text = t2Parts.map(p => p.label).join(doubles ? " & " : ", ");
+
+  if (!doubles) {
+    const s1 = rankStrength(t1Parts[0]?.rank);
+    const s2 = rankStrength(t2Parts[0]?.rank);
+    div.style.color = (s1 > s2) ? "green" : (s1 === s2) ? "goldenrod" : "red";
+    div.textContent = `${t1Text} vs ${t2Text}`;
+  } else {
+    const s1 = t1Parts.reduce((sum,p) => sum + rankStrength(p.rank), 0);
+    const s2 = t2Parts.reduce((sum,p) => sum + rankStrength(p.rank), 0);
+
+    const existingDoubles = container.querySelectorAll(".match-entry.doubles").length;
+    if (existingDoubles % 2 === 1) div.classList.add("alt-bg");
+
+    div.style.color = (s1 > s2) ? "green" : (s1 === s2) ? "goldenrod" : "red";
+    div.classList.add("doubles");
+    div.innerHTML = `${t1Text} vs.<br>${t2Text}`;
+  }
+
+  container.appendChild(div);
+  return div;
+}
+
+function confirmMatch() {
+  if (__availBusy || __confirmBusy) return;
+
+  if (availabilityMode) {
+    showPopup(
+      "⚠️ Availability Mode",
+      "Tap <strong>Bench</strong> to save (or tap it with no selections to cancel) before confirming.",
+      "#ffc107"
+    );
+    return;
+  }
+
+  const doubles = isDoublesMode();
+  const t1Count = selectedPlayers1.length;
+  const t2Count = selectedPlayers2.length;
+  const valid = doubles ? (t1Count === 2 && t2Count === 2) : (t1Count === 1 && t2Count === 1);
+  if (!valid) {
+    showPopup(
+      doubles ? "Doubles Mode" : "Singles Mode",
+      doubles ? "Select <strong>2 per team</strong> before confirming." : "Select <strong>1 per team</strong> before confirming.",
+      doubles ? "#17a2b8" : "#6c757d"
+    );
+    return;
+  }
+
+  __confirmBusy = true;
+  const confirmBtn = document.getElementById("confirmBtn");
+  setDisabled(confirmBtn, true);
+
+  const t1 = [...selectedPlayers1];
+  const t2 = [...selectedPlayers2];
+
+  const k = __matchKey(t1, t2);
+  try {
+    t1.forEach(p => { const n = __normName(p); if (n) { __optForceMatchedT1.add(n); __optForceUnmatchedT1.delete(n); } });
+    t2.forEach(p => { const n = __normName(p); if (n) { __optForceMatchedT2.add(n); __optForceUnmatchedT2.delete(n); } });
+    __optMatchesHide.delete(k);
+    __optMatchesAdd.push({ k, obj: __buildOptMatchObj(t1, t2), ts: Date.now() });
+    __gcOpt();
+  } catch(_) {}
+
+  const touched = [...t1, ...t2];
+  touched.forEach(p => {
+    const row = document.querySelector(`.player-row[data-player="${CSS.escape(p)}"]`);
+    if (row) {
+      row.classList.remove("selected");
+      row.classList.add("flash-green");
+      setTimeout(() => {
+        row.classList.remove("flash-green");
+        row.classList.add("matched");
+      }, 120);
+    }
+  });
+
+  const createdMatchDiv = addMatchToList(t1, t2);
+
+  selectedPlayers1 = [];
+  selectedPlayers2 = [];
+  document.querySelectorAll(".player-row.selected").forEach(r => r.classList.remove("selected"));
+
+  google.script.run
+    .withSuccessHandler((res) => { try { if (res && res.v && __lastData) __lastData.v = String(res.v); } catch(_) {} })
+    .withFailureHandler((err) => {
+      if (createdMatchDiv) createdMatchDiv.remove();
+      touched.forEach(p => {
+        const row = document.querySelector(`.player-row[data-player="${CSS.escape(p)}"]`);
+        if (row) row.classList.remove("matched");
+      });
+      const msg = (err && err.message) ? err.message : "Unknown error";
+      showPopup("Error", "Couldn’t save the match.<br><small>" + msg + "</small>", "#dc3545");
+    })
+    .recordMatch(t1, t2);
+
+  setTimeout(() => {
+    __confirmBusy = false;
+    setDisabled(confirmBtn, false);
+  }, 180);
+}
+
+function undoLast() {
+  if (__undoBusy) return;
+
+  const container = document.getElementById("matchesList");
+  const matches = container.querySelectorAll(".match-entry");
+  if (!matches.length) return;
+
+  __undoBusy = true;
+  const undoBtn = document.getElementById("undoBtn");
+  setDisabled(undoBtn, true);
+
+  const lastDiv = matches[matches.length - 1];
+
+  let t1 = [], t2 = [];
+  try {
+    t1 = JSON.parse(lastDiv.dataset.team1 || "[]");
+    t2 = JSON.parse(lastDiv.dataset.team2 || "[]");
+  } catch (e) {}
+
+  const k = __matchKey(t1, t2);
+  try {
+    t1.forEach(p => { const n = __normName(p); if (n) { __optForceUnmatchedT1.add(n); __optForceMatchedT1.delete(n); } });
+    t2.forEach(p => { const n = __normName(p); if (n) { __optForceUnmatchedT2.add(n); __optForceMatchedT2.delete(n); } });
+    __optMatchesHide.add(k);
+    __optMatchesAdd = (__optMatchesAdd||[]).filter(x => x.k !== k);
+  } catch(_) {}
+
+  lastDiv.remove();
+  [...t1, ...t2].forEach(p => {
+    const row = document.querySelector(`.player-row[data-player="${CSS.escape(p)}"]`);
+    if (row) {
+      row.classList.remove("matched");
+      row.classList.add("flash-yellow");
+      setTimeout(() => row.classList.remove("flash-yellow"), 150);
+    }
+  });
+
+  google.script.run
+    .withSuccessHandler((res) => { try { if (res && res.v && __lastData) __lastData.v = String(res.v); } catch(_) {} })
+    .withFailureHandler((err) => {
+      try {
+        const k2 = __matchKey(t1, t2);
+        t1.forEach(p => { const n = __normName(p); if (n) __optForceUnmatchedT1.delete(n); });
+        t2.forEach(p => { const n = __normName(p); if (n) __optForceUnmatchedT2.delete(n); });
+        __optMatchesHide.delete(k2);
+      } catch(_) {}
+      container.appendChild(lastDiv);
+      [...t1, ...t2].forEach(p => {
+        const row = document.querySelector(`.player-row[data-player="${CSS.escape(p)}"]`);
+        if (row) row.classList.add("matched");
+      });
+      const msg = (err && err.message) ? err.message : "Unknown error";
+      showPopup("Undo failed", `Please try again.<br><small>${msg}</small>`, "#dc3545");
+    })
+    .undoLastMatch();
+
+  setTimeout(() => {
+    __undoBusy = false;
+    setDisabled(undoBtn, false);
+  }, 180);
+}
+
+/* ---------- Reset menu ---------- */
+function resetAll() {
+  if (__resetBusy) return;
+
+  const resetBtn = document.getElementById("resetBtn");
+  const savedResetLabel = resetBtn.textContent;
+  setDisabled(resetBtn, true);
+
+  const { box, close } = openBigDialog();
+
+  const btnResetMatches = makeBigDialogButton("RESET MATCHES", "#0d6efd");
+  const btnResetBench   = makeBigDialogButton("RESET BENCH", "#6c757d");
+  const btnResetUnav = makeBigDialogButton("RESET UNAVAILABLE", "linear-gradient(var(--btn-angle), #111 0%, #000 100%)", "#fff");
+  const btnFullReset    = makeBigDialogButton("FULL RESET", "#dc3545");
+  const cancel = makeBigDialogButton("CANCEL", "linear-gradient(135deg,#eef1f5,#dfe5ec)", "#222");
+
+  const loading = document.getElementById("loadingOverlay");
+
+  const done = (data) => {
+    try { __optForceMatchedT1.clear(); __optForceMatchedT2.clear(); __optForceUnmatchedT1.clear(); __optForceUnmatchedT2.clear(); __optMatchesAdd = []; __optMatchesHide.clear(); } catch(_) {}
+    if (loading) loading.classList.remove("active");
+    if (data) renderData(data);
+    __resetBusy = false;
+    setDisabled(resetBtn, false);
+    resetBtn.textContent = savedResetLabel;
+    exitAvailabilityMode();
+  };
+
+  const fail = (err) => {
+    if (loading) loading.classList.remove("active");
+    __resetBusy = false;
+    setDisabled(resetBtn, false);
+    resetBtn.textContent = savedResetLabel;
+
+    const msg = (err && err.message) ? err.message : "Unknown error";
+    showPopup("Error", "There was a problem completing the reset.<br><small>" + msg + "</small>", "#dc3545");
+  };
+
+  const runServerReset = (which) => {
+    if (__resetBusy) return;
+    __resetBusy = true;
+
+    [btnResetMatches, btnResetBench, btnResetUnav, btnFullReset, cancel].forEach(b => {
+      b.disabled = true;
+      b.style.opacity = "0.6";
+      b.style.cursor = "not-allowed";
+    });
+
+    close();
+    if (loading) loading.classList.add("active");
+
+    if (which === "resetAllMatches") return google.script.run.withSuccessHandler(done).withFailureHandler(fail).resetAllMatches();
+    if (which === "resetBench")      return google.script.run.withSuccessHandler(done).withFailureHandler(fail).resetBench();
+    if (which === "resetUnavailable")return google.script.run.withSuccessHandler(done).withFailureHandler(fail).resetUnavailable();
+    return google.script.run.withSuccessHandler(done).withFailureHandler(fail).fullResetAll();
+  };
+
+  async function confirmAndRun(which){
+    let title = "";
+    let msg   = "";
+    let okText = "CONFIRM";
+    let okColor = "linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%)";
+    let okTextColor = "#fff";
+
+    if (which === "resetAllMatches"){
+      okText = "RESET MATCHES";
+      okColor = "linear-gradient(var(--btn-angle), var(--blue1) 0%, var(--blue2) 100%)";
+    } else if (which === "resetBench"){
+      okText = "RESET BENCH";
+      okColor = "linear-gradient(var(--btn-angle), var(--gray1) 0%, var(--gray2) 100%)";
+    } else if (which === "resetUnavailable"){
+      okText = "RESET UNAVAILABLE";
+      okColor = "linear-gradient(var(--btn-angle), #111 0%, #000 100%)";
+    } else { 
+      okText = "FULL RESET";
+      okColor = "linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%)";
+    }
+
+    const ok = await showConfirm(title, msg, { okText, okColor, okTextColor, cancelText: "CANCEL" });
+    if (!ok) return;
+    runServerReset(which);
+  }
+
+  btnResetMatches.onclick = () => confirmAndRun("resetAllMatches");
+  btnResetBench.onclick   = () => confirmAndRun("resetBench");
+  btnResetUnav.onclick    = () => confirmAndRun("resetUnavailable");
+  btnFullReset.onclick    = () => confirmAndRun("fullResetAll");
+
+  cancel.onclick = () => {
+    close();
+    setDisabled(resetBtn, false);
+    resetBtn.textContent = savedResetLabel;
+  };
+
+  box.appendChild(btnResetMatches);
+  box.appendChild(btnResetBench);
+  box.appendChild(btnResetUnav);
+  box.appendChild(btnFullReset);
+  box.appendChild(cancel);
+}
+
+/* ---------- Sorting ---------- */
+function sortTable(tableId, colIndex) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+
+  const tbody = table.tBodies[0];
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.rows);
+  const asc = table.dataset.sortAsc !== "true";
+  table.dataset.sortAsc = asc;
+
+  const rowData = rows.map(row => ({ row, val: row.cells[colIndex]?.innerText || "" }));
+
+  const statusGroup = (row) => {
+    if (row.classList.contains("unavailable")) return 2;
+    if (row.classList.contains("bench")) return 1;
+    return 0;
+  };
+
+  rowData.sort((a, b) => {
+    const gA = statusGroup(a.row);
+    const gB = statusGroup(b.row);
+    if (gA !== gB) return gA - gB;
+
+    const aRankTxt = a.row.cells[1]?.innerText || '';
+    const bRankTxt = b.row.cells[1]?.innerText || '';
+    const aIsW = /f$/i.test(normRank(aRankTxt));
+    const bIsW = /f$/i.test(normRank(bRankTxt));
+    if (aIsW !== bIsW) return aIsW ? 1 : -1;
+
+    let A = a.val, B = b.val;
+
+    if (colIndex === 1) {
+      const aKey = rankKey(A);
+      const bKey = rankKey(B);
+      return asc ? (aKey - bKey) : (bKey - aKey);
+    }
+    if (colIndex === 2) {
+      const aNum = parseFloat(A) || -Infinity;
+      const bNum = parseFloat(B) || -Infinity;
+      return asc ? (aNum - bNum) : (bNum - aNum);
+    }
+    return asc ? A.localeCompare(B) : B.localeCompare(A);
+  });
+
+  const frag = document.createDocumentFragment();
+  rowData.forEach(d => frag.appendChild(d.row));
+  tbody.appendChild(frag);
+}
+
+/* ---------- Doubles mode ---------- */
+function setDoublesMode(on, markManual){
+  const btn = document.getElementById("doublesBtn");
+  if (!btn) return;
+
+  window.doublesMode = !!on;
+  btn.classList.toggle("active", !!on);
+  btn.textContent = on ? "DOUBLES" : "SINGLES";
+
+  if (markManual) manualDoublesMode = true;
+
+  selectedPlayers1 = [];
+  selectedPlayers2 = [];
+  document.querySelectorAll(".player-row.selected").forEach(r => r.classList.remove("selected"));
+}
+function toggleDoublesMode(){ setDoublesMode(!isDoublesMode(), true); }
+function isDoublesMode(){ return window.doublesMode===true; }
+
+/* ---------- Bootstrap + Freshness-First Cache ---------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  forceBenchButtonLabel();
+
+  // 1. INSTANT LOAD FROM PHONE MEMORY
+  const cachedRaw = localStorage.getItem("fa_cache_matchups");
+  if (cachedRaw) {
+     try { renderData(JSON.parse(cachedRaw)); } catch(e) {}
+  }
+
+  // 2. SHOW SYNC BANNER & LOCK BUTTONS
+  const syncBanner = document.getElementById("syncBanner");
+  if (syncBanner) syncBanner.style.display = "block";
+  disableAllControls(true);
+
+  // 3. FETCH LIVE DATA IN BACKGROUND
+  try {
+     const response = await fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: "getMatchupsDataFast", args: [] })
+     });
+     const data = await response.json();
+     if (data.ok && data.result) {
+        localStorage.setItem("fa_cache_matchups", JSON.stringify(data.result));
+        renderData(data.result);
+     }
+  } catch(err) {
+     console.error("Sync failed", err);
+  }
+
+  // 4. UNLOCK UI & HIDE BANNER
+  if (syncBanner) syncBanner.style.display = "none";
+  disableAllControls(false);
+});
+
+/* ---------- Auto-sync (shared devices) ---------- */
+function startAutoSync(){
+  if (__autoSyncTimer) return;
+  __autoSyncTimer = setInterval(async () => {
+    if (__syncBusy) return;
+
+    try{
+      if ((selectedPlayers1 && selectedPlayers1.length) || (selectedPlayers2 && selectedPlayers2.length)) return;
+      if (availabilityMode) return;
+    }catch(_){}
+
+    const v = (__lastData && __lastData.v) ? String(__lastData.v) : "";
+    if (!v) return;
+
+    __syncBusy = true;
+    try {
+       const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: "getMatchupsDataIfNewerFast", args: [v] })
+       });
+       const data = await response.json();
+       if (data.ok && data.result) {
+          localStorage.setItem("fa_cache_matchups", JSON.stringify(data.result));
+          renderData(data.result);
+       }
+    } catch(err) {}
+    __syncBusy = false;
+  }, 2000);
+}
+
+function stopAutoSync() { if (__autoSyncTimer) { clearInterval(__autoSyncTimer); __autoSyncTimer = null; } }
+document.addEventListener("visibilitychange", () => { document.hidden ? stopAutoSync() : startAutoSync(); });
+startAutoSync();
+
+/* ---------- Popup ---------- */
+function showPopup(title, message, color="#0d6efd"){
+  const {box, close}=openBigDialog();
+  const h=document.createElement("h3");
+  h.textContent=title||"Message"; h.style.margin="0 0 12px 0"; h.style.fontSize="1.1em"; h.style.fontWeight="900"; h.style.color=color;
+  const p=document.createElement("div");
+  p.innerHTML=message||""; p.style.margin="6px 0 18px"; p.style.fontSize="0.9em"; p.style.lineHeight="1.35"; p.style.color="#111";
+  const ok=makeBigDialogButton("OK", color); ok.onclick=close;
+  box.appendChild(h); box.appendChild(p); box.appendChild(ok);
+}
+
+/* ---------- Toast + Confirm (styled, no native browser dialogs) ---------- */
+function showToast(message, variant="success", ms=1400){
+  const prev = document.getElementById("fa_toast");
+  if (prev) prev.remove();
+
+  const t = document.createElement("div");
+  t.id = "fa_toast";
+
+  const qs = new URLSearchParams(location.search||"");
+  const embedded = qs.get("embed") === "1";
+  const ps  = (embedded && typeof window.__FA_PARENT_SCALE === "number" && window.__FA_PARENT_SCALE > 0) ? window.__FA_PARENT_SCALE : 1;
+  const py  = (embedded && typeof window.__FA_PARENT_SCROLL_Y === "number") ? window.__FA_PARENT_SCROLL_Y : 0;
+  const pvh = (embedded && typeof window.__FA_PARENT_VH === "number" && window.__FA_PARENT_VH > 0) ? window.__FA_PARENT_VH : window.innerHeight;
+
+  t.style.position = embedded ? "absolute" : "fixed";
+  t.style.left = "50%";
+  t.style.transform = "translateX(-50%)";
+  t.style.zIndex = "10001";
+  t.style.padding = "12px 14px";
+  t.style.borderRadius = "14px";
+  t.style.minWidth = "260px";
+  t.style.maxWidth = "92vw";
+  t.style.textAlign = "center";
+  t.style.fontWeight = "900";
+  t.style.letterSpacing = ".2px";
+  t.style.fontSize = "1.05rem";
+  t.style.color = "#fff";
+  t.style.boxShadow = "0 10px 30px rgba(0,0,0,.25)";
+  t.style.backdropFilter = "blur(2px)";
+
+  const bg = (variant === "danger")
+    ? `linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%)`
+    : (variant === "info")
+      ? `linear-gradient(var(--btn-angle), var(--blue1) 0%, var(--blue2) 100%)`
+      : (variant === "gray")
+        ? `linear-gradient(var(--btn-angle), var(--gray1) 0%, var(--gray2) 100%)`
+        : `linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%)`;
+
+  t.style.background = bg;
+  t.innerHTML = message || "";
+
+  if (embedded) {
+    const bottom = 18;
+    const y = Math.max(0, Math.floor(py / ps) + Math.floor((pvh / ps)) - 90 - bottom);
+    t.style.top = y + "px";
+  } else {
+    t.style.bottom = "18px";
+  }
+
+  t.style.opacity = "0";
+  t.style.transition = "opacity 140ms ease, transform 140ms ease";
+  document.body.appendChild(t);
+  requestAnimationFrame(() => {
+    t.style.opacity = "1";
+    t.style.transform = "translateX(-50%) translateY(-2px)";
+  });
+
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translateX(-50%) translateY(4px)";
+    setTimeout(() => { try { t.remove(); } catch(_){} }, 220);
+  }, ms);
+}
+
+function showConfirm(title, messageHtml, opts={}){
+  return new Promise((resolve) => {
+    const { box, close } = openBigDialog();
+
+    const titleText = (title == null) ? "Confirm" : title;
+    if (titleText !== ""){
+      const h = document.createElement("div");
+      h.textContent = titleText;
+      h.style.margin = "0 0 10px 0";
+      h.style.fontSize = "1.08em";
+      h.style.fontWeight = "900";
+      h.style.letterSpacing = ".5px";
+      h.style.textAlign = "center";
+      box.appendChild(h);
+    }
+
+    if (messageHtml){
+      const p = document.createElement("div");
+      p.innerHTML = messageHtml;
+      p.style.margin = "6px 0 16px";
+      p.style.fontSize = "0.9em";
+      p.style.lineHeight = "1.35";
+      p.style.color = "#111";
+      p.style.textAlign = "center";
+      box.appendChild(p);
+    }
+
+    const okText = opts.okText || "OK";
+    const okColor = opts.okColor || `linear-gradient(var(--btn-angle), var(--green1) 0%, var(--green2) 100%)`;
+    const cancelText = opts.cancelText || "CANCEL";
+    const okTextColor = opts.okTextColor || "#fff";
+
+    const ok = makeBigDialogButton(okText, okColor, okTextColor);
+    const cancel = makeBigDialogButton(cancelText, "linear-gradient(var(--btn-angle), #eef1f5 0%, #dfe5ec 100%)", "#222");
+
+    ok.onclick = () => { close(); resolve(true); };
+    cancel.onclick = () => { close(); resolve(false); };
+
+    box.appendChild(ok);
+    box.appendChild(cancel);
+  });
+}
+</script>
+
+<div id="loadingOverlay"><div class="loadingPulse"></div></div>
+</body>
+</html>
