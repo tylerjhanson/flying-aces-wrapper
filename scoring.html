@@ -8,52 +8,28 @@
 
 <style>
 /* =========================================================
-   HEADER STYLES (Integrated from header.html)
+   HEADER STYLES (Restored from your header.html)
    ========================================================= */
-:root{ --fa-header-offset: 0px; }
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
 .fa-header{
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #f7f8fa;
-  border-bottom: none;
-  padding: 0 !important;
-  box-sizing: border-box;
+  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
+  padding: 0 !important; box-sizing: border-box;
 }
-html, body { touch-action: pan-x pan-y; }
 .fa-header .fa-tabs{
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px !important;
-  padding: 8px 0 !important;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important;
 }
-.fa-header .fa-tabs button,
-.fa-header .fa-submenu button{
-  -webkit-appearance:none !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:100% !important;
-  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight:900 !important;
-  font-size: clamp(12px, 3.6vw, 16px) !important;
-  height: 40px !important;
-  border-radius: 8px !important;
-  border: 0 !important;
+.fa-header .fa-tabs button, .fa-header .fa-submenu button{
+  -webkit-appearance:none !important; display:flex !important; align-items:center !important;
+  justify-content:center !important; width:100% !important; font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
+  height: 40px !important; border-radius: 8px !important; border: 0 !important;
   background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
-  color: #222 !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important; cursor: pointer !important;
 }
 .fa-header .fa-tabs button.active{
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  background: linear-gradient(var(--btn-angle),#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
 }
-#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; gap: 10px !important; }
 .fa-submenu{
   position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
   opacity: 0; transform: translateY(-6px); visibility: hidden; transition: opacity 140ms, transform 140ms;
@@ -66,42 +42,71 @@ html, body { touch-action: pan-x pan-y; }
 }
 
 /* =========================================================
-   SCORING STYLES (Integrated from scoring.html)
+   SCORING STYLES (Your Original Layout)
    ========================================================= */
 html, body {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%; 
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%; 
   font-family: "Segoe UI", Roboto, Arial, sans-serif; 
-  background: #f7f8fa; 
-  margin: 0; 
-  padding: 4px; 
-  color: #222; 
+  background: #f7f8fa; margin: 0; padding: 4px; color: #222; 
 }
-.teams{
+
+/* The 4-column grid that makes the left panel 1/4 and right panel 3/4 */
+.teams {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   max-width: 1600px;
-  margin: 10px auto 0;
+  margin: 0 auto;
   align-items: start;
 }
+
 .team { 
-  background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 10px; 
+  background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); 
+  padding: 10px; box-sizing: border-box;
 }
-.team-left{ grid-column: span 1; border-top: 5px solid #111; }
-.team-right{ grid-column: span 3; border-top: 5px solid #ff3b3b; }
-.calc-box{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.calc-box span{ font-weight: 800; font-size: 1.1em; }
-.calc-controls{ display: flex; align-items: center; gap: 10px; }
-.calc-btn{
-  width: 32px; height: 32px; border-radius: 6px; border: 1px solid #ddd;
-  background: #f9f9f9; font-weight: 900; font-size: 1.2em; cursor: pointer;
+
+.team-left {
+  grid-column: span 1;
+  border-top: 5px solid #111;
 }
-.score-table{ width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 0.95em; }
-.score-table th{ background: #eee; padding: 6px; text-align: center; font-weight: 800; }
-.score-table td{ padding: 6px; text-align: center; border-bottom: 1px solid #eee; font-weight: 700; }
-.win{ color: #28a745; }
-.lose{ color: #dc3545; }
+
+.team-right {
+  grid-column: span 3;
+  border-top: 5px solid #ff3b3b;
+}
+
+.calc-box {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+}
+
+.calc-label { font-weight: 800; font-size: 1.1em; color: #555; }
+.calc-val { font-weight: 900; font-size: 1.3em; min-width: 30px; text-align: center; }
+
+.calc-controls { display: flex; align-items: center; gap: 4px; }
+
+.calc-btn {
+  width: 34px; height: 34px; border: none; border-radius: 8px;
+  background: #f0f2f5; font-weight: 900; font-size: 1.4em; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.summary-row {
+  margin-top: 12px; font-weight: 800; font-size: 1.15em; line-height: 1.8;
+}
+
+.score-table { width: 100%; border-collapse: collapse; font-size: 1.25em; }
+.score-table th { background: #f8f9fa; padding: 8px 4px; font-weight: 900; border-bottom: 2px solid #eee; }
+.score-table td { padding: 10px 4px; text-align: center; font-weight: 800; border-bottom: 1px solid #f0f0f0; }
+
+.win { color: #28a745; }
+.lose { color: #dc3545; }
+.pending { color: #999; font-style: italic; }
+
+@media (max-width: 600px) {
+  .teams { grid-template-columns: 1fr; }
+  .team-left, .team-right { grid-column: span 1; }
+}
 </style>
 </head>
 
@@ -113,7 +118,7 @@ html, body {
     <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
     <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
     <button id="nav-menu" type="button" data-key="menu">
-      <img class="menu-logo" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" alt="" style="height:18px;">
+      <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:18px;">
       <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
     </button>
   </nav>
@@ -131,38 +136,34 @@ html, body {
 <div class="teams">
   <div class="team team-left">
     <div class="calc-box">
-      <span>SINGLES</span>
+      <div class="calc-label">SINGLES</div>
       <div class="calc-controls">
         <button class="calc-btn" onclick="updateVal('b1', -1)">-</button>
-        <span id="b1">8</span>
+        <div class="calc-val" id="b1">8</div>
         <button class="calc-btn" onclick="updateVal('b1', 1)">+</button>
       </div>
     </div>
     <div class="calc-box">
-      <span>DOUBLES</span>
+      <div class="calc-label">DOUBLES</div>
       <div class="calc-controls">
         <button class="calc-btn" onclick="updateVal('b2', -1)">-</button>
-        <span id="b2">8</span>
+        <div class="calc-val" id="b2">8</div>
         <button class="calc-btn" onclick="updateVal('b2', 1)">+</button>
       </div>
     </div>
     <div class="calc-box">
-      <span>PTS/MATCH</span>
+      <div class="calc-label">ACES</div>
       <div class="calc-controls">
-        <button class="calc-btn" onclick="updateVal('b3', -0.5)">-</button>
-        <span id="b3">2</span>
-        <button class="calc-btn" onclick="updateVal('b3', 0.5)">+</button>
-      </div>
-    </div>
-    <hr>
-    <div style="font-size:0.9em; font-weight:800; line-height:1.6;">
-      TOTAL PTS: <span id="b5">--</span><br>
-      TO WIN: <span id="b6">--</span><br>
-      ACES TO DATE: <div class="calc-controls" style="display:inline-flex; margin-left:10px;">
         <button class="calc-btn" onclick="updateVal('b9', -0.5)">-</button>
-        <span id="b9">0</span>
+        <div class="calc-val" id="b9">0</div>
         <button class="calc-btn" onclick="updateVal('b9', 0.5)">+</button>
       </div>
+    </div>
+
+    <div class="summary-row">
+      TOTAL PTS: <span id="b5">--</span><br>
+      TO WIN: <span id="b6">--</span><br>
+      OPP ACES: <span id="b10">--</span>
     </div>
   </div>
 
@@ -183,64 +184,36 @@ html, body {
 </div>
 
 <script>
-// =========================================================
-// MAGIC POLYFILL: Rewires google.script.run to native fetch
-// =========================================================
 const GAS_API_URL = "YOUR_WEB_APP_URL_HERE"; 
 
-window.google = {
-  script: {
-    run: new Proxy({}, { get: (target, prop) => createProxy(null, null)[prop] })
-  }
-};
-
-function createProxy(onSuccess, onFailure) {
+/* --- API Polyfill --- */
+window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
+function createProxy(s, f) {
   return new Proxy({}, {
-    get: function(target, prop) {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, onFailure);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(onSuccess, cb);
-      return function(...args) {
-        fetch(GAS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: prop, args: args })
-        })
-        .then(r => r.json())
-        .then(data => {
-          if (!data.ok) throw new Error(data.error);
-          if (onSuccess) onSuccess(data.result);
-        })
-        .catch(err => {
-          if (onFailure) onFailure(err);
-          else console.error("API Error:", err);
-        });
-      };
+    get: (t, prop) => {
+      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
+        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
     }
   });
 }
 
-/* ===========================
-   SCORING LOGIC (Preserved)
-   =========================== */
+/* --- Calculator Logic --- */
 let _saveTimer = null;
-function updateVal(id, delta){
+function updateVal(id, delta) {
   const el = document.getElementById(id);
   let val = parseFloat(el.innerText);
   val = Math.max(0, val + delta);
-  el.innerText = val;
+  el.innerText = (id === 'b9') ? val : Math.floor(val);
   calc();
 }
 
-function calc(){
+function calc() {
   const b1 = parseFloat(document.getElementById('b1').innerText);
   const b2 = parseFloat(document.getElementById('b2').innerText);
-  const b3 = parseFloat(document.getElementById('b3').innerText);
   const b9 = parseFloat(document.getElementById('b9').innerText);
-
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    google.script.run.faSetScoringConfig({ b1, b2, b3, b9 });
-  }, 1000);
+  const b3 = 2; // Default points per match
 
   const totalPts = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3);
   const toWin = (totalPts / 2) + 0.5;
@@ -248,30 +221,36 @@ function calc(){
 
   document.getElementById('b5').innerText = totalPts;
   document.getElementById('b6').innerText = toWin;
+  document.getElementById('b10').innerText = oppToDate;
 
-  const tbody = document.getElementById('tableBody');
+  // Cloud Save
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    google.script.run.faSetScoringConfig({ b1, b2, b9 });
+  }, 1000);
+
+  // Table Build
   const numDubs = Math.floor(b2/2);
-  const extraSingle = (b2 % 2 === 1);
+  const hasExtra = (b2 % 2 === 1);
   let html = "";
 
   for (let d = 0; d <= numDubs; d++) {
-    const sOpts = extraSingle ? [0, 1] : [0];
+    const sOpts = hasExtra ? [0, 1] : [0];
     for (let s of sOpts) {
       const aces = b9 + (d * 2) + (s * b3);
-      const opp = oppToDate + ((numDubs - d) * 2) + ((extraSingle ? 1 - s : 0) * b3);
+      const opp = oppToDate + ((numDubs - d) * 2) + ((hasExtra ? 1 - s : 0) * b3);
       const res = aces >= toWin ? "WIN" : (aces + opp < totalPts ? "???" : "LOSE");
       html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${res.toLowerCase()}">${res}</td></tr>`;
     }
   }
-  tbody.innerHTML = html;
+  document.getElementById('tableBody').innerHTML = html;
 }
 
-/* ===========================
-   HEADER LOGIC (Integrated)
-   =========================== */
+/* --- Header & Init --- */
 (function(){
   const menuBtn = document.getElementById("nav-menu"), menuEl = document.getElementById("faMoreMenu");
-  menuBtn.onclick = () => menuEl.classList.toggle("show");
+  menuBtn.onclick = (e) => { e.stopPropagation(); menuEl.classList.toggle("show"); };
+  document.addEventListener("click", () => menuEl.classList.remove("show"));
   document.querySelectorAll("[data-page]").forEach(btn => {
     btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
   });
