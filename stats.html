@@ -161,6 +161,25 @@ tbody td:nth-child(n+2){ text-align:center; }
   box-shadow: 0 25px 60px rgba(0,0,0,.35);
   padding: 14px;
 }
+/* sheet-style modal: fill height with equal top/bottom inset */
+:root{ --modal-inset: 12px; }
+.modal.modal-sheet{
+  align-items: stretch;
+  padding: calc(var(--modal-inset) + env(safe-area-inset-top)) var(--modal-inset) calc(var(--modal-inset) + env(safe-area-inset-bottom));
+}
+.modal.modal-sheet .modal-card{
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+}
+.modal.modal-sheet .modal-body{
+  flex:1;
+  max-height:none !important;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
 .modal-head{
   display:flex;
   align-items:center;
@@ -333,7 +352,8 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   letter-spacing:.02em;
   white-space:nowrap;
 }
-.mc-delta{ font-size:11px; font-weight:950; line-height:1; }
+.mc-delta{ font-size:11px; font-weight:950; line-height:1; min-height:12px; }
+.mc-delta:empty{ opacity:0; }
 
 .delta{ font-variant-numeric:tabular-nums; font-weight:950; }
 .delta.pos{ color:#15803d; }
@@ -1410,24 +1430,40 @@ html, body { touch-action: pan-x pan-y; }
   }
 
   function requestRefresh(){
-    var nonce = Date.now();
-    var didUnload = false;
-    window.addEventListener("beforeunload", function(){ didUnload = true; }, { once:true });
+  var nonce = Date.now();
 
-    if (isEmbedded()) postRefresh(nonce);
-    else hardReloadSelf();
-
-    setTimeout(function(){
-      if (!didUnload) hardReloadSelf();
-    }, 350);
+  // Embedded wrapper refresh (postMessage)
+  if (isEmbedded()){
+    try{ postRefresh(nonce); }catch(e){}
+    setTimeout(function(){ hideToast(); }, 600);
+    return;
   }
+
+  // Prefer a soft refresh (no page reload) when the page provides a handler
+  if (typeof window.__FA_SOFT_REFRESH__ === "function"){
+    try{ window.__FA_SOFT_REFRESH__(); }catch(e){}
+    setTimeout(function(){ hideToast(); }, 900);
+    return;
+  }
+
+  // Fallback: hard reload
+  var didUnload = false;
+  window.addEventListener("beforeunload", function(){ didUnload = true; }, { once:true });
+  hardReloadSelf();
+
+  setTimeout(function(){
+    if (!didUnload) hardReloadSelf();
+  }, 350);
+}
 
   var startY = 0, startX = 0, lastDy = 0;
   var armed = false;
+  var PAGE_LOAD_AT = Date.now();
+  var ARM_OFFSET = 60; // require pull to start lower on screen
 
   // Make accidental refreshes harder, but still easy enough when intentional
-  var THRESH = 120;   // was 90
-  var SHOW_AT = 18;   // was 12
+  var THRESH = 170;   // was 90
+  var SHOW_AT = 22;   // was 12
   var MAX_SLOP_X = 80;
   var VERTICAL_RATIO = 2.0;
 
@@ -1449,7 +1485,7 @@ html, body { touch-action: pan-x pan-y; }
     lastDy = 0;
 
     // Allow pull-to-refresh starting anywhere below the sticky header
-    armed = (startY >= (headerBottom() + 6));
+    armed = (startY >= (headerBottom() + ARM_OFFSET));
   }, { passive:true });
 
   window.addEventListener("touchmove", function(e){
@@ -1480,6 +1516,9 @@ html, body { touch-action: pan-x pan-y; }
 
   window.addEventListener("touchend", function(){
     if (!armed){ hideToast(); return; }
+
+    // Guard: ignore pull-to-refresh during initial page settle
+    if ((Date.now() - PAGE_LOAD_AT) < 1200){ hideToast(); armed=false; lastDy=0; return; }
 
     if (lastDy >= THRESH){
       showToast();
@@ -2741,13 +2780,31 @@ function _buildMatchCardHtml(r, withDelete, opts){
   const dateStr = prettyDate(r.ts || r.matchDate || r.date || "");
   const dateHtml = dateStr ? `<div class="mc-date">${esc(dateStr)}</div>` : "";
 
-  let deltaWrap = "";
-  if (opts.includeEloDelta !== false){
-    const focalGuess = String(opts.focalId || r.focalId || r.a1Id || r.o1Id || "").trim();
-    const d = _tryGetEloDelta_(r, focalGuess);
-    const deltaHtml = (d != null) ? fmtDelta(d) : "";
-    if (deltaHtml) deltaWrap = `<div class="mc-delta">${deltaHtml}</div>`;
+let deltaWrap = "";
+if (opts.includeEloDelta !== false){
+  const focalGuess = String(opts.focalId || r.focalId || r.a1Id || r.o1Id || "").trim();
+
+  const dateKey = _dateKeyFromAny_(r.ts || r.matchDate || r.date || "");
+  const modeLc  = String(r.mode||"").toLowerCase();
+
+  const a0 = String(r.acesScore==null ? "" : r.acesScore).trim();
+  const o0 = String(r.oppScore==null  ? "" : r.oppScore ).trim();
+  const scoreKey0 = _normScore((a0 && o0) ? (a0 + "-" + o0) : (r.mpScore || r.score || ""));
+
+  const idsAll0 = [r.a1Id,r.a2Id,r.a3Id,r.o1Id,r.o2Id,r.o3Id]
+    .map(x=>String(x||"").trim()).filter(Boolean);
+
+  const ds = `data-need-delta="1" data-focal="${esc(focalGuess)}" data-date="${esc(dateKey)}" data-mode="${esc(modeLc)}" data-score="${esc(scoreKey0)}" data-ids="${esc(idsAll0.join(","))}"`;
+
+  // Fill immediately when we already have Elo pack/index; otherwise keep placeholder and patch later
+  let inner = "";
+  if ((FA_ELO_MATCH_SIG_MAP || FA_ELO_MATCH_SIG_MAP_NOSCORE) || (FA_ELO_PACK && Array.isArray(FA_ELO_PACK.matches))){
+    const d = _tryGetEloDeltaFromSig_(dateKey, modeLc, scoreKey0, idsAll0, focalGuess);
+    if (d != null) inner = fmtDelta(d);
   }
+
+  deltaWrap = `<div class="mc-delta" ${ds}>${inner}</div>`;
+}
 
   return `
     <div class="match-card ${cls}">
@@ -2764,15 +2821,6 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
   if (!wrap) return;
   opts = opts || {};
 
-  // If Elo delta requested, render immediately (without delta if needed), then re-render once we have the Elo match index
-  if (opts.includeEloDelta !== false && !opts.__deltaReady){
-    ensureEloMatchIndex(function(){
-      try{
-        renderMatchCards(containerId, list, withDelete, emptyText, Object.assign({}, opts, {__deltaReady:true}));
-      }catch(_){}
-    });
-  }
-
   const rows = (list||[]).map(r => {
     const rr = (opts.leftTeam || opts.rightTeam)
       ? Object.assign({}, r, {
@@ -2786,6 +2834,13 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
   wrap.innerHTML = rows.length
     ? rows.join("")
     : `<div class="muted" style="padding:12px; font-weight:900;">${esc(emptyText || "No matches yet.")}</div>`;
+// Patch Elo +/- in place once the Elo match index is available (no full re-render -> no scroll jump)
+if (opts.includeEloDelta !== false){
+  ensureEloMatchIndex(function(){
+    try{ fillEloDeltas(wrap); }catch(_){}
+  });
+}
+
 
   if (withDelete){
     wrap.querySelectorAll("button[data-row]").forEach(btn => {
@@ -3144,6 +3199,107 @@ function _tryGetEloDelta_(row, focalId){
   return null;
 }
 
+function _tryGetEloDeltaFromSig_(dateKey, modeLc, scoreKey, idsAll, focalId){
+  focalId = String(focalId||"").trim();
+  dateKey = String(dateKey||"").trim();
+  modeLc  = String(modeLc||"").toLowerCase();
+  scoreKey = String(scoreKey||"").trim();
+  idsAll = (idsAll||[]).map(x=>String(x||"").trim()).filter(Boolean);
+
+  if (!focalId || !dateKey || !modeLc) return null;
+
+  // 1) Fast signature maps when IDs are available
+  if (idsAll.length && (FA_ELO_MATCH_SIG_MAP || FA_ELO_MATCH_SIG_MAP_NOSCORE)){
+    const k1 = _sigUnordered_(dateKey, modeLc, scoreKey, idsAll);
+    let cand = (FA_ELO_MATCH_SIG_MAP && FA_ELO_MATCH_SIG_MAP[k1]) ? FA_ELO_MATCH_SIG_MAP[k1] : null;
+
+    if (!cand || !cand.length){
+      const k2 = _sigUnorderedNoScore_(dateKey, modeLc, idsAll);
+      cand = (FA_ELO_MATCH_SIG_MAP_NOSCORE && FA_ELO_MATCH_SIG_MAP_NOSCORE[k2]) ? FA_ELO_MATCH_SIG_MAP_NOSCORE[k2] : null;
+    }
+
+    if (cand && cand.length){
+      let m = null;
+      for (let i=0; i<cand.length; i++){
+        const x = cand[i];
+        const aIds = (x && x.aIds) ? x.aIds : [];
+        const bIds = (x && x.bIds) ? x.bIds : [];
+        if (aIds.indexOf(focalId) >= 0 || bIds.indexOf(focalId) >= 0){ m = x; break; }
+      }
+      if (!m) m = cand[0];
+
+      const d = Number(m.delta);
+      if (!isFinite(d)) return null;
+      if ((m.aIds||[]).indexOf(focalId) >= 0) return d;
+      if ((m.bIds||[]).indexOf(focalId) >= 0) return -d;
+      return null;
+    }
+  }
+
+  // 2) Robust fallback: scan Elo pack for same day + mode containing focalId (prefer exact score match)
+  const all = (FA_ELO_PACK && Array.isArray(FA_ELO_PACK.matches)) ? FA_ELO_PACK.matches : [];
+  if (!all.length) return null;
+
+  let best = null;
+  for (let i=0; i<all.length; i++){
+    const m = all[i];
+    if (!m) continue;
+    if (_dateKeyFromEloMatch_(m) !== dateKey) continue;
+    if (String(m.mode||"").toLowerCase() !== modeLc) continue;
+
+    const aIds = (m.aIds||[]);
+    const bIds = (m.bIds||[]);
+    const inA = aIds.indexOf(focalId) >= 0;
+    const inB = bIds.indexOf(focalId) >= 0;
+    if (!inA && !inB) continue;
+
+    if (scoreKey){
+      const ms = _normScore(m.score || "");
+      if (ms && ms === scoreKey){ best = m; break; }
+    }
+    if (!best) best = m;
+  }
+
+  if (!best) return null;
+
+  const d = Number(best.delta);
+  if (!isFinite(d)) return null;
+  if ((best.aIds||[]).indexOf(focalId) >= 0) return d;
+  if ((best.bIds||[]).indexOf(focalId) >= 0) return -d;
+  return null;
+}
+
+function fillEloDeltas(root){
+  if (!root) return;
+  const nodes = root.querySelectorAll(".mc-delta[data-need-delta='1']");
+  if (!nodes || !nodes.length) return;
+
+  nodes.forEach(el => {
+    if (!el || el.dataset.done === "1") return;
+
+    const dateKey = String(el.dataset.date || "").trim();
+    const modeLc  = String(el.dataset.mode || "").toLowerCase();
+    const scoreKey = String(el.dataset.score || "").trim();
+    const focalId  = String(el.dataset.focal || "").trim();
+    const idsAll = String(el.dataset.ids || "")
+      .split(",").map(s=>s.trim()).filter(Boolean);
+
+    if (!dateKey || !modeLc || !focalId){
+      el.dataset.done = "1";
+      return;
+    }
+
+    const d = _tryGetEloDeltaFromSig_(dateKey, modeLc, scoreKey, idsAll, focalId);
+    if (d != null){
+      el.innerHTML = fmtDelta(d);
+    } else {
+      el.innerHTML = "";
+    }
+    el.dataset.done = "1";
+  });
+}
+
+
 
 
 
@@ -3192,6 +3348,9 @@ function _rowDateKey(r){
    - roster uses faGetTeamPlayers_v2(team) + Elo overall from getLeagueEloV2Data()
    - transitive uses: your team recent singles + scout team recent singles
    ========================================================= */
+
+const FA_ELO_PACK_CACHE_KEY = "FA_ELO_PACK_CACHE_V1";
+const FA_ELO_SETTINGS_CACHE_KEY = "FA_ELO_SETTINGS_CACHE_V1";
 
 const FA_ELO_DEFAULTS = {
   kBase: 24,
@@ -3245,7 +3404,32 @@ function loadEloPack(cb, force){
     return;
   }
 
-  const onOk = (pack) => {
+  
+// Try instant localStorage cache (from Elo page) for immediate paint
+if (!force && !FA_ELO_PACK){
+  try{
+    const raw = localStorage.getItem(FA_ELO_PACK_CACHE_KEY);
+    if (raw){
+      const cached = JSON.parse(raw);
+      if (cached && cached.ok){
+        FA_ELO_PACK = cached;
+        FA_ELO_LOADED_AT = now;
+        _eloIndexPack_(FA_ELO_PACK);
+        cb(FA_ELO_PACK);
+        // Keep going only if we want a revalidate; otherwise TTL will short-circuit.
+      }
+    }
+  }catch(_){}
+}
+
+// Use shared league-wide Elo settings when available (matches Elo page)
+let eloSettings = {};
+try{
+  const rawS = localStorage.getItem(FA_ELO_SETTINGS_CACHE_KEY);
+  if (rawS) eloSettings = JSON.parse(rawS) || {};
+}catch(_){}
+
+const onOk = (pack) => {
     try{
       FA_ELO_PACK = pack || null;
       FA_ELO_LOADED_AT = Date.now();
@@ -3260,7 +3444,7 @@ function loadEloPack(cb, force){
   };
 
   // Use the SAME server pack as the Elo page (supports matches[] with delta)
-  gsRun("getLeagueEloSimpleData", {})
+  gsRun("getLeagueEloSimpleData", eloSettings)
     .then(onOk)
     .catch(err => {
       console.error(err);
@@ -4757,6 +4941,19 @@ function tryApplyStatsBootstrapFromCache(){
   }catch(e){ return false; }
 }
 
+
+/* Soft refresh hook (used by pull-to-refresh to avoid full page reload + layout reset) */
+window.__FA_SOFT_REFRESH__ = function(){
+  try{
+    const t = (typeof getStatsTeam === "function" ? getStatsTeam() : (window.FA_STATS_TEAM || window.FA_ACES_TEAM || ""));
+    if (typeof refreshStats === "function") refreshStats(t, { silent:true });
+  }catch(_){}
+
+  try{ if (typeof loadEloPack === "function") loadEloPack(function(){}, true); }catch(_){}
+  try{ if (typeof loadLeagueMatchIndex === "function") loadLeagueMatchIndex(function(){}, true); }catch(_){}
+  try{ if (typeof scheduleScoutUpdate === "function") scheduleScoutUpdate(); }catch(_){}
+  try{ if (typeof refreshLeague === "function") refreshLeague(); }catch(_){}
+};
 window.addEventListener("load", () => {
   try{
     wireOnce();
@@ -4785,7 +4982,7 @@ window.addEventListener("load", () => {
 </div>
 
 <!-- Player popup modal -->
-<div class="modal" id="playerModal" aria-hidden="true">
+<div class="modal modal-sheet" id="playerModal" aria-hidden="true">
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
     <div class="modal-head">
       <div class="title" id="pmTitle">PLAYER</div>
@@ -4796,7 +4993,7 @@ window.addEventListener("load", () => {
         <div class="small" id="pmMeta"></div>
       </div>
     </div>
-    <div class="modal-body" id="pmBody" style="max-height:60vh; overflow:auto; -webkit-overflow-scrolling:touch; padding:12px 14px;">
+    <div class="modal-body" id="pmBody" style="overflow:auto; -webkit-overflow-scrolling:touch; padding:12px 14px;">
       <div class="muted" style="font-weight:900;">Loading…</div>
     </div>
   </div>
