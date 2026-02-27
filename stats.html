@@ -298,7 +298,7 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   border-radius:16px;
   padding:8px 10px;
   display:grid;
-  grid-template-columns: 1fr 86px 1fr;
+  grid-template-columns: 1fr 96px 1fr;
   gap:8px;
   align-items:center;
 
@@ -316,47 +316,24 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   box-shadow: inset 6px 0 0 rgba(161,98,7,.18), inset -6px 0 0 rgba(161,98,7,.18);
 }
 
-/* meta row inside match-card (date + W/L/T + optional Elo delta + mode) */
-.mc-meta{
-  grid-column: 1 / -1;
+/* center stack inside match-card (date over score + optional Elo delta) */
+.mc-mid{
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding-bottom:8px;
-  margin-bottom:6px;
-  border-bottom:1px solid #eef2f7;
+  justify-content:center;
+  gap:6px;
+  min-width:0;
+  text-align:center;
+}
+.mc-date{
   font-size:10px;
   color:#667085;
   font-weight:950;
-  text-transform:uppercase;
-  letter-spacing:.06em;
+  letter-spacing:.02em;
+  white-space:nowrap;
 }
-.mc-meta-left{ white-space:nowrap; }
-.mc-meta-mid{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex:1;
-  min-width:0;
-}
-.mc-meta-right{ white-space:nowrap; }
-
-/* result badges + delta (mirrors ELO modal) */
-.res{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:999px;
-  padding:2px 8px;
-  font-weight:950;
-  font-size:11px;
-  border:1px solid transparent;
-}
-.res.w{ background:#e8f7ee; border-color:#bbf7d0; color:#15803d; }
-.res.l{ background:#ffe6e6; border-color:#fecaca; color:#b91c1c; }
-.res.t{ background:#fff7dd; border-color:#fde68a; color:#a16207; }
+.mc-delta{ font-size:11px; font-weight:950; line-height:1; }
 
 .delta{ font-variant-numeric:tabular-nums; font-weight:950; }
 .delta.pos{ color:#15803d; }
@@ -510,7 +487,7 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
 }
 
 @media (max-width: 520px){
-  .match-card{ grid-template-columns: 1fr 78px 1fr; padding:9px; }
+  .match-card{ grid-template-columns: 1fr 88px 1fr; padding:9px; }
   .mc-score{ min-width:62px; padding:6px 7px; }
   .mc-score-stroke{ font-size:14px; gap:5px; }
 }
@@ -2687,39 +2664,29 @@ function _buildMatchCardHtml(r, withDelete, opts){
          <span>${esc(oScore)}</span>
        </div>`
     : `<div class="mc-score mc-score-mp ${cls}">${esc(mp || "—")}</div>`;
-
-  // --- Meta (optional) ---
-  let metaHtml = "";
+  // --- Center meta (date over score + optional Elo delta) ---
+  let dateHtml = "";
   if (opts.showMeta){
     const dateStr = prettyDate(r.ts || r.matchDate || r.date || "");
-    const resCls = (res === "W") ? "w" : (res === "L") ? "l" : "t";
-
-    let deltaHtml = "";
-    if (opts.includeEloDelta && opts.focalId){
-      const d = _tryGetEloDelta_(r, opts.focalId);
-      if (d != null) deltaHtml = fmtDelta(d);
-    } else if (r.eloDelta != null){
-      deltaHtml = fmtDelta(r.eloDelta);
-    } else if (r.delta != null){
-      deltaHtml = fmtDelta(r.delta);
-    }
-
-    const modeUp = mode ? mode.toUpperCase() : "";
-    const smUp = (String(r.scoreMode||"") ? String(r.scoreMode).toUpperCase() : (isStroke ? "STROKE" : "MATCH"));
-    const rightMeta = [modeUp, smUp].filter(Boolean).join(" • ");
-
-    metaHtml = `<div class="mc-meta">
-      <span class="mc-meta-left">${esc(dateStr)}</span>
-      <span class="mc-meta-mid"><span class="res ${resCls}">${esc(res || "T")}</span>${deltaHtml}</span>
-      <span class="mc-meta-right">${esc(rightMeta)}</span>
-    </div>`;
+    if (dateStr) dateHtml = `<div class="mc-date">${esc(dateStr)}</div>`;
   }
+
+  let deltaHtml = "";
+  if (opts.includeEloDelta && opts.focalId){
+    const d = _tryGetEloDelta_(r, opts.focalId);
+    if (d != null) deltaHtml = fmtDelta(d);
+  } else if (r.eloDelta != null){
+    deltaHtml = fmtDelta(r.eloDelta);
+  } else if (r.delta != null){
+    deltaHtml = fmtDelta(r.delta);
+  }
+
+  const deltaWrap = deltaHtml ? `<div class="mc-delta">${deltaHtml}</div>` : "";
 
   return `
     <div class="match-card ${cls}">
-      ${metaHtml}
       <div class="mc-left">${leftHtml}</div>
-      <div class="mc-mid">${scoreHtml}</div>
+      <div class="mc-mid">${dateHtml}${scoreHtml}${deltaWrap}</div>
       <div class="mc-right">${rightHtml}</div>
       ${withDelete ? `<button class="small-btn" data-row="${r.rowNum}">DELETE</button>` : ``}
     </div>
