@@ -1825,7 +1825,36 @@ function setStatsTeam(teamId){
     if (typeof setPlayerEmpty === "function") setPlayerEmpty();
   }catch(e){}
 
-  // clear old opponent cards immediately to avoid wrong-team flash
+  
+  // ✅ clear visible bodies on team switch so old team doesn't linger
+  try{
+    FA_STATS_OBJ = null;
+
+    // reset opponent filter dropdown (Results by Opponent)
+    if ($("oppFilter")) $("oppFilter").value = "";
+
+    // rosters
+    if ($("scoutRosterMenBody")) $("scoutRosterMenBody").innerHTML =
+      `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    if ($("scoutRosterWomenBody")) $("scoutRosterWomenBody").innerHTML =
+      `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+
+    // main tables
+    if ($("singlesBody")) $("singlesBody").innerHTML =
+      `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    if ($("doublesPlayerBody")) $("doublesPlayerBody").innerHTML =
+      `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    if ($("doublesPairBody")) $("doublesPairBody").innerHTML =
+      `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+
+    // player modal/cards section (if present)
+    if ($("playerMeta")) $("playerMeta").textContent = "";
+    if ($("playerSummaryBody")) $("playerSummaryBody").innerHTML = "";
+    if ($("playerPartnersBody")) $("playerPartnersBody").innerHTML = "";
+    if ($("playerCards")) $("playerCards").innerHTML = "";
+  }catch(e){}
+
+// clear old opponent cards immediately to avoid wrong-team flash
   try{
     FA_RECENT_CACHE = [];
     if ($("oppResultsCards")) $("oppResultsCards").innerHTML = `<div class="muted" style="padding:6px 2px; font-weight:900;">Loading…</div>`;
