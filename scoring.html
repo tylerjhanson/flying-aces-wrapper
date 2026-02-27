@@ -7,34 +7,68 @@
 
 <style>
 /* =========================================================
-   1. HEADER STYLES (Identical to matchups.html)
+   1. LITERAL HEADER STYLES (Copied exactly from header.html)
    ========================================================= */
-:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
-.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; border-bottom: none; padding: 0 !important; box-sizing: border-box; }
-.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; margin: 0 !important; background: transparent !important; }
+:root{ --fa-header-offset: 0px; }
+.fa-header{
+  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
+  border-bottom: none; padding: 0 !important; box-sizing: border-box;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+}
+html, body { touch-action: pan-x pan-y; }
+.fa-header .fa-tabs{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important; padding: 8px 0 !important; margin: 0 !important;
+  border: none !important; background: transparent !important;
+}
 .fa-header .fa-tabs button, .fa-header .fa-submenu button{
-  -webkit-appearance:none !important; appearance:none !important; display:flex !important; align-items:center !important; justify-content:center !important; width:100% !important; font-family:"Segoe UI", Roboto, Arial, sans-serif !important; font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important; letter-spacing: .2px !important; line-height: 1 !important; height: 40px !important; border-radius: 8px !important; border: 0 !important; background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important; box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important; cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+  -webkit-appearance:none !important; appearance:none !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  width:100% !important; box-sizing:border-box !important;
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important; line-height: 1 !important;
+  height: 40px !important; min-height: 40px !important; padding: 0 6px !important;
+  border-radius: 8px !important; border: 0 !important; outline: none !important;
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important;
+  cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+  -webkit-tap-highlight-color: transparent !important; user-select: none !important;
 }
 .fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
 #nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
-.fa-submenu{ position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001; opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none; transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms; }
+#nav-menu .menu-logo{ height: 18px; width: auto; display: block; }
+#nav-menu .hamburger-icon{ width: 24px; height: 24px; flex: 0 0 auto; }
+.fa-submenu-wrap{ position: relative; }
+.fa-submenu{
+  position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
+  opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
 .fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
-.fa-submenu .inner{ background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12); box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden; padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px); }
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden;
+  padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px);
+}
+.fa-header .fa-submenu button{ height: 42px !important; min-height: 42px !important; font-size: 13px !important; border-radius: 12px !important; }
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{ height: 36px !important; min-height: 36px !important; font-size: 13px !important; }
+  #nav-menu .menu-logo{ height: 16px; }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+}
 
 /* =========================================================
-   2. SCORING STYLES (Single Column Layout)
+   2. SCORING STYLES (Single Column Mobile Layout)
    ========================================================= */
-html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #f7f8fa; margin: 0; padding: 4px; color: #222; touch-action: manipulation; }
-
-/* ✅ Force single column for mobile readability */
+html, body { background: #f7f8fa; margin: 0; padding: 4px; color: #222; font-family: "Segoe UI", Roboto, Arial, sans-serif; }
 .scoring-wrapper { display: flex; flex-direction: column; gap: 10px; max-width: 600px; margin: 0 auto; }
-
 .team { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 10px; box-sizing: border-box; border-top: 5px solid #111; }
-
 .input-group { margin-bottom: 10px; }
 label{ display:flex; align-items:center; justify-content:center; height: 26px; margin-bottom: 4px; font-size: 11px; font-weight: 900; letter-spacing: .3px; text-transform: uppercase; background: #000; color: #fff; border-radius: 8px; }
 select{ width: 100%; box-sizing: border-box; height: 42px; font-size: 18px; font-weight: 900; color: #333; background-color: #fff; text-align: center; text-align-last: center; border: 1.5px solid #ddd; border-radius: 8px; -webkit-appearance: none; appearance: none; line-height: 1.15; padding: 9px 30px 9px 16px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'><path fill='%23666' d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px 16px; }
-
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
 .stat-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 6px 2px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
 .stat-label { font-size: 0.82em; color: #555; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
@@ -43,10 +77,9 @@ select{ width: 100%; box-sizing: border-box; height: 42px; font-size: 18px; font
 .stat-aces .stat-label, .stat-aces .stat-value { color: white; }
 .stat-opp { background: linear-gradient(145deg, #333333, #000000); border-color: #111; }
 .stat-opp .stat-label, .stat-opp .stat-value { color: white; }
-
 table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.75em; } 
 th, td { padding: 8px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
-th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em; text-transform: uppercase; }
+th { background-color: #f0f0f0; color: #444; font-weight: 800; text-transform: uppercase; }
 .res-win { color: #28a745; }
 .res-loss { color: #dc3545; }
 .res-tie  { color: #ffc107; }
@@ -59,43 +92,29 @@ th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em
       <button id="nav-scoring" class="active" type="button" data-page="scoring">SCORING</button>
       <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
       <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-      <button id="nav-menu" type="button" data-key="menu">
-        <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:18px;">
-        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <button id="nav-menu" type="button" data-key="menu" onclick="toggleMenu()">
+        <img class="menu-logo" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" alt="">
+        <svg class="hamburger-icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
       </button>
     </nav>
     <div class="fa-submenu" id="faMoreMenu">
       <div class="inner">
-        <button data-page="rankings">RANKINGS</button>
-        <button data-page="stats">STATS</button>
-        <button data-page="elo">ELO</button>
-        <button data-page="standings">STANDINGS</button>
-        <button data-page="admin">ADMIN</button>
+        <button onclick="navigate('rankings')">RANKINGS</button>
+        <button onclick="navigate('stats')">STATS</button>
+        <button onclick="navigate('elo')">ELO</button>
+        <button onclick="navigate('standings')">STANDINGS</button>
+        <button onclick="navigate('admin')">ADMIN</button>
       </div>
     </div>
   </div>
 
   <div class="scoring-wrapper">
     <div class="team">
-      <div class="input-group">
-        <label>ROUND 1</label>
-        <select id="b1" onchange="runCalc()">
-          <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label>ROUND 2</label>
-        <select id="b2" onchange="runCalc()">
-          <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-        </select>
-      </div>
+      <div class="input-group"><label>ROUND 1</label><select id="b1" onchange="runCalc()"><option value="22">22</option><option value="24" selected>24</option></select></div>
+      <div class="input-group"><label>ROUND 2</label><select id="b2" onchange="runCalc()"><option value="22">22</option><option value="24" selected>24</option></select></div>
       <div style="border-top: 1px dashed #ccc; margin: 10px 0;"></div>
-      <div class="input-group">
-        <label>ACES SINGLES</label>
-        <select id="b9" onchange="runCalc()"></select>
-      </div>
+      <div class="input-group"><label>ACES SINGLES</label><select id="b9" onchange="runCalc()"></select></div>
     </div>
-
     <div class="team">
       <div class="stats-grid">
         <div class="stat-box stat-aces"><span class="stat-label">Aces</span><span class="stat-value" id="displayB9">0</span></div>
@@ -113,7 +132,7 @@ th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em
 <script>
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec"; 
 
-/* --- 1. MAGIC POLYFILL --- */
+/* --- API Bridge --- */
 window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
 function createProxy(s, f) {
   return new Proxy({}, {
@@ -126,10 +145,17 @@ function createProxy(s, f) {
   });
 }
 
-/* --- 2. ORIGINAL LOGIC (Preserved) --- */
+/* --- Navigation --- */
+function navigate(p){ window.location.href = p + ".html"; }
+function toggleMenu(){ document.getElementById('faMoreMenu').classList.toggle('show'); }
+document.querySelectorAll('.fa-tabs button:not(#nav-menu)').forEach(b => {
+  b.onclick = () => navigate(b.dataset.page);
+});
+
+/* --- Logic --- */
 function populateAcesDropdown() {
   const select = document.getElementById('b9');
-  if (!select || select.options.length) return;
+  if (!select) return;
   let html = "";
   for (let i = 0; i <= 25; i += 0.5) { html += `<option value="${i}">${i}</option>`; }
   select.innerHTML = html;
@@ -138,7 +164,7 @@ function populateAcesDropdown() {
 let __saveTimer = null;
 function runCalc() {
   const b1 = parseFloat(document.getElementById('b1').value), b2 = parseFloat(document.getElementById('b2').value), b9 = parseFloat(document.getElementById('b9').value), b3 = 1;
-  if (__saveTimer) clearTimeout(__saveTimer);
+  clearTimeout(__saveTimer);
   __saveTimer = setTimeout(() => { google.script.run.saveToCloud({ b1, b2, b9 }); }, 400);
 
   const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3), b6 = (b5 / 2) + 0.5, b10 = b1 - b9;
@@ -158,15 +184,6 @@ function runCalc() {
   }
   tbody.innerHTML = html;
 }
-
-/* --- 3. NAVIGATION (Consistent) --- */
-(function(){
-  const menuBtn = document.getElementById("nav-menu"), menuEl = document.getElementById("faMoreMenu");
-  menuBtn.onclick = () => menuEl.classList.toggle("show");
-  document.querySelectorAll("[data-page]").forEach(btn => {
-    btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
-  });
-})();
 
 window.onload = function() {
   populateAcesDropdown();
