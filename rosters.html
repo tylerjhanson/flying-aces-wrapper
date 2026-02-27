@@ -621,8 +621,7 @@ html, body { touch-action: pan-x pan-y; }
 
   function isEmbedded(){
     try { if (window.top !== window) return true; } catch(e){ return true; }
-    var embed = (qs().get("embed") || "").toLowerCase();
-    return (embed === "1" || embed === "true" || embed === "yes");
+    return false;
   }
 
   // Pages that live under the hamburger menu
@@ -702,22 +701,24 @@ html, body { touch-action: pan-x pan-y; }
     opts = opts || {};
     var s = qs();
     var parts = [];
+    // Only propagate embed=1 when actually inside an iframe
+    if (opts.embed && isEmbedded()) parts.push("embed=1");
     var scale = s.get("scale");
     var v = s.get("v");
-    if (opts.embed) parts.push("embed=1");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
     if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.join("&");
+    return parts.length ? ("?" + parts.join("&")) : "";
   }
 
-  function buildHref(page){ return page + ".html"; });
-      var parts = ["p=" + encodeURIComponent(page)];
-      if (q) parts.push(q);
-      return "?" + parts.join("&");
+  function buildHref(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return "";
+    if (isEmbedded()){
+      var q = extraQS({ embed:true });
+      if (q) q = q.replace(/^\?/, "&");
+      return "?p=" + encodeURIComponent(page) + q;
     } else {
-      var base = "/" + encodeURIComponent(page);
-      var q2 = extraQS({ embed:false });
-      return q2 ? (base + "?" + q2) : base;
+      return "/" + encodeURIComponent(page) + ".html" + extraQS({ embed:false });
     }
   }
 
@@ -727,17 +728,16 @@ html, body { touch-action: pan-x pan-y; }
     var p = (s.get("p") || s.get("page") || "").toLowerCase();
     if (!p) return;
 
-    // If someone lands on /something?p=rosters, send them to /rosters
-    var target = "/" + encodeURIComponent(p);
-    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
-    if (!cur) cur = "/";
-    if (cur === target) return;
+    var target = "/" + encodeURIComponent(p) + ".html";
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+/g, "/");
+    if (cur.endsWith("/")) cur = cur.slice(0, -1);
+    if (cur === target.toLowerCase()) return;
 
     var q2 = extraQS({ embed:false });
     try{
-      window.location.replace(q2 ? (target + "?" + q2) : target);
+      window.location.replace(q2 ? (target + q2) : target);
     }catch(e){
-      window.location.href = q2 ? (target + "?" + q2) : target;
+      window.location.href = q2 ? (target + q2) : target;
     }
   }
 
@@ -1105,6 +1105,23 @@ html, body { touch-action: pan-x pan-y; }
   }, { passive:true });
 })();
 </script>
+<script>
+(function(){
+  try{
+    var path = (window.location.pathname || "").toLowerCase();
+    var file = path.split("/").pop() || "";
+    var page = "";
+    if (file.endsWith(".html")) page = file.slice(0, -5);
+    if (!page){
+      // if served as /page (without .html), try first segment
+      var seg = path.split("/").filter(Boolean)[0] || "";
+      page = seg;
+    }
+    if (page && window.faSetActiveByPage) window.faSetActiveByPage(page);
+  }catch(_){}
+})();
+</script>
+
 
 
 <script>
@@ -1126,7 +1143,10 @@ html, body { touch-action: pan-x pan-y; }
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: prop, args: args })
         })
-        .then(r => r.json())
+        .then(r => r.text()).then(t => { 
+          if (!t) throw new Error("Empty response from GAS. Check FA_GAS_API_URL + deployment access.");
+          try { return JSON.parse(t); } catch(e){ console.error("Non-JSON response:", t.slice(0,300)); throw e; }
+        })
         .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
         .catch(e => { if (f) f(e); });
       }
@@ -1570,7 +1590,7 @@ function applyBootstrap(boot, opt){
   (window.requestAnimationFrame || function(fn){ setTimeout(fn, 0); })(function(){
     setTimeout(function(){ wireDnDOnce(); wireTouchDnDOnce(); }, 0);
   });
-  if (typeof startBootstrapSync === "function") startBootstrapSync();
+  startBootstrapSync && startBootstrapSync();
 
   setStatus("Loaded " + STATE.masterAces.length + " players from PlayersDB");
 }
@@ -2690,6 +2710,13 @@ function applyMove(src, dest, doSwap){
 }
 
 /** STATUS */
+function setStatus(msg, ok=true, errObj=null){
+  try{
+    // currentSet is the active roster tab in this page
+    showStatus((typeof currentSet !== "undefined" ? currentSet : "DEFAULT"), String(msg||""), true, !!ok, (!!ok ? null : errObj));
+  }catch(_){}
+}
+
 function showStatus(setName, msg, final=false, ok=true, errObj=null){
   const id = `${setName}-status`;
   const el = document.getElementById(id);

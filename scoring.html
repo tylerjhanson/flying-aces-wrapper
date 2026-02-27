@@ -2,64 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
-<title>Scoring</title>
+<meta name="robots" content="noindex, nofollow"> <title>Scoring</title>
 
 <style>
-/* =========================================================
-   1. HEADER STYLES (Exact copy from matchups.html)
-   ========================================================= */
-:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
-.fa-header{
-  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
-  border-bottom: none; padding: 0 !important; box-sizing: border-box;
-  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
-}
-html, body { touch-action: pan-x pan-y; }
-.fa-header .fa-tabs{
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 6px !important; padding: 8px 0 !important; margin: 0 !important;
-  border: none !important; background: transparent !important;
-}
-.fa-header .fa-tabs button, .fa-header .fa-submenu button{
-  -webkit-appearance:none !important; appearance:none !important;
-  display:flex !important; align-items:center !important; justify-content:center !important;
-  width:100% !important; box-sizing:border-box !important;
-  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
-  letter-spacing: .2px !important; line-height: 1 !important;
-  height: 40px !important; min-height: 40px !important; padding: 0 6px !important;
-  border-radius: 8px !important; border: 0 !important; outline: none !important;
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important;
-  cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
-  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
-  -webkit-tap-highlight-color: transparent !important; user-select: none !important;
-}
-.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
-#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
-#nav-menu .menu-logo{ height: 18px; width: auto; display: block; }
-#nav-menu .hamburger-icon{ width: 24px; height: 24px; flex: 0 0 auto; }
-.fa-submenu{
-  position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
-  opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
-}
-.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
-.fa-submenu .inner{
-  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden;
-  padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px);
-}
-@media (max-width: 420px){
-  .fa-header .fa-tabs{ padding: 6px 0 !important; }
-  .fa-header .fa-tabs button{ height: 36px !important; min-height: 36px !important; font-size: 13px !important; }
-  #nav-menu .menu-logo{ height: 16px; }
-  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
-}
-
 /* =========================================================
    2. SCORING STYLES (Single Column + Sticky Header)
    ========================================================= */
@@ -99,7 +45,7 @@ th {
 </head>
 
 <body>
-<style>
+  <style>
 :root{ --fa-header-offset: 0px; }
 
 /* Header container */
@@ -440,8 +386,7 @@ html, body { touch-action: pan-x pan-y; }
 
   function isEmbedded(){
     try { if (window.top !== window) return true; } catch(e){ return true; }
-    var embed = (qs().get("embed") || "").toLowerCase();
-    return (embed === "1" || embed === "true" || embed === "yes");
+    return false;
   }
 
   // Pages that live under the hamburger menu
@@ -521,22 +466,24 @@ html, body { touch-action: pan-x pan-y; }
     opts = opts || {};
     var s = qs();
     var parts = [];
+    // Only propagate embed=1 when actually inside an iframe
+    if (opts.embed && isEmbedded()) parts.push("embed=1");
     var scale = s.get("scale");
     var v = s.get("v");
-    if (opts.embed) parts.push("embed=1");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
     if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.join("&");
+    return parts.length ? ("?" + parts.join("&")) : "";
   }
 
-  function buildHref(page){ return page + ".html"; });
-      var parts = ["p=" + encodeURIComponent(page)];
-      if (q) parts.push(q);
-      return "?" + parts.join("&");
+  function buildHref(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return "";
+    if (isEmbedded()){
+      var q = extraQS({ embed:true });
+      if (q) q = q.replace(/^\?/, "&");
+      return "?p=" + encodeURIComponent(page) + q;
     } else {
-      var base = "/" + encodeURIComponent(page);
-      var q2 = extraQS({ embed:false });
-      return q2 ? (base + "?" + q2) : base;
+      return "/" + encodeURIComponent(page) + ".html" + extraQS({ embed:false });
     }
   }
 
@@ -546,17 +493,16 @@ html, body { touch-action: pan-x pan-y; }
     var p = (s.get("p") || s.get("page") || "").toLowerCase();
     if (!p) return;
 
-    // If someone lands on /something?p=rosters, send them to /rosters
-    var target = "/" + encodeURIComponent(p);
-    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
-    if (!cur) cur = "/";
-    if (cur === target) return;
+    var target = "/" + encodeURIComponent(p) + ".html";
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+/g, "/");
+    if (cur.endsWith("/")) cur = cur.slice(0, -1);
+    if (cur === target.toLowerCase()) return;
 
     var q2 = extraQS({ embed:false });
     try{
-      window.location.replace(q2 ? (target + "?" + q2) : target);
+      window.location.replace(q2 ? (target + q2) : target);
     }catch(e){
-      window.location.href = q2 ? (target + "?" + q2) : target;
+      window.location.href = q2 ? (target + q2) : target;
     }
   }
 
@@ -924,6 +870,23 @@ html, body { touch-action: pan-x pan-y; }
   }, { passive:true });
 })();
 </script>
+<script>
+(function(){
+  try{
+    var path = (window.location.pathname || "").toLowerCase();
+    var file = path.split("/").pop() || "";
+    var page = "";
+    if (file.endsWith(".html")) page = file.slice(0, -5);
+    if (!page){
+      // if served as /page (without .html), try first segment
+      var seg = path.split("/").filter(Boolean)[0] || "";
+      page = seg;
+    }
+    if (page && window.faSetActiveByPage) window.faSetActiveByPage(page);
+  }catch(_){}
+})();
+</script>
+
 
 
 <script>
@@ -945,7 +908,10 @@ html, body { touch-action: pan-x pan-y; }
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: prop, args: args })
         })
-        .then(r => r.json())
+        .then(r => r.text()).then(t => { 
+          if (!t) throw new Error("Empty response from GAS. Check FA_GAS_API_URL + deployment access.");
+          try { return JSON.parse(t); } catch(e){ console.error("Non-JSON response:", t.slice(0,300)); throw e; }
+        })
         .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
         .catch(e => { if (f) f(e); });
       }
@@ -960,6 +926,138 @@ html, body { touch-action: pan-x pan-y; }
 })();
 </script>
 
-  
+<div id="bootDebug" style="display:none; margin:10px 0; padding:10px; border-radius:12px; background:#fff3cd; color:#5c3b00; font-weight:700; line-height:1.3;">
+  Rosters failed to load players. This usually means the server bootstrap returned an empty list.
+  <div id="bootDebugDetail" style="margin-top:6px; font-weight:600; font-family:monospace; white-space:pre-wrap;"></div>
+</div>
+<div id="emptyBanner" style="display:none; margin:10px 0; padding:10px; border-radius:12px; background:#fff; color:#b00020; font-weight:800;"></div>
+
+
+<script>window.EXEC_BASE = window.GAS_API_URL || '';</script>
+<div class="set-switcher">
+  <button class="set-btn" data-set="SINGLES" id="btn-SINGLES">SINGLES</button>
+  <button class="set-btn" data-set="DEFAULT" id="btn-DEFAULT">DOUBLES</button>
+  <button class="set-btn" data-set="WEAK"    id="btn-WEAK">MIXED 1</button>
+  <button class="set-btn" data-set="STRONG"  id="btn-STRONG">MIXED 2</button>
+</div>
+
+<div class="scoring-wrapper">
+    <div class="team">
+      <div class="inputs-row">
+        <div class="input-group">
+          <label>ROUND 1</label>
+          <select id="b1" onchange="runCalc()">
+            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>ROUND 2</label>
+          <select id="b2" onchange="runCalc()">
+            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>ACES SINGLES</label>
+          <select id="b9" onchange="runCalc()"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="team">
+      <div class="stats-grid">
+        <div class="stat-box stat-aces"><span class="stat-label">Aces</span><span class="stat-value" id="displayB9">0</span></div>
+        <div class="stat-box stat-opp"><span class="stat-label">Opp</span><span class="stat-value" id="b10">0</span></div>
+        <div class="stat-box"><span class="stat-label">Total</span><span class="stat-value" id="b5">0</span></div>
+        <div class="stat-box"><span class="stat-label">Need</span><span class="stat-value" id="b6">0</span></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dubs</th><th>Single</th><th>Aces</th><th>Opp</th><th>Result</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
+window.GAS_API_URL = GAS_API_URL; 
+
+/* --- 1. API BRIDGE --- */
+window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
+function createProxy(s, f) {
+  return new Proxy({}, {
+    get: (t, prop) => {
+      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+      return (...args) => fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: prop, args: args }) })
+        .then(r => r.text()).then(t => { 
+          if (!t) throw new Error("Empty response from GAS. Check FA_GAS_API_URL + deployment access.");
+          try { return JSON.parse(t); } catch(e){ console.error("Non-JSON response:", t.slice(0,300)); throw e; }
+        }).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
+    }
+  });
+}
+
+/* --- 3. SCORING LOGIC --- */
+function populateAcesDropdown() {
+  const select = document.getElementById('b9');
+  if (!select || select.options.length) return;
+  let html = "";
+  // ✅ RANGE 0-26
+  for (let i = 0; i <= 26; i += 0.5) { html += `<option value="${i}">${i}</option>`; }
+  select.innerHTML = html;
+}
+
+let __saveTimer = null;
+function runCalc() {
+  const b1 = parseFloat(document.getElementById('b1').value), b2 = parseFloat(document.getElementById('b2').value), b9 = parseFloat(document.getElementById('b9').value);
+  const b3 = 1;
+  const data = { b1, b2, b9 };
+  localStorage.setItem("fa_cache_scoring", JSON.stringify(data));
+
+  clearTimeout(__saveTimer);
+  __saveTimer = setTimeout(() => { google.script.run.saveToCloud(data); }, 400);
+
+  const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3), b6 = (b5 / 2) + 0.5, b10 = b1 - b9;
+  document.getElementById('b5').innerText = b5; document.getElementById('b6').innerText = b6; document.getElementById('b10').innerText = b10; document.getElementById('displayB9').innerText = b9;
+
+  const tbody = document.getElementById('tableBody');
+  const numD = Math.floor(b2/2), hasE = (b2 % 2 === 1);
+  let html = "";
+  for (let d = 0; d <= numD; d++) {
+    const sOpts = hasE ? [0, 1] : [0];
+    for (let s of sOpts) {
+      const aces = b9 + (d * 2) + (s * b3), opp = b10 + (numD * 2 + (b2 % 2) * b3) - (d * 2 + s * b3);
+      let rT = "TIE", rC = "res-tie";
+      if (aces > opp) { rT = "WIN"; rC = "res-win"; } else if (aces < opp) { rT = "LOSS"; rC = "res-loss"; }
+      html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${rC}">${rT}</td></tr>`;
+    }
+  }
+  tbody.innerHTML = html;
+}
+
+window.onload = function() {
+  populateAcesDropdown();
+  const cached = localStorage.getItem("fa_cache_scoring");
+  if (cached) {
+    try {
+      const data = JSON.parse(cached);
+      document.getElementById('b1').value = data.b1;
+      document.getElementById('b2').value = data.b2;
+      document.getElementById('b9').value = data.b9;
+      runCalc();
+    } catch(e) {}
+  }
+  google.script.run.withSuccessHandler((data) => {
+    if (data) {
+      document.getElementById('b1').value = data.b1 ?? 24;
+      document.getElementById('b2').value = data.b2 ?? 24;
+      document.getElementById('b9').value = data.b9 ?? 0;
+      runCalc();
+    }
+  }).loadFromCloud();
+};
+</script>
 </body>
 </html>

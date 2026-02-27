@@ -725,8 +725,7 @@ html, body { touch-action: pan-x pan-y; }
 
   function isEmbedded(){
     try { if (window.top !== window) return true; } catch(e){ return true; }
-    var embed = (qs().get("embed") || "").toLowerCase();
-    return (embed === "1" || embed === "true" || embed === "yes");
+    return false;
   }
 
   // Pages that live under the hamburger menu
@@ -802,9 +801,30 @@ html, body { touch-action: pan-x pan-y; }
     }
   }
 
-  function extraQS(){ return ""; }
+  function extraQS(opts){
+    opts = opts || {};
+    var s = qs();
+    var parts = [];
+    // Only propagate embed=1 when actually inside an iframe
+    if (opts.embed && isEmbedded()) parts.push("embed=1");
+    var scale = s.get("scale");
+    var v = s.get("v");
+    if (scale) parts.push("scale=" + encodeURIComponent(scale));
+    if (v) parts.push("v=" + encodeURIComponent(v));
+    return parts.length ? ("?" + parts.join("&")) : "";
+  }
 
-  function buildHref(page){ return page + ".html"; }
+  function buildHref(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return "";
+    if (isEmbedded()){
+      var q = extraQS({ embed:true });
+      if (q) q = q.replace(/^\?/, "&");
+      return "?p=" + encodeURIComponent(page) + q;
+    } else {
+      return "/" + encodeURIComponent(page) + ".html" + extraQS({ embed:false });
+    }
+  }
 
   function sendToWrapper(page){
     var msg = { type: "FA_NAV", page: page };
@@ -1167,6 +1187,23 @@ html, body { touch-action: pan-x pan-y; }
   }, { passive:true });
 })();
 </script>
+<script>
+(function(){
+  try{
+    var path = (window.location.pathname || "").toLowerCase();
+    var file = path.split("/").pop() || "";
+    var page = "";
+    if (file.endsWith(".html")) page = file.slice(0, -5);
+    if (!page){
+      // if served as /page (without .html), try first segment
+      var seg = path.split("/").filter(Boolean)[0] || "";
+      page = seg;
+    }
+    if (page && window.faSetActiveByPage) window.faSetActiveByPage(page);
+  }catch(_){}
+})();
+</script>
+
 
 <div class="roundToggle" role="group" aria-label="Round">
   <button id="btnRound1" class="roundBtn" aria-pressed="false" onclick="onTapRound('R1')">ROUND 1</button>
@@ -1205,7 +1242,8 @@ html, body { touch-action: pan-x pan-y; }
 // =========================================================
 // THE MAGIC POLYFILL: Converts google.script.run to fetch()
 // =========================================================
-const GAS_API_URL = (localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec");
+const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
+window.GAS_API_URL = GAS_API_URL;
 
 window.google = {
   script: {
