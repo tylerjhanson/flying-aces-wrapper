@@ -3,46 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow"> <title>Scoring</title>
-
-<style>
-/* =========================================================
-   2. SCORING STYLES (Single Column + Sticky Header)
-   ========================================================= */
-html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #f7f8fa; margin: 0; padding: 4px; color: #222; touch-action: manipulation; }
-.scoring-wrapper { display: flex; flex-direction: column; gap: 10px; max-width: 600px; margin: 0 auto; }
-
-.team { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 10px; box-sizing: border-box; }
-
-.inputs-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-label { display:flex; align-items:center; justify-content:center; height: 26px; margin-bottom: 4px; font-size: 11px; font-weight: 900; letter-spacing: .3px; text-transform: uppercase; background: #000; color: #fff; border-radius: 8px; white-space: nowrap; }
-select { width: 100%; box-sizing: border-box; height: 42px; font-size: 18px; font-weight: 900; color: #333; background-color: #fff; text-align: center; text-align-last: center; border: 1.5px solid #ddd; border-radius: 8px; -webkit-appearance: none; appearance: none; line-height: 1.15; padding: 9px 4px; }
-
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
-.stat-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 6px 2px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-.stat-label { font-size: 0.82em; color: #555; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
-.stat-value { font-size: 1.6em; font-weight: bold; color: #333; }
-.stat-aces { background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%); border-color: #b30000; }
-.stat-aces .stat-label, .stat-aces .stat-value { color: white; }
-.stat-opp { background: linear-gradient(145deg, #333333, #000000); border-color: #111; }
-.stat-opp .stat-label, .stat-opp .stat-value { color: white; }
-
-/* ✅ STICKY TABLE HEADER */
-.table-wrap { overflow: visible; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 1.1em; } 
-th, td { padding: 8px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
-th { 
-  background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em; text-transform: uppercase; 
-  position: sticky; top: 56px; /* Header height (40px) + Header padding (8px*2) */
-  z-index: 10;
-}
-@media (max-width: 420px) { th { top: 48px; } } /* Adjusted for mobile header height */
-
-.res-win { color: #28a745; }
-.res-loss { color: #dc3545; }
-.res-tie  { color: #ffc107; }
-</style>
-
 
 <style>
 :root{ --fa-header-offset: 0px; }
@@ -288,7 +248,6 @@ html, body { touch-action: pan-x pan-y; }
 </head>
 
 <body>
-
 <div class="fa-header fa-submenu-wrap">
   <nav class="fa-tabs">
     <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
@@ -886,121 +845,6 @@ html, body { touch-action: pan-x pan-y; }
     hideToast();
   }, { passive:true });
 })();
-</script>
-<div class="scoring-wrapper">
-    <div class="team">
-      <div class="inputs-row">
-        <div class="input-group">
-          <label>ROUND 1</label>
-          <select id="b1" onchange="runCalc()">
-            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>ROUND 2</label>
-          <select id="b2" onchange="runCalc()">
-            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>ACES SINGLES</label>
-          <select id="b9" onchange="runCalc()"></select>
-        </div>
-      </div>
-    </div>
-
-    <div class="team">
-      <div class="stats-grid">
-        <div class="stat-box stat-aces"><span class="stat-label">Aces</span><span class="stat-value" id="displayB9">0</span></div>
-        <div class="stat-box stat-opp"><span class="stat-label">Opp</span><span class="stat-value" id="b10">0</span></div>
-        <div class="stat-box"><span class="stat-label">Total</span><span class="stat-value" id="b5">0</span></div>
-        <div class="stat-box"><span class="stat-label">Need</span><span class="stat-value" id="b6">0</span></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Dubs</th><th>Single</th><th>Aces</th><th>Opp</th><th>Result</th></tr></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-<script>
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec"; 
-
-/* --- 1. API BRIDGE --- */
-window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
-function createProxy(s, f) {
-  return new Proxy({}, {
-    get: (t, prop) => {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
-      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
-    }
-  });
-}
-
-/* --- 2. NAVIGATION --- */
-/* --- 3. SCORING LOGIC --- */
-function populateAcesDropdown() {
-  const select = document.getElementById('b9');
-  if (!select || select.options.length) return;
-  let html = "";
-  // ✅ RANGE 0-26
-  for (let i = 0; i <= 26; i += 0.5) { html += `<option value="${i}">${i}</option>`; }
-  select.innerHTML = html;
-}
-
-let __saveTimer = null;
-function runCalc() {
-  const b1 = parseFloat(document.getElementById('b1').value), b2 = parseFloat(document.getElementById('b2').value), b9 = parseFloat(document.getElementById('b9').value);
-  const b3 = 1;
-  const data = { b1, b2, b9 };
-  localStorage.setItem("fa_cache_scoring", JSON.stringify(data));
-
-  clearTimeout(__saveTimer);
-  __saveTimer = setTimeout(() => { google.script.run.saveToCloud(data); }, 400);
-
-  const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3), b6 = (b5 / 2) + 0.5, b10 = b1 - b9;
-  document.getElementById('b5').innerText = b5; document.getElementById('b6').innerText = b6; document.getElementById('b10').innerText = b10; document.getElementById('displayB9').innerText = b9;
-
-  const tbody = document.getElementById('tableBody');
-  const numD = Math.floor(b2/2), hasE = (b2 % 2 === 1);
-  let html = "";
-  for (let d = 0; d <= numD; d++) {
-    const sOpts = hasE ? [0, 1] : [0];
-    for (let s of sOpts) {
-      const aces = b9 + (d * 2) + (s * b3), opp = b10 + (numD * 2 + (b2 % 2) * b3) - (d * 2 + s * b3);
-      let rT = "TIE", rC = "res-tie";
-      if (aces > opp) { rT = "WIN"; rC = "res-win"; } else if (aces < opp) { rT = "LOSS"; rC = "res-loss"; }
-      html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${rC}">${rT}</td></tr>`;
-    }
-  }
-  tbody.innerHTML = html;
-}
-
-window.onload = function() {
-  populateAcesDropdown();
-  const cached = localStorage.getItem("fa_cache_scoring");
-  if (cached) {
-    try {
-      const data = JSON.parse(cached);
-      document.getElementById('b1').value = data.b1;
-      document.getElementById('b2').value = data.b2;
-      document.getElementById('b9').value = data.b9;
-      runCalc();
-    } catch(e) {}
-  }
-  google.script.run.withSuccessHandler((data) => {
-    if (data) {
-      document.getElementById('b1').value = data.b1 ?? 24;
-      document.getElementById('b2').value = data.b2 ?? 24;
-      document.getElementById('b9').value = data.b9 ?? 0;
-      runCalc();
-    }
-  }).loadFromCloud();
-};
 </script>
 </body>
 </html>

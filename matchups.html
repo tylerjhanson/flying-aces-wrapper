@@ -388,6 +388,7 @@ button.ctrlBtn:disabled{
 
 </style>
 
+
 <style>
 :root{ --fa-header-offset: 0px; }
 
@@ -716,18 +717,8 @@ html, body { touch-action: pan-x pan-y; }
     catch (e) { return new URLSearchParams(""); }
   }
 
-  function currentPage(){
+  function pageFromQSOnly(){
     var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
-
-    // Support hash routing (GitHub wrapper uses #scoring, #matchups, etc.)
-    if (!p){
-      var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
-      h = h.replace(/^\/+/, "");
-      if (h.indexOf("?") !== -1) h = h.split("?")[0];
-      if (h.indexOf("&") !== -1) h = h.split("&")[0];
-      p = h;
-    }
-
     if (!p) return "";
     if (p === "doubles") p = "rosters";
     if (p === "scores") p = "scoring";
@@ -735,11 +726,47 @@ html, body { touch-action: pan-x pan-y; }
     return p;
   }
 
-  function isEmbedded(){
-    try { if (window.top !== window) return true; } catch(e){ return true; }
-    var embed = (qs().get("embed") || "").toLowerCase();
-    return (embed === "1" || embed === "true" || embed === "yes");
+  function currentPage(){
+    // 1) Legacy querystring routing
+    var p = pageFromQSOnly();
+
+    // 2) Hash routing (#scoring, #matchups, etc.)
+    if (!p){
+      var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
+      h = h.replace(/^\/+/, "");
+      if (h.indexOf("?") !== -1) h = h.split("?")[0];
+      if (h.indexOf("&") !== -1) h = h.split("&")[0];
+      p = h;
+
+      if (p === "doubles") p = "rosters";
+      if (p === "scores") p = "scoring";
+      if (p === "players") p = "admin";
+    }
+
+    // 3) Path routing (/rosters, /matchups, /stats, etc.)
+    if (!p){
+      var path = (window.location.pathname || "").toLowerCase();
+      path = path.replace(/\/+$/, "");
+      var last = path.split("/").pop() || "";
+      last = last.replace(/\.html$/, "");
+      if (last && last !== "index") p = last;
+    }
+
+    return p || "";
   }
+
+  function isEmbedded(){
+    try { return window.top !== window; } catch(e){ return true; }
+  }
+
+  // If someone lands on a legacy URL like ?p=rosters, redirect to clean path when NOT embedded.
+  try{
+    var legacyP = pageFromQSOnly();
+    if (legacyP && !isEmbedded()){
+      window.location.replace(buildHrefStatic(legacyP));
+      return;
+    }
+  }catch(_){}
 
   // Pages that live under the hamburger menu
   const menuPages = ['rankings','stats','standings','elo','admin','players'];
@@ -817,7 +844,6 @@ html, body { touch-action: pan-x pan-y; }
   function extraQS(){
     var s = qs();
     var parts = [];
-    parts.push("embed=1");
     var scale = s.get("scale");
     var v = s.get("v");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
@@ -827,6 +853,25 @@ html, body { touch-action: pan-x pan-y; }
 
   function buildHref(page){
     return "?p=" + encodeURIComponent(page) + extraQS();
+  }
+
+  // Static GitHub Pages routing: /scoring, /rosters, /matchups, /rankings, /stats, /elo, /standings, /admin
+  function buildHrefStatic(page){
+    page = String(page||"").toLowerCase();
+    if (!page) return "/";
+    if (page === "doubles") page = "rosters";
+    if (page === "scores") page = "scoring";
+    if (page === "players") page = "admin";
+
+    // Keep any non-routing query params (e.g. v=..., scale=...) but drop legacy ones.
+    var s = qs();
+    try{ s.delete("p"); }catch(_){}
+    try{ s.delete("page"); }catch(_){}
+    try{ s.delete("embed"); }catch(_){}
+    var rest = "";
+    try { rest = s.toString(); } catch(e){ rest = ""; }
+
+    return "/" + encodeURIComponent(page) + (rest ? ("?" + rest) : "");
   }
 
   function sendToWrapper(page){
@@ -910,7 +955,7 @@ html, body { touch-action: pan-x pan-y; }
       var ok = sendToWrapper(page);
       if (!ok) window.location.href = buildHref(page);
     }else{
-      window.location.href = buildHref(page);
+      window.location.href = buildHrefStatic(page);
     }
   }
 
