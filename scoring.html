@@ -8,124 +8,120 @@
 
 <style>
 /* =========================================================
-   HEADER STYLES (Integrated)
+   1. HEADER STYLES (100% Consistent with your site)
    ========================================================= */
-:root{ --fa-header-offset: 0px; --btn-angle: 135deg; --red1: #ff3b3b; --red2: #e40000; }
-.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; padding: 0 !important; }
-.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; }
-.fa-header .fa-tabs button{
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
+.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; padding: 0 !important; box-sizing: border-box; }
+.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; margin: 0 !important; }
+.fa-header .fa-tabs button, .fa-header .fa-submenu button{
   -webkit-appearance:none; display:flex; align-items:center; justify-content:center; width:100%;
   font-family:"Segoe UI", Roboto, Arial, sans-serif; font-weight:900; font-size: clamp(12px, 3.6vw, 16px);
-  height: 40px; border-radius: 8px; border: 0; outline: none;
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%);
-  box-shadow: 0 1px 4px rgba(0,0,0,.10); color: #222; cursor: pointer;
+  height: 40px; border-radius: 8px; border: 0; background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%);
+  box-shadow: 0 1px 4px rgba(0,0,0,.10); color: #222; cursor: pointer; transition: transform .08s ease;
 }
-.fa-header .fa-tabs button.active{
-  background: linear-gradient(var(--btn-angle), var(--red1) 0%, var(--red2) 100%) !important;
-  color: #fff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-}
+.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #fff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; }
+#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; gap: 10px !important; }
+.fa-submenu{ position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001; opacity: 0; visibility: hidden; }
+.fa-submenu.show{ opacity: 1; visibility: visible; }
+.fa-submenu .inner{ background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12); border-radius: 14px; padding: 8px; display: grid; gap: 8px; }
 
 /* =========================================================
-   SCORING UI STYLES (MATCHES SCREENSHOTS)
+   2. SCORING UI STYLES (Matched to your Screenshots)
    ========================================================= */
-html, body {
-  margin: 0; padding: 10px; font-family: "Segoe UI", Roboto, Arial, sans-serif;
-  background: #f7f8fa; color: #222; -webkit-text-size-adjust: 100%;
-}
+html, body { margin: 0; padding: 10px; background: #f7f8fa; color: #222; font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+.scoring-container { display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin: 0 auto; }
 
-.teams { display: grid; grid-template-columns: 1fr 2.6fr; gap: 10px; align-items: start; }
-
-/* Left Panels */
-.side-panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 10px; overflow: hidden; }
-.side-header { background: #000; color: #fff; text-align: center; padding: 6px; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
-.side-body { padding: 10px; display: flex; justify-content: center; }
+/* Black Header Cards */
+.input-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); overflow: hidden; }
+.card-header { background: #000; color: #fff; text-align: center; padding: 6px; font-weight: 900; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+.card-body { padding: 4px 10px; display: flex; justify-content: center; }
 
 select {
-  width: 100%; border: none; background: transparent; font-size: 1.5rem; font-weight: 900;
+  width: 100%; border: none; background: transparent; font-size: 1.6rem; font-weight: 900;
   text-align: center; color: #222; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;
 }
 
-/* Right Panel Summary Cards */
-.main-panel { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 6px; }
-.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
-.sum-card { border: 1px solid #eee; border-radius: 8px; text-align: center; padding: 6px 2px; }
-.sum-label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: #555; }
-.sum-val { font-size: 1.3rem; font-weight: 900; }
+/* Metric Summary Pills */
+.summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+.pill { border-radius: 10px; padding: 8px 2px; text-align: center; background: #fff; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.pill.red { background: #ff3b3b; color: #fff; border: none; }
+.pill.black { background: #111; color: #fff; border: none; }
+.pill-label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
+.pill-val { font-size: 1.4rem; font-weight: 900; line-height: 1; }
 
-.card-red { background: var(--red2); color: #fff; border: none; }
-.card-black { background: #111; color: #fff; border: none; }
-
-/* Result Table */
-.score-table { width: 100%; border-collapse: collapse; font-size: 1.1rem; }
-.score-table th { background: #f0f0f0; padding: 8px 4px; font-weight: 900; text-transform: uppercase; font-size: 0.8rem; color: #555; }
-.score-table td { padding: 8px 4px; text-align: center; font-weight: 700; border-bottom: 1px solid #f2f2f2; }
+/* Table Styles */
+.results-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); padding: 8px; margin-top: 4px; }
+.score-table { width: 100%; border-collapse: collapse; font-size: 1.25rem; }
+.score-table th { background: #f8f9fa; padding: 8px 4px; font-size: 0.8rem; font-weight: 900; color: #666; text-transform: uppercase; border-bottom: 2px solid #eee; }
+.score-table td { padding: 10px 4px; text-align: center; font-weight: 700; border-bottom: 1px solid #f2f2f2; }
 
 .win { color: #28a745; }
 .loss { color: #ff3b3b; }
-
-@media (max-width: 600px) {
-  .teams { grid-template-columns: 1fr; }
-}
 </style>
 </head>
 
 <body>
 
-<div class="fa-header">
+<div class="fa-header fa-submenu-wrap">
   <nav class="fa-tabs">
-    <button class="active">SCORING</button>
-    <button onclick="location.href='rosters.html'">ROSTERS</button>
-    <button onclick="location.href='matchups.html'">MATCHUPS</button>
-    <button style="display:flex; gap:6px;">
-       <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:14px;">
-       <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <button class="active" onclick="navigate('scoring')">SCORING</button>
+    <button onclick="navigate('rosters')">ROSTERS</button>
+    <button onclick="navigate('matchups')">MATCHUPS</button>
+    <button id="nav-menu" onclick="toggleMenu()">
+      <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:16px;">
+      <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
     </button>
   </nav>
+  <div class="fa-submenu" id="faMoreMenu">
+    <div class="inner">
+      <button onclick="navigate('rankings')">RANKINGS</button>
+      <button onclick="navigate('stats')">STATS</button>
+      <button onclick="navigate('elo')">ELO</button>
+      <button onclick="navigate('standings')">STANDINGS</button>
+      <button onclick="navigate('admin')">ADMIN</button>
+    </div>
+  </div>
 </div>
 
-<div class="teams">
-  <div class="left-col">
-    <div class="side-panel">
-      <div class="side-header">ROUND 1</div>
-      <div class="side-body">
-        <select id="b1" onchange="calc()"></select>
-      </div>
+<div class="scoring-container">
+  
+  <div class="input-card">
+    <div class="card-header">ROUND 1</div>
+    <div class="card-body"><select id="b1" onchange="calc()"></select></div>
+  </div>
+
+  <div class="input-card">
+    <div class="card-header">ROUND 2</div>
+    <div class="card-body"><select id="b2" onchange="calc()"></select></div>
+  </div>
+
+  <div style="border-top: 1px dashed #ccc; margin: 4px 0;"></div>
+
+  <div class="input-card">
+    <div class="card-header">ACES SINGLES</div>
+    <div class="card-body"><select id="b9" onchange="calc()"></select></div>
+  </div>
+
+  <div class="summary-row">
+    <div class="pill red">
+      <div class="pill-label">ACES</div>
+      <div class="pill-val" id="pill-aces">13</div>
     </div>
-    <div class="side-panel">
-      <div class="side-header">ROUND 2</div>
-      <div class="side-body">
-        <select id="b2" onchange="calc()"></select>
-      </div>
+    <div class="pill black">
+      <div class="pill-label">OPP</div>
+      <div class="pill-val" id="pill-opp">9</div>
     </div>
-    <div style="border-top: 1px dashed #ccc; margin: 10px 0;"></div>
-    <div class="side-panel">
-      <div class="side-header">ACES SINGLES</div>
-      <div class="side-body">
-        <select id="b9" onchange="calc()"></select>
-      </div>
+    <div class="pill">
+      <div class="pill-label">TOTAL</div>
+      <div class="pill-val" id="pill-total">44</div>
+    </div>
+    <div class="pill">
+      <div class="pill-label">NEED</div>
+      <div class="pill-val" id="pill-need">22.5</div>
     </div>
   </div>
 
-  <div class="main-panel">
-    <div class="summary-grid">
-      <div class="sum-card card-red">
-        <div class="sum-label" style="color:#fff;">ACES</div>
-        <div class="sum-val" id="disp-aces">--</div>
-      </div>
-      <div class="sum-card card-black">
-        <div class="sum-label" style="color:#fff;">OPP</div>
-        <div class="sum-val" id="disp-opp">--</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-label">TOTAL</div>
-        <div class="sum-val" id="disp-total">--</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-label">NEED</div>
-        <div class="sum-val" id="disp-need">--</div>
-      </div>
-    </div>
-
+  <div class="results-card">
     <table class="score-table">
       <thead>
         <tr>
@@ -144,33 +140,23 @@ select {
 <script>
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
 
-// Populate Dropdowns 0-40
-function fillDropdowns() {
-  const ids = ['b1', 'b2', 'b9'];
-  ids.forEach(id => {
-    const sel = document.getElementById(id);
-    for (let i = 0; i <= 40; i++) {
-      let opt = document.createElement('option');
-      opt.value = i; opt.innerHTML = i;
-      if (i === 22 && id !== 'b9') opt.selected = true;
-      if (i === 13 && id === 'b9') opt.selected = true;
-      sel.appendChild(opt);
+// 1. Populate Dropdowns (0-45 matches)
+function setup() {
+  ['b1', 'b2', 'b9'].forEach(id => {
+    const s = document.getElementById(id);
+    for(let i=0; i<=45; i++) {
+      let o = document.createElement('option');
+      o.value = i; o.innerText = i;
+      if (id === 'b1' && i === 22) o.selected = true;
+      if (id === 'b2' && i === 22) o.selected = true;
+      if (id === 'b9' && i === 13) o.selected = true;
+      s.appendChild(o);
     }
   });
+  calc();
 }
 
-// Polyfill
-window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
-function createProxy(s, f) {
-  return new Proxy({}, {
-    get: (t, prop) => {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); });
-    }
-  });
-}
-
+// 2. Logic (Identical to your Production Sheet)
 let _saveTimer = null;
 function calc() {
   const b1 = parseInt(document.getElementById('b1').value);
@@ -178,25 +164,25 @@ function calc() {
   const b9 = parseInt(document.getElementById('b9').value);
   const ptsPerMatch = 2;
 
-  const totalPts = b1 + b2;
-  const need = (totalPts / 2) + 0.5;
+  const total = b1 + b2;
+  const need = (total / 2) + 0.5;
   const currentOpp = b1 - b9;
 
-  document.getElementById('disp-aces').innerText = b9;
-  document.getElementById('disp-opp').innerText = currentOpp;
-  document.getElementById('disp-total').innerText = totalPts;
-  document.getElementById('disp-need').innerText = need;
+  document.getElementById('pill-aces').innerText = b9;
+  document.getElementById('pill-opp').innerText = currentOpp;
+  document.getElementById('pill-total').innerText = total;
+  document.getElementById('pill-need').innerText = need;
 
+  // Background Save
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
-    google.script.run.faSetScoringConfig({ b1, b2, b9 });
+    fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: "faSetScoringConfig", args: [{ b1, b2, b9 }] }) });
   }, 1000);
 
-  const tbody = document.getElementById('tableBody');
+  // Build Table
   const numDubs = Math.floor(b2 / 2);
   const hasExtra = (b2 % 2 === 1);
   let html = "";
-
   for (let d = 0; d <= numDubs; d++) {
     const sOpts = hasExtra ? [0, 1] : [0];
     for (let s of sOpts) {
@@ -206,11 +192,17 @@ function calc() {
       html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${res.toLowerCase()}">${res}</td></tr>`;
     }
   }
-  tbody.innerHTML = html;
+  document.getElementById('tableBody').innerHTML = html;
 }
 
-fillDropdowns();
-document.addEventListener('DOMContentLoaded', calc);
+// 3. Navigation Helpers
+function navigate(p) { window.location.href = p + ".html"; }
+function toggleMenu() { document.getElementById('faMoreMenu').classList.toggle('show'); }
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.fa-submenu-wrap')) document.getElementById('faMoreMenu').classList.remove('show');
+});
+
+setup();
 </script>
 </body>
 </html>
