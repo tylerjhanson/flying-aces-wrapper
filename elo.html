@@ -1160,7 +1160,7 @@ html, body { touch-action: pan-x pan-y; }
    - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
    ========================= */
 (function(){
-  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "YOUR_WEB_APP_URL_HERE";
+  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
   window.GAS_API_URL = GAS_API_URL;
 
   function createProxy(s, f){
