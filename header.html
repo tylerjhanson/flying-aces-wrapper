@@ -1,9 +1,12 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8"/>
 
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <style>
 :root{ --fa-header-offset: 0px; }
 
@@ -246,43 +249,31 @@ html, body { touch-action: pan-x pan-y; }
 @keyframes faSpin { to { transform: rotate(360deg); } }
 </style>
 </head>
-
 <body>
 <div class="fa-header fa-submenu-wrap">
-  <nav class="fa-tabs">
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-
-    <!-- Hamburger -->
-<button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
-  <img
-    class="menu-logo"
-    src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32"
-    alt=""
-    aria-hidden="true"
-    loading="eager"
-    decoding="async"
-  />
-  <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
-  </svg>
+<nav class="fa-tabs">
+<button data-page="scoring" id="nav-scoring" type="button">SCORING</button>
+<button data-page="rosters" id="nav-rosters" type="button">ROSTERS</button>
+<button data-page="matchups" id="nav-matchups" type="button">MATCHUPS</button>
+<!-- Hamburger -->
+<button aria-expanded="false" aria-label="More" data-key="menu" id="nav-menu" type="button">
+<img alt="" aria-hidden="true" class="menu-logo" decoding="async" loading="eager" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&amp;h=32"/>
+<svg aria-hidden="true" class="hamburger-icon" viewbox="0 0 24 24">
+<path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"></path>
+</svg>
 </button>
-
-  </nav>
-
-  <!-- Dropdown (anchored under hamburger) -->
-  <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
-    <div class="inner">
-  <button data-page="rankings">RANKINGS</button>
-  <button data-page="stats">STATS</button>
-  <button data-page="elo">ELO</button>
-  <button data-page="standings">STANDINGS</button>
-  <button data-page="admin">ADMIN</button>
+</nav>
+<!-- Dropdown (anchored under hamburger) -->
+<div aria-hidden="true" class="fa-submenu" id="faMoreMenu">
+<div class="inner">
+<button data-page="rankings">RANKINGS</button>
+<button data-page="stats">STATS</button>
+<button data-page="elo">ELO</button>
+<button data-page="standings">STANDINGS</button>
+<button data-page="admin">ADMIN</button>
 </div>
-  </div>
 </div>
-
+</div>
 <script>
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
@@ -328,56 +319,39 @@ html, body { touch-action: pan-x pan-y; }
     catch (e) { return new URLSearchParams(""); }
   }
 
-  function pageFromQSOnly(){
-    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
-    if (!p) return "";
-    if (p === "doubles") p = "rosters";
-    if (p === "scores") p = "scoring";
-    if (p === "players") p = "admin";
-    return p;
-  }
-
   function currentPage(){
-    // 1) Legacy querystring routing
-    var p = pageFromQSOnly();
+    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
 
-    // 2) Hash routing (#scoring, #matchups, etc.)
+    // Support hash routing (GitHub wrapper uses #scoring, #matchups, etc.)
     if (!p){
       var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
       h = h.replace(/^\/+/, "");
       if (h.indexOf("?") !== -1) h = h.split("?")[0];
       if (h.indexOf("&") !== -1) h = h.split("&")[0];
       p = h;
-
-      if (p === "doubles") p = "rosters";
-      if (p === "scores") p = "scoring";
-      if (p === "players") p = "admin";
     }
 
-    // 3) Path routing (/rosters, /matchups, /stats, etc.)
+    // Support clean-path routing (/rosters, /matchups, etc.)
     if (!p){
       var path = (window.location.pathname || "").toLowerCase();
-      path = path.replace(/\/+$/, "");
-      var last = path.split("/").pop() || "";
-      last = last.replace(/\.html$/, "");
-      if (last && last !== "index") p = last;
+      path = path.replace(/\/+$/, ""); // trim trailing slash
+      if (path && path !== "/"){
+        var seg = path.split("/").filter(Boolean).pop() || "";
+        seg = seg.replace(/\.html$/, "");
+        p = seg;
+      }
     }
 
-    return p || "";
+    if (!p) return "matchups";
+    if (p === "doubles") p = "rosters";
+    return p;
   }
 
   function isEmbedded(){
-    try { return window.top !== window; } catch(e){ return true; }
+    try { if (window.top !== window) return true; } catch(e){ return true; }
+    var embed = (qs().get("embed") || "").toLowerCase();
+    return (embed === "1" || embed === "true" || embed === "yes");
   }
-
-  // If someone lands on a legacy URL like ?p=rosters, redirect to clean path when NOT embedded.
-  try{
-    var legacyP = pageFromQSOnly();
-    if (legacyP && !isEmbedded()){
-      window.location.replace(buildHrefStatic(legacyP));
-      return;
-    }
-  }catch(_){}
 
   // Pages that live under the hamburger menu
   const menuPages = ['rankings','stats','standings','elo','admin','players'];
@@ -452,38 +426,54 @@ html, body { touch-action: pan-x pan-y; }
     }
   }
 
-  function extraQS(){
+  function extraQS(opts){
+    opts = opts || {};
     var s = qs();
     var parts = [];
     var scale = s.get("scale");
     var v = s.get("v");
+    if (opts.embed) parts.push("embed=1");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
     if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.length ? ("&" + parts.join("&")) : "";
+    return parts.join("&");
   }
 
   function buildHref(page){
-    return "?p=" + encodeURIComponent(page) + extraQS();
-  }
-
-  // Static GitHub Pages routing: /scoring, /rosters, /matchups, /rankings, /stats, /elo, /standings, /admin
-  function buildHrefStatic(page){
     page = String(page||"").toLowerCase();
-    if (!page) return "/";
-    if (page === "doubles") page = "rosters";
-    if (page === "scores") page = "scoring";
-    if (page === "players") page = "admin";
-
-    // Keep any non-routing query params (e.g. v=..., scale=...) but drop legacy ones.
-    var s = qs();
-    try{ s.delete("p"); }catch(_){}
-    try{ s.delete("page"); }catch(_){}
-    try{ s.delete("embed"); }catch(_){}
-    var rest = "";
-    try { rest = s.toString(); } catch(e){ rest = ""; }
-
-    return "/" + encodeURIComponent(page) + (rest ? ("?" + rest) : "");
+    var embedded = isEmbedded();
+    if (embedded){
+      var q = extraQS({ embed:true });
+      var parts = ["p=" + encodeURIComponent(page)];
+      if (q) parts.push(q);
+      return "?" + parts.join("&");
+    } else {
+      var base = "/" + encodeURIComponent(page);
+      var q2 = extraQS({ embed:false });
+      return q2 ? (base + "?" + q2) : base;
+    }
   }
+
+  function maybeRedirectLegacyParams(){
+    if (isEmbedded()) return;
+    var s = qs();
+    var p = (s.get("p") || s.get("page") || "").toLowerCase();
+    if (!p) return;
+
+    // If someone lands on /something?p=rosters, send them to /rosters
+    var target = "/" + encodeURIComponent(p);
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+    if (!cur) cur = "/";
+    if (cur === target) return;
+
+    var q2 = extraQS({ embed:false });
+    try{
+      window.location.replace(q2 ? (target + "?" + q2) : target);
+    }catch(e){
+      window.location.href = q2 ? (target + "?" + q2) : target;
+    }
+  }
+
+  
 
   function sendToWrapper(page){
     var msg = { type: "FA_NAV", page: page };
@@ -566,7 +556,7 @@ html, body { touch-action: pan-x pan-y; }
       var ok = sendToWrapper(page);
       if (!ok) window.location.href = buildHref(page);
     }else{
-      window.location.href = buildHrefStatic(page);
+      window.location.href = buildHref(page);
     }
   }
 
@@ -644,6 +634,7 @@ html, body { touch-action: pan-x pan-y; }
     });
   }catch(_){ }
 
+  maybeRedirectLegacyParams();
   detectActive();
   setMenuAria(false);
 

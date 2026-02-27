@@ -2,10 +2,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow"> <title>Scoring</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Scoring</title>
 
 <style>
+/* =========================================================
+   1. HEADER STYLES (Exact copy from matchups.html)
+   ========================================================= */
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
+.fa-header{
+  position: sticky; top: 0; z-index: 1000; background: #f7f8fa;
+  border-bottom: none; padding: 0 !important; box-sizing: border-box;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+}
+html, body { touch-action: pan-x pan-y; }
+.fa-header .fa-tabs{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important; padding: 8px 0 !important; margin: 0 !important;
+  border: none !important; background: transparent !important;
+}
+.fa-header .fa-tabs button, .fa-header .fa-submenu button{
+  -webkit-appearance:none !important; appearance:none !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  width:100% !important; box-sizing:border-box !important;
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important; line-height: 1 !important;
+  height: 40px !important; min-height: 40px !important; padding: 0 6px !important;
+  border-radius: 8px !important; border: 0 !important; outline: none !important;
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important;
+  cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+  -webkit-tap-highlight-color: transparent !important; user-select: none !important;
+}
+.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
+#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
+#nav-menu .menu-logo{ height: 18px; width: auto; display: block; }
+#nav-menu .hamburger-icon{ width: 24px; height: 24px; flex: 0 0 auto; }
+.fa-submenu{
+  position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
+  opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden;
+  padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px);
+}
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{ height: 36px !important; min-height: 36px !important; font-size: 13px !important; }
+  #nav-menu .menu-logo{ height: 16px; }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+}
+
 /* =========================================================
    2. SCORING STYLES (Single Column + Sticky Header)
    ========================================================= */
@@ -42,8 +96,9 @@ th {
 .res-loss { color: #dc3545; }
 .res-tie  { color: #ffc107; }
 </style>
+</head>
 
-
+<body>
 <style>
 :root{ --fa-header-offset: 0px; }
 
@@ -285,45 +340,31 @@ html, body { touch-action: pan-x pan-y; }
 }
 @keyframes faSpin { to { transform: rotate(360deg); } }
 </style>
-</head>
-
-<body>
 
 <div class="fa-header fa-submenu-wrap">
-  <nav class="fa-tabs">
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-
-    <!-- Hamburger -->
-<button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
-  <img
-    class="menu-logo"
-    src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32"
-    alt=""
-    aria-hidden="true"
-    loading="eager"
-    decoding="async"
-  />
-  <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
-  </svg>
+<nav class="fa-tabs">
+<button data-page="scoring" id="nav-scoring" type="button">SCORING</button>
+<button data-page="rosters" id="nav-rosters" type="button">ROSTERS</button>
+<button data-page="matchups" id="nav-matchups" type="button">MATCHUPS</button>
+<!-- Hamburger -->
+<button aria-expanded="false" aria-label="More" data-key="menu" id="nav-menu" type="button">
+<img alt="" aria-hidden="true" class="menu-logo" decoding="async" loading="eager" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&amp;h=32"/>
+<svg aria-hidden="true" class="hamburger-icon" viewbox="0 0 24 24">
+<path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"></path>
+</svg>
 </button>
-
-  </nav>
-
-  <!-- Dropdown (anchored under hamburger) -->
-  <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
-    <div class="inner">
-  <button data-page="rankings">RANKINGS</button>
-  <button data-page="stats">STATS</button>
-  <button data-page="elo">ELO</button>
-  <button data-page="standings">STANDINGS</button>
-  <button data-page="admin">ADMIN</button>
+</nav>
+<!-- Dropdown (anchored under hamburger) -->
+<div aria-hidden="true" class="fa-submenu" id="faMoreMenu">
+<div class="inner">
+<button data-page="rankings">RANKINGS</button>
+<button data-page="stats">STATS</button>
+<button data-page="elo">ELO</button>
+<button data-page="standings">STANDINGS</button>
+<button data-page="admin">ADMIN</button>
 </div>
-  </div>
 </div>
-
+</div>
 <script>
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
@@ -369,56 +410,39 @@ html, body { touch-action: pan-x pan-y; }
     catch (e) { return new URLSearchParams(""); }
   }
 
-  function pageFromQSOnly(){
-    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
-    if (!p) return "";
-    if (p === "doubles") p = "rosters";
-    if (p === "scores") p = "scoring";
-    if (p === "players") p = "admin";
-    return p;
-  }
-
   function currentPage(){
-    // 1) Legacy querystring routing
-    var p = pageFromQSOnly();
+    var p = (qs().get("p") || qs().get("page") || "").toLowerCase();
 
-    // 2) Hash routing (#scoring, #matchups, etc.)
+    // Support hash routing (GitHub wrapper uses #scoring, #matchups, etc.)
     if (!p){
       var h = (window.location.hash || "").replace(/^#/, "").toLowerCase();
       h = h.replace(/^\/+/, "");
       if (h.indexOf("?") !== -1) h = h.split("?")[0];
       if (h.indexOf("&") !== -1) h = h.split("&")[0];
       p = h;
-
-      if (p === "doubles") p = "rosters";
-      if (p === "scores") p = "scoring";
-      if (p === "players") p = "admin";
     }
 
-    // 3) Path routing (/rosters, /matchups, /stats, etc.)
+    // Support clean-path routing (/rosters, /matchups, etc.)
     if (!p){
       var path = (window.location.pathname || "").toLowerCase();
-      path = path.replace(/\/+$/, "");
-      var last = path.split("/").pop() || "";
-      last = last.replace(/\.html$/, "");
-      if (last && last !== "index") p = last;
+      path = path.replace(/\/+$/, ""); // trim trailing slash
+      if (path && path !== "/"){
+        var seg = path.split("/").filter(Boolean).pop() || "";
+        seg = seg.replace(/\.html$/, "");
+        p = seg;
+      }
     }
 
-    return p || "";
+    if (!p) return "matchups";
+    if (p === "doubles") p = "rosters";
+    return p;
   }
 
   function isEmbedded(){
-    try { return window.top !== window; } catch(e){ return true; }
+    try { if (window.top !== window) return true; } catch(e){ return true; }
+    var embed = (qs().get("embed") || "").toLowerCase();
+    return (embed === "1" || embed === "true" || embed === "yes");
   }
-
-  // If someone lands on a legacy URL like ?p=rosters, redirect to clean path when NOT embedded.
-  try{
-    var legacyP = pageFromQSOnly();
-    if (legacyP && !isEmbedded()){
-      window.location.replace(buildHrefStatic(legacyP));
-      return;
-    }
-  }catch(_){}
 
   // Pages that live under the hamburger menu
   const menuPages = ['rankings','stats','standings','elo','admin','players'];
@@ -493,38 +517,54 @@ html, body { touch-action: pan-x pan-y; }
     }
   }
 
-  function extraQS(){
+  function extraQS(opts){
+    opts = opts || {};
     var s = qs();
     var parts = [];
     var scale = s.get("scale");
     var v = s.get("v");
+    if (opts.embed) parts.push("embed=1");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
     if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.length ? ("&" + parts.join("&")) : "";
+    return parts.join("&");
   }
 
   function buildHref(page){
-    return "?p=" + encodeURIComponent(page) + extraQS();
-  }
-
-  // Static GitHub Pages routing: /scoring, /rosters, /matchups, /rankings, /stats, /elo, /standings, /admin
-  function buildHrefStatic(page){
     page = String(page||"").toLowerCase();
-    if (!page) return "/";
-    if (page === "doubles") page = "rosters";
-    if (page === "scores") page = "scoring";
-    if (page === "players") page = "admin";
-
-    // Keep any non-routing query params (e.g. v=..., scale=...) but drop legacy ones.
-    var s = qs();
-    try{ s.delete("p"); }catch(_){}
-    try{ s.delete("page"); }catch(_){}
-    try{ s.delete("embed"); }catch(_){}
-    var rest = "";
-    try { rest = s.toString(); } catch(e){ rest = ""; }
-
-    return "/" + encodeURIComponent(page) + (rest ? ("?" + rest) : "");
+    var embedded = isEmbedded();
+    if (embedded){
+      var q = extraQS({ embed:true });
+      var parts = ["p=" + encodeURIComponent(page)];
+      if (q) parts.push(q);
+      return "?" + parts.join("&");
+    } else {
+      var base = "/" + encodeURIComponent(page);
+      var q2 = extraQS({ embed:false });
+      return q2 ? (base + "?" + q2) : base;
+    }
   }
+
+  function maybeRedirectLegacyParams(){
+    if (isEmbedded()) return;
+    var s = qs();
+    var p = (s.get("p") || s.get("page") || "").toLowerCase();
+    if (!p) return;
+
+    // If someone lands on /something?p=rosters, send them to /rosters
+    var target = "/" + encodeURIComponent(p);
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+    if (!cur) cur = "/";
+    if (cur === target) return;
+
+    var q2 = extraQS({ embed:false });
+    try{
+      window.location.replace(q2 ? (target + "?" + q2) : target);
+    }catch(e){
+      window.location.href = q2 ? (target + "?" + q2) : target;
+    }
+  }
+
+  
 
   function sendToWrapper(page){
     var msg = { type: "FA_NAV", page: page };
@@ -607,7 +647,7 @@ html, body { touch-action: pan-x pan-y; }
       var ok = sendToWrapper(page);
       if (!ok) window.location.href = buildHref(page);
     }else{
-      window.location.href = buildHrefStatic(page);
+      window.location.href = buildHref(page);
     }
   }
 
@@ -685,6 +725,7 @@ html, body { touch-action: pan-x pan-y; }
     });
   }catch(_){ }
 
+  maybeRedirectLegacyParams();
   detectActive();
   setMenuAria(false);
 
@@ -887,120 +928,42 @@ html, body { touch-action: pan-x pan-y; }
   }, { passive:true });
 })();
 </script>
-<div class="scoring-wrapper">
-    <div class="team">
-      <div class="inputs-row">
-        <div class="input-group">
-          <label>ROUND 1</label>
-          <select id="b1" onchange="runCalc()">
-            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>ROUND 2</label>
-          <select id="b2" onchange="runCalc()">
-            <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label>ACES SINGLES</label>
-          <select id="b9" onchange="runCalc()"></select>
-        </div>
-      </div>
-    </div>
 
-    <div class="team">
-      <div class="stats-grid">
-        <div class="stat-box stat-aces"><span class="stat-label">Aces</span><span class="stat-value" id="displayB9">0</span></div>
-        <div class="stat-box stat-opp"><span class="stat-label">Opp</span><span class="stat-value" id="b10">0</span></div>
-        <div class="stat-box"><span class="stat-label">Total</span><span class="stat-value" id="b5">0</span></div>
-        <div class="stat-box"><span class="stat-label">Need</span><span class="stat-value" id="b6">0</span></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Dubs</th><th>Single</th><th>Aces</th><th>Opp</th><th>Result</th></tr></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 
 <script>
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec"; 
+/* =========================
+   google.script.run → fetch() bridge (Native Fetch Polyfill)
+   - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
+   ========================= */
+(function(){
+  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "YOUR_WEB_APP_URL_HERE";
+  window.GAS_API_URL = GAS_API_URL;
 
-/* --- 1. API BRIDGE --- */
-window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
-function createProxy(s, f) {
-  return new Proxy({}, {
-    get: (t, prop) => {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
-      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
-    }
-  });
-}
-
-/* --- 2. NAVIGATION --- */
-/* --- 3. SCORING LOGIC --- */
-function populateAcesDropdown() {
-  const select = document.getElementById('b9');
-  if (!select || select.options.length) return;
-  let html = "";
-  // ✅ RANGE 0-26
-  for (let i = 0; i <= 26; i += 0.5) { html += `<option value="${i}">${i}</option>`; }
-  select.innerHTML = html;
-}
-
-let __saveTimer = null;
-function runCalc() {
-  const b1 = parseFloat(document.getElementById('b1').value), b2 = parseFloat(document.getElementById('b2').value), b9 = parseFloat(document.getElementById('b9').value);
-  const b3 = 1;
-  const data = { b1, b2, b9 };
-  localStorage.setItem("fa_cache_scoring", JSON.stringify(data));
-
-  clearTimeout(__saveTimer);
-  __saveTimer = setTimeout(() => { google.script.run.saveToCloud(data); }, 400);
-
-  const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3), b6 = (b5 / 2) + 0.5, b10 = b1 - b9;
-  document.getElementById('b5').innerText = b5; document.getElementById('b6').innerText = b6; document.getElementById('b10').innerText = b10; document.getElementById('displayB9').innerText = b9;
-
-  const tbody = document.getElementById('tableBody');
-  const numD = Math.floor(b2/2), hasE = (b2 % 2 === 1);
-  let html = "";
-  for (let d = 0; d <= numD; d++) {
-    const sOpts = hasE ? [0, 1] : [0];
-    for (let s of sOpts) {
-      const aces = b9 + (d * 2) + (s * b3), opp = b10 + (numD * 2 + (b2 % 2) * b3) - (d * 2 + s * b3);
-      let rT = "TIE", rC = "res-tie";
-      if (aces > opp) { rT = "WIN"; rC = "res-win"; } else if (aces < opp) { rT = "LOSS"; rC = "res-loss"; }
-      html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${rC}">${rT}</td></tr>`;
-    }
+  function createProxy(s, f){
+    return new Proxy({}, {
+      get: (t, prop) => {
+        if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+        if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+        return (...args) => fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: prop, args: args })
+        })
+        .then(r => r.json())
+        .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
+        .catch(e => { if (f) f(e); });
+      }
+    });
   }
-  tbody.innerHTML = html;
-}
 
-window.onload = function() {
-  populateAcesDropdown();
-  const cached = localStorage.getItem("fa_cache_scoring");
-  if (cached) {
-    try {
-      const data = JSON.parse(cached);
-      document.getElementById('b1').value = data.b1;
-      document.getElementById('b2').value = data.b2;
-      document.getElementById('b9').value = data.b9;
-      runCalc();
-    } catch(e) {}
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  if (!window.google.script.run){
+    window.google.script.run = new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] });
   }
-  google.script.run.withSuccessHandler((data) => {
-    if (data) {
-      document.getElementById('b1').value = data.b1 ?? 24;
-      document.getElementById('b2').value = data.b2 ?? 24;
-      document.getElementById('b9').value = data.b9 ?? 0;
-      runCalc();
-    }
-  }).loadFromCloud();
-};
+})();
 </script>
+
+  
 </body>
 </html>

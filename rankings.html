@@ -3,252 +3,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Flying Aces Rankings</title>
 
-
-<style>
-:root{ --fa-header-offset: 0px; }
-
-/* Header container */
-.fa-header{
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #f7f8fa;
-  border-bottom: none;
-  padding: 0 !important;
-  box-sizing: border-box;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
-/* ✅ Help block pinch/zoom gestures inside iframe (browser-dependent) */
-html, body { touch-action: pan-x pan-y; }
-
-/* ============ TOP TABS (4) ============ */
-.fa-header .fa-tabs{
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px !important;
-  padding: 8px 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-}
-
-/* Shared button base for top tabs + submenu buttons */
-.fa-header .fa-tabs button,
-.fa-header .fa-submenu button{
-  -webkit-appearance:none !important;
-  appearance:none !important;
-
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  width:100% !important;
-  box-sizing:border-box !important;
-
-  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
-  font-weight:900 !important;
-  font-size: clamp(12px, 3.6vw, 16px) !important;
-  letter-spacing: .2px !important;
-  line-height: 1 !important;
-
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 6px !important;
-
-  border-radius: 8px !important;
-  border: 0 !important;
-  outline: none !important;
-
-  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
-
-  color: #222 !important;
-  cursor: pointer !important;
-
-  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
-
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-
-  -webkit-tap-highlight-color: transparent !important;
-  user-select: none !important;
-}
-
-.fa-header .fa-tabs button:not(.active):hover,
-.fa-header .fa-submenu button:not(.sub-active):hover{
-  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
-}
-
-/* Active tab */
-.fa-header .fa-tabs button.active{
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-  filter: brightness(1.06);
-}
-
-/* Tap flash */
-.fa-header .fa-tabs button.fa-press,
-.fa-header .fa-submenu button.fa-press{
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-  filter: brightness(1.06);
-}
-
-.fa-header .fa-tabs button:active,
-.fa-header .fa-submenu button:active{
-  transform: scale(0.99);
-}
-
-/* ======= Hamburger button + logo ======= */
-#nav-menu{
-  padding: 0 10px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 10px !important;
-}
-
-#nav-menu .menu-logo{
-  height: 18px;
-  width: auto;
-  display: block;
-}
-
-#nav-menu .hamburger-icon{
-  width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-}
-#nav-menu .hamburger-icon{
-  width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-}
-
-/* ============ DROPDOWN MENU (hamburger) ============ */
-.fa-submenu-wrap{ position: relative; }
-
-.fa-submenu{
-  position: absolute;
-  top: 100%;
-  left: 0;
-  padding: 8px 0 0;
-  z-index: 1001;
-
-  opacity: 0;
-  transform: translateY(-6px);
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
-}
-.fa-submenu.show{
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-  pointer-events: auto;
-  transition: opacity 140ms ease, transform 140ms ease;
-}
-
-.fa-submenu .inner{
-  background: rgba(255,255,255,.98);
-  border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 12px 26px rgba(0,0,0,.16);
-  border-radius: 14px;
-  overflow: hidden;
-  padding: 8px;
-
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-/* Slightly taller menu rows feels more “iOS” without changing your top tabs */
-.fa-header .fa-submenu button{
-  height: 42px !important;
-  min-height: 42px !important;
-  font-size: 13px !important;
-  border-radius: 12px !important;
-}
-
-.fa-header .fa-submenu button.sub-active{
-  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
-  color:#fff !important;
-  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
-  filter: brightness(1.04);
-}
-
-@media (max-width: 420px){
-  .fa-header .fa-tabs{ padding: 6px 0 !important; }
-  .fa-header .fa-tabs button{
-    height: 36px !important;
-    min-height: 36px !important;
-    font-size: 13px !important;
-    padding: 0 6px !important;
-  }
-  .fa-header .fa-submenu button{
-    height: 40px !important;
-    min-height: 40px !important;
-    font-size: 12.5px !important;
-  }
-  #nav-menu .hamburger-icon{
-    width: 22px;
-    height: 22px;
-  }
-}
-@media (max-width: 420px){
-  #nav-menu .menu-logo{ height: 16px; }
-  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
-}
-/* =========================================================
-   Pull-to-refresh toast (spinner-only pill)
-   ========================================================= */
-#fa-ptr{
-  position: fixed;
-  left: 50%;
-  top: calc(env(safe-area-inset-top) + 10px);
-  transform: translate(-50%, -14px);
-  opacity: 0;
-  z-index: 99999;
-  pointer-events: none;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 10px 12px;
-  border-radius: 999px;
-
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 6px 18px rgba(0,0,0,.12);
-
-  transition: opacity 140ms ease, transform 140ms ease;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-#fa-ptr.show{ opacity: 1; transform: translate(-50%, 0); }
-#fa-ptr .spin{
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid rgba(0,0,0,.18);
-  border-top-color: rgba(0,0,0,.55);
-  animation: faSpin 800ms linear infinite;
-}
-@keyframes faSpin { to { transform: rotate(360deg); } }
-</style>
 <style>
 :root{
   --btn-angle: 135deg;
@@ -558,42 +317,272 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
 </head>
 
 <body>
-<script>window.EXEC_BASE = '<?!= execBase ?>';</script>
+<style>
+:root{ --fa-header-offset: 0px; }
+
+/* Header container */
+.fa-header{
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #f7f8fa;
+  border-bottom: none;
+  padding: 0 !important;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ✅ Help block pinch/zoom gestures inside iframe (browser-dependent) */
+html, body { touch-action: pan-x pan-y; }
+
+/* ============ TOP TABS (4) ============ */
+.fa-header .fa-tabs{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Shared button base for top tabs + submenu buttons */
+.fa-header .fa-tabs button,
+.fa-header .fa-submenu button{
+  -webkit-appearance:none !important;
+  appearance:none !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+
+  font-family:"Segoe UI", Roboto, Arial, sans-serif !important;
+  font-weight:900 !important;
+  font-size: clamp(12px, 3.6vw, 16px) !important;
+  letter-spacing: .2px !important;
+  line-height: 1 !important;
+
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 6px !important;
+
+  border-radius: 8px !important;
+  border: 0 !important;
+  outline: none !important;
+
+  background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10) !important;
+
+  color: #222 !important;
+  cursor: pointer !important;
+
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
+
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+.fa-header .fa-tabs button:not(.active):hover,
+.fa-header .fa-submenu button:not(.sub-active):hover{
+  background: linear-gradient(180deg, #f1f1f1 0%, #e3e7f0 100%) !important;
+}
+
+/* Active tab */
+.fa-header .fa-tabs button.active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+/* Tap flash */
+.fa-header .fa-tabs button.fa-press,
+.fa-header .fa-submenu button.fa-press{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.06);
+}
+
+.fa-header .fa-tabs button:active,
+.fa-header .fa-submenu button:active{
+  transform: scale(0.99);
+}
+
+/* ======= Hamburger button + logo ======= */
+#nav-menu{
+  padding: 0 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+#nav-menu .menu-logo{
+  height: 18px;
+  width: auto;
+  display: block;
+}
+
+#nav-menu .hamburger-icon{
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+#nav-menu .hamburger-icon{
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+/* ============ DROPDOWN MENU (hamburger) ============ */
+.fa-submenu-wrap{ position: relative; }
+
+.fa-submenu{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 8px 0 0;
+  z-index: 1001;
+
+  opacity: 0;
+  transform: translateY(-6px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms;
+}
+.fa-submenu.show{
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.fa-submenu .inner{
+  background: rgba(255,255,255,.98);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 26px rgba(0,0,0,.16);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 8px;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Slightly taller menu rows feels more “iOS” without changing your top tabs */
+.fa-header .fa-submenu button{
+  height: 42px !important;
+  min-height: 42px !important;
+  font-size: 13px !important;
+  border-radius: 12px !important;
+}
+
+.fa-header .fa-submenu button.sub-active{
+  background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important;
+  color:#fff !important;
+  box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
+  filter: brightness(1.04);
+}
+
+@media (max-width: 420px){
+  .fa-header .fa-tabs{ padding: 6px 0 !important; }
+  .fa-header .fa-tabs button{
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 6px !important;
+  }
+  .fa-header .fa-submenu button{
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 12.5px !important;
+  }
+  #nav-menu .hamburger-icon{
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (max-width: 420px){
+  #nav-menu .menu-logo{ height: 16px; }
+  #nav-menu .hamburger-icon{ width: 22px; height: 22px; }
+}
+/* =========================================================
+   Pull-to-refresh toast (spinner-only pill)
+   ========================================================= */
+#fa-ptr{
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 10px);
+  transform: translate(-50%, -14px);
+  opacity: 0;
+  z-index: 99999;
+  pointer-events: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+
+  transition: opacity 140ms ease, transform 140ms ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+#fa-ptr.show{ opacity: 1; transform: translate(-50%, 0); }
+#fa-ptr .spin{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,.18);
+  border-top-color: rgba(0,0,0,.55);
+  animation: faSpin 800ms linear infinite;
+}
+@keyframes faSpin { to { transform: rotate(360deg); } }
+</style>
+
 <div class="fa-header fa-submenu-wrap">
-  <nav class="fa-tabs">
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
-    <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-
-    <!-- Hamburger -->
-<button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
-  <img
-    class="menu-logo"
-    src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32"
-    alt=""
-    aria-hidden="true"
-    loading="eager"
-    decoding="async"
-  />
-  <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
-  </svg>
+<nav class="fa-tabs">
+<button data-page="scoring" id="nav-scoring" type="button">SCORING</button>
+<button data-page="rosters" id="nav-rosters" type="button">ROSTERS</button>
+<button data-page="matchups" id="nav-matchups" type="button">MATCHUPS</button>
+<!-- Hamburger -->
+<button aria-expanded="false" aria-label="More" data-key="menu" id="nav-menu" type="button">
+<img alt="" aria-hidden="true" class="menu-logo" decoding="async" loading="eager" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&amp;h=32"/>
+<svg aria-hidden="true" class="hamburger-icon" viewbox="0 0 24 24">
+<path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6"></path>
+</svg>
 </button>
-
-  </nav>
-
-  <!-- Dropdown (anchored under hamburger) -->
-  <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
-    <div class="inner">
-  <button data-page="rankings">RANKINGS</button>
-  <button data-page="stats">STATS</button>
-  <button data-page="elo">ELO</button>
-  <button data-page="standings">STANDINGS</button>
-  <button data-page="admin">ADMIN</button>
+</nav>
+<!-- Dropdown (anchored under hamburger) -->
+<div aria-hidden="true" class="fa-submenu" id="faMoreMenu">
+<div class="inner">
+<button data-page="rankings">RANKINGS</button>
+<button data-page="stats">STATS</button>
+<button data-page="elo">ELO</button>
+<button data-page="standings">STANDINGS</button>
+<button data-page="admin">ADMIN</button>
 </div>
-  </div>
 </div>
-
+</div>
 <script>
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
@@ -651,10 +640,19 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
       p = h;
     }
 
-    if (!p) return "";
+    // Support clean-path routing (/rosters, /matchups, etc.)
+    if (!p){
+      var path = (window.location.pathname || "").toLowerCase();
+      path = path.replace(/\/+$/, ""); // trim trailing slash
+      if (path && path !== "/"){
+        var seg = path.split("/").filter(Boolean).pop() || "";
+        seg = seg.replace(/\.html$/, "");
+        p = seg;
+      }
+    }
+
+    if (!p) return "matchups";
     if (p === "doubles") p = "rosters";
-    if (p === "scores") p = "scoring";
-    if (p === "players") p = "admin";
     return p;
   }
 
@@ -737,20 +735,54 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
     }
   }
 
-  function extraQS(){
+  function extraQS(opts){
+    opts = opts || {};
     var s = qs();
     var parts = [];
-    parts.push("embed=1");
     var scale = s.get("scale");
     var v = s.get("v");
+    if (opts.embed) parts.push("embed=1");
     if (scale) parts.push("scale=" + encodeURIComponent(scale));
     if (v) parts.push("v=" + encodeURIComponent(v));
-    return parts.length ? ("&" + parts.join("&")) : "";
+    return parts.join("&");
   }
 
   function buildHref(page){
-    return "?p=" + encodeURIComponent(page) + extraQS();
+    page = String(page||"").toLowerCase();
+    var embedded = isEmbedded();
+    if (embedded){
+      var q = extraQS({ embed:true });
+      var parts = ["p=" + encodeURIComponent(page)];
+      if (q) parts.push(q);
+      return "?" + parts.join("&");
+    } else {
+      var base = "/" + encodeURIComponent(page);
+      var q2 = extraQS({ embed:false });
+      return q2 ? (base + "?" + q2) : base;
+    }
   }
+
+  function maybeRedirectLegacyParams(){
+    if (isEmbedded()) return;
+    var s = qs();
+    var p = (s.get("p") || s.get("page") || "").toLowerCase();
+    if (!p) return;
+
+    // If someone lands on /something?p=rosters, send them to /rosters
+    var target = "/" + encodeURIComponent(p);
+    var cur = (window.location.pathname || "").toLowerCase().replace(/\/+$/, "");
+    if (!cur) cur = "/";
+    if (cur === target) return;
+
+    var q2 = extraQS({ embed:false });
+    try{
+      window.location.replace(q2 ? (target + "?" + q2) : target);
+    }catch(e){
+      window.location.href = q2 ? (target + "?" + q2) : target;
+    }
+  }
+
+  
 
   function sendToWrapper(page){
     var msg = { type: "FA_NAV", page: page };
@@ -911,6 +943,7 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
     });
   }catch(_){ }
 
+  maybeRedirectLegacyParams();
   detectActive();
   setMenuAria(false);
 
@@ -1114,6 +1147,42 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
 })();
 </script>
 
+
+<script>
+/* =========================
+   google.script.run → fetch() bridge (Native Fetch Polyfill)
+   - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
+   ========================= */
+(function(){
+  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "YOUR_WEB_APP_URL_HERE";
+  window.GAS_API_URL = GAS_API_URL;
+
+  function createProxy(s, f){
+    return new Proxy({}, {
+      get: (t, prop) => {
+        if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+        if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+        return (...args) => fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: prop, args: args })
+        })
+        .then(r => r.json())
+        .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
+        .catch(e => { if (f) f(e); });
+      }
+    });
+  }
+
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  if (!window.google.script.run){
+    window.google.script.run = new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] });
+  }
+})();
+</script>
+
+<script>window.EXEC_BASE = window.GAS_API_URL || '';</script>
 <div class="container">
   <div class="top-panel">
     
@@ -1173,19 +1242,7 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
 
 <div id="loadingOverlay"><div class="loadingPulse"></div></div>
 
-<script>const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
-window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
-function createProxy(s, f) {
-  return new Proxy({}, {
-    get: (t, prop) => {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
-      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
-    }
-  });
-}
-
+<script>
 /* ===== Big dialog helpers ===== */
 /* ===== Rank tiers (single source of truth) =====
    Server-side rerank writes A/B/C/D into the Players sheet.
