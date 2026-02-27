@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
-<title>Scoring</title>
+<meta name="robots" content="noindex, nofollow"> <title>Scoring</title>
 
 <style>
 /* =========================================================
@@ -30,31 +29,21 @@
   background: linear-gradient(var(--btn-angle),#ff3b3b 0%, #e40000 100%) !important;
   color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important;
 }
-.fa-submenu{
-  position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001;
-  opacity: 0; transform: translateY(-6px); visibility: hidden; transition: opacity 140ms, transform 140ms;
-}
-.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; }
-.fa-submenu .inner{
-  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; padding: 8px;
-  display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px);
-}
 
 /* =========================================================
-   SCORING STYLES (Your Original Layout)
+   SCORING STYLES (Restored from your scoring.html)
    ========================================================= */
 html, body {
   -webkit-text-size-adjust: 100%; text-size-adjust: 100%; 
   font-family: "Segoe UI", Roboto, Arial, sans-serif; 
   background: #f7f8fa; margin: 0; padding: 4px; color: #222; 
+  touch-action: manipulation;
 }
 
-/* The 4-column grid that makes the left panel 1/4 and right panel 3/4 */
 .teams {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr); /* ✅ Your original 4-column setup */
+  gap: 6px;                 
   max-width: 1600px;
   margin: 0 auto;
   align-items: start;
@@ -66,42 +55,33 @@ html, body {
 }
 
 .team-left {
-  grid-column: span 1;
+  grid-column: span 1; /* ✅ Calculator takes 1/4 width */
   border-top: 5px solid #111;
 }
 
 .team-right {
-  grid-column: span 3;
+  grid-column: span 3; /* ✅ Results table takes 3/4 width */
   border-top: 5px solid #ff3b3b;
 }
 
 .calc-box {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
 }
 
-.calc-label { font-weight: 800; font-size: 1.1em; color: #555; }
-.calc-val { font-weight: 900; font-size: 1.3em; min-width: 30px; text-align: center; }
-
-.calc-controls { display: flex; align-items: center; gap: 4px; }
+.calc-controls { display: flex; align-items: center; gap: 10px; }
 
 .calc-btn {
-  width: 34px; height: 34px; border: none; border-radius: 8px;
-  background: #f0f2f5; font-weight: 900; font-size: 1.4em; cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: 32px; height: 32px; border-radius: 6px; border: 1px solid #ddd;
+  background: #f9f9f9; font-weight: 900; font-size: 1.2em; cursor: pointer;
 }
 
-.summary-row {
-  margin-top: 12px; font-weight: 800; font-size: 1.15em; line-height: 1.8;
-}
-
-.score-table { width: 100%; border-collapse: collapse; font-size: 1.25em; }
-.score-table th { background: #f8f9fa; padding: 8px 4px; font-weight: 900; border-bottom: 2px solid #eee; }
-.score-table td { padding: 10px 4px; text-align: center; font-weight: 800; border-bottom: 1px solid #f0f0f0; }
+.score-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 0.95em; }
+.score-table th { background: #eee; padding: 6px; text-align: center; font-weight: 800; }
+.score-table td { padding: 6px; text-align: center; border-bottom: 1px solid #eee; font-weight: 700; }
 
 .win { color: #28a745; }
 .lose { color: #dc3545; }
-.pending { color: #999; font-style: italic; }
 
 @media (max-width: 600px) {
   .teams { grid-template-columns: 1fr; }
@@ -114,56 +94,44 @@ html, body {
 
 <div class="fa-header fa-submenu-wrap">
   <nav class="fa-tabs">
-    <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
-    <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
+    <button id="nav-scoring" class="active" type="button" data-page="scoring">SCORING</button>
+    <button id="nav-rosters" type="button" data-page="rosters">ROSTERS</button>
     <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
     <button id="nav-menu" type="button" data-key="menu">
       <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:18px;">
       <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
     </button>
   </nav>
-  <div class="fa-submenu" id="faMoreMenu">
-    <div class="inner">
-      <button data-page="rankings">RANKINGS</button>
-      <button data-page="stats">STATS</button>
-      <button data-page="elo">ELO</button>
-      <button data-page="standings">STANDINGS</button>
-      <button data-page="admin">ADMIN</button>
-    </div>
-  </div>
 </div>
 
 <div class="teams">
   <div class="team team-left">
     <div class="calc-box">
-      <div class="calc-label">SINGLES</div>
+      <span style="font-weight:800;">SINGLES</span>
       <div class="calc-controls">
         <button class="calc-btn" onclick="updateVal('b1', -1)">-</button>
-        <div class="calc-val" id="b1">8</div>
+        <span id="b1" style="font-weight:900; font-size:1.1em;">8</span>
         <button class="calc-btn" onclick="updateVal('b1', 1)">+</button>
       </div>
     </div>
     <div class="calc-box">
-      <div class="calc-label">DOUBLES</div>
+      <span style="font-weight:800;">DOUBLES</span>
       <div class="calc-controls">
         <button class="calc-btn" onclick="updateVal('b2', -1)">-</button>
-        <div class="calc-val" id="b2">8</div>
+        <span id="b2" style="font-weight:900; font-size:1.1em;">8</span>
         <button class="calc-btn" onclick="updateVal('b2', 1)">+</button>
       </div>
     </div>
-    <div class="calc-box">
-      <div class="calc-label">ACES</div>
-      <div class="calc-controls">
-        <button class="calc-btn" onclick="updateVal('b9', -0.5)">-</button>
-        <div class="calc-val" id="b9">0</div>
-        <button class="calc-btn" onclick="updateVal('b9', 0.5)">+</button>
-      </div>
-    </div>
-
-    <div class="summary-row">
+    <hr>
+    <div style="font-size:0.9em; font-weight:800; line-height:1.8; margin-top:10px;">
       TOTAL PTS: <span id="b5">--</span><br>
       TO WIN: <span id="b6">--</span><br>
-      OPP ACES: <span id="b10">--</span>
+      ACES TO DATE: 
+      <div class="calc-controls" style="display:inline-flex; margin-left:8px;">
+        <button class="calc-btn" onclick="updateVal('b9', -0.5)">-</button>
+        <span id="b9" style="font-weight:900; margin: 0 4px;">0</span>
+        <button class="calc-btn" onclick="updateVal('b9', 0.5)">+</button>
+      </div>
     </div>
   </div>
 
@@ -186,7 +154,7 @@ html, body {
 <script>
 const GAS_API_URL = "YOUR_WEB_APP_URL_HERE"; 
 
-/* --- API Polyfill --- */
+/* --- API Polyfill (Functional Bridge) --- */
 window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
 function createProxy(s, f) {
   return new Proxy({}, {
@@ -199,13 +167,13 @@ function createProxy(s, f) {
   });
 }
 
-/* --- Calculator Logic --- */
+/* --- Logic Restored from scoring.html --- */
 let _saveTimer = null;
 function updateVal(id, delta) {
   const el = document.getElementById(id);
   let val = parseFloat(el.innerText);
   val = Math.max(0, val + delta);
-  el.innerText = (id === 'b9') ? val : Math.floor(val);
+  el.innerText = val;
   calc();
 }
 
@@ -213,7 +181,7 @@ function calc() {
   const b1 = parseFloat(document.getElementById('b1').innerText);
   const b2 = parseFloat(document.getElementById('b2').innerText);
   const b9 = parseFloat(document.getElementById('b9').innerText);
-  const b3 = 2; // Default points per match
+  const b3 = 2; // pts/match
 
   const totalPts = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3);
   const toWin = (totalPts / 2) + 0.5;
@@ -221,15 +189,13 @@ function calc() {
 
   document.getElementById('b5').innerText = totalPts;
   document.getElementById('b6').innerText = toWin;
-  document.getElementById('b10').innerText = oppToDate;
 
-  // Cloud Save
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
-    google.script.run.faSetScoringConfig({ b1, b2, b9 });
+    google.script.run.faSetScoringConfig({ b1, b2, b3, b9 });
   }, 1000);
 
-  // Table Build
+  const tbody = document.getElementById('tableBody');
   const numDubs = Math.floor(b2/2);
   const hasExtra = (b2 % 2 === 1);
   let html = "";
@@ -243,19 +209,13 @@ function calc() {
       html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${res.toLowerCase()}">${res}</td></tr>`;
     }
   }
-  document.getElementById('tableBody').innerHTML = html;
+  tbody.innerHTML = html;
 }
 
-/* --- Header & Init --- */
-(function(){
-  const menuBtn = document.getElementById("nav-menu"), menuEl = document.getElementById("faMoreMenu");
-  menuBtn.onclick = (e) => { e.stopPropagation(); menuEl.classList.toggle("show"); };
-  document.addEventListener("click", () => menuEl.classList.remove("show"));
-  document.querySelectorAll("[data-page]").forEach(btn => {
-    btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
-  });
-  document.getElementById("nav-scoring").classList.add("active");
-})();
+/* --- Navigation --- */
+document.querySelectorAll("[data-page]").forEach(btn => {
+  btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
+});
 
 document.addEventListener('DOMContentLoaded', calc);
 </script>
