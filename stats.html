@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -1588,7 +1589,7 @@ html, body { touch-action: pan-x pan-y; }
 </details>
 
 <!-- RESULTS BY OPPONENT -->
-<details class="panel collapsible">
+<details class="panel collapsible" id="oppResults">
   <summary>Results by opponent<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
     <div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
@@ -1816,13 +1817,16 @@ function setStatsTeam(teamId){
   // ✅ update roster tables to match selected team
   try{ if (typeof updateRostersForTeam === 'function') updateRostersForTeam(teamId); }catch(e){}
 
-  // show cached stats ONLY if it matches the server version (prevents "flash" + re-sort)
+  // ✅ Instant-load: paint cached stats immediately (stale-while-revalidate)
   try{
     const cached = loadCachedStats(teamId);
-    const serverVer = String(window.FA_STATS_VERSION || "");
-    if (cached && cached.version && serverVer && cached.version === serverVer && cached.stats){
-      applyStats(cached.stats);
-      return; // already correct; don't fetch + rerender
+    if (cached && cached.stats){
+      applyStats(cached.stats); // show something instantly
+      // If server version is already known and matches, we can skip a fetch.
+      const serverVer = String(window.FA_STATS_VERSION || "");
+      if (cached.version && serverVer && cached.version === serverVer){
+        return;
+      }
     }
   }catch(e){}
 
@@ -3519,11 +3523,67 @@ try{
 
   // Cache recent list for opponent filtering UI
   FA_RECENT_CACHE = (stats.recent || []).slice();
-  if ($("oppResultsCards")) { try{ loadEloPack(() => renderOpponentResults()); }catch(e){ renderOpponentResults(); } }
+  // ✅ speed: defer heavy sections until user opens the collapsible
   if (isManageOpen()) renderManageList();
-  scheduleScoutUpdate();
+  _faMaybeRunLazyAfterApply_();
 }
 
+
+/* ---------- lazy render controls (speed) ---------- */
+let FA_LAZY_WIRED = false;
+let FA_LAZY_DONE_OPP = false;
+let FA_LAZY_DONE_SCOUT = false;
+
+function _faWireLazy_(){
+  if (FA_LAZY_WIRED) return;
+  FA_LAZY_WIRED = true;
+
+  function wire(detailsId, fn){
+    const el = document.getElementById(detailsId);
+    if (!el) return;
+    el.addEventListener("toggle", function(){
+      if (!el.open) return;
+      // let the UI paint first
+      requestAnimationFrame(fn);
+    });
+    // if already open (shouldn't be), render once
+    if (el.open) requestAnimationFrame(fn);
+  }
+
+  // Results by opponent is heavy (needs Elo pack + many cards)
+  wire("oppResults", function(){
+    if (FA_LAZY_DONE_OPP) return;
+    FA_LAZY_DONE_OPP = true;
+    try{ loadEloPack(() => renderOpponentResults()); }
+    catch(e){ try{ renderOpponentResults(); }catch(_){ } }
+  });
+
+  // Singles links (scouting) can be heavy; compute only when opened
+  wire("singlesLinks", function(){
+    if (FA_LAZY_DONE_SCOUT) return;
+    FA_LAZY_DONE_SCOUT = true;
+    try{ scheduleScoutUpdate(); }catch(_){}
+  });
+}
+
+function _faMaybeRunLazyAfterApply_(){
+  // Always wire once we have DOM + stats
+  try{ _faWireLazy_(); }catch(_){}
+  // If user already opened a panel, render it now
+  try{
+    const opp = document.getElementById("oppResults");
+    if (opp && opp.open && !FA_LAZY_DONE_OPP){
+      FA_LAZY_DONE_OPP = true;
+      try{ loadEloPack(() => renderOpponentResults()); }
+      catch(e){ try{ renderOpponentResults(); }catch(_){ } }
+    }
+    const scout = document.getElementById("singlesLinks");
+    if (scout && scout.open && !FA_LAZY_DONE_SCOUT){
+      FA_LAZY_DONE_SCOUT = true;
+      try{ scheduleScoutUpdate(); }catch(_){}
+    }
+  }catch(_){}
+}
 /* ---------- player view ---------- */
 function _nameKey_(s){ return String(s||"").trim().toLowerCase(); }
 
@@ -3895,6 +3955,8 @@ function wireOnce(){
   if (window.__FA_WIRED__) return;
   window.__FA_WIRED__ = true;
 
+  try{ _faWireLazy_(); }catch(_){ }
+
   if ($("statsTeamPick")){
     $("statsTeamPick").addEventListener("change", ()=> setStatsTeam(getStatsTeam()));
   }
@@ -3902,7 +3964,16 @@ function wireOnce(){
   $("playerPick").addEventListener("change", loadPlayerStats);
 }
   if ($("oppFilter")){
-    $("oppFilter").addEventListener("change", renderOpponentResults);
+    $("oppFilter").addEventListener("change", ()=>{
+      // if user changes filter before opening panel, render once
+      if (!FA_LAZY_DONE_OPP){
+        FA_LAZY_DONE_OPP = true;
+        try{ loadEloPack(() => renderOpponentResults()); }
+        catch(e){ try{ renderOpponentResults(); }catch(_){ } }
+      }else{
+        renderOpponentResults();
+      }
+    });
   }
   if ($("scoutOpp")){
   $("scoutOpp").addEventListener("change", updateScout);
