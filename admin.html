@@ -1211,28 +1211,35 @@ html, body { touch-action: pan-x pan-y; }
    - Set window.GAS_API_URL once (or store FA_GAS_API_URL in localStorage)
    ========================= */
 (function(){
-  const GAS_API_URL = window.GAS_API_URL || localStorage.getItem("FA_GAS_API_URL") || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
-  window.GAS_API_URL = GAS_API_URL;
+  const GAS_API_URL =
+  localStorage.getItem("FA_GAS_API_URL") ||
+  "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
 
-  function createProxy(s, f){
-    return new Proxy({}, {
-      get: (t, prop) => {
-        if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
-        if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
-        return (...args) => fetch(GAS_API_URL, {
+window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
+
+function createProxy(s, f) {
+  return new Proxy({}, {
+    get: (t, prop) => {
+      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+
+      return (...args) =>
+        fetch(GAS_API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: prop, args: args })
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS-friendly
+          body: JSON.stringify({ action: prop, args })
         })
-        .then(r => r.text()).then(t => { 
-          if (!t) throw new Error("Empty response from GAS. Check FA_GAS_API_URL + deployment access.");
-          try { return JSON.parse(t); } catch(e){ console.error("Non-JSON response:", t.slice(0,300)); throw e; }
+        .then(async (r) => {
+          const txt = await r.text();
+          if (!txt) throw new Error("Empty response from GAS");
+          try { return JSON.parse(txt); }
+          catch(e){ throw new Error("Non-JSON from GAS: " + txt.slice(0,200)); }
         })
-        .then(d => { if (d && d.ok && s) s(d.result); else if (d && d.ok === false && f) f(d); })
-        .catch(e => { if (f) f(e); });
-      }
-    });
-  }
+        .then(d => { if (d && d.ok && s) s(d.result); else if (!d?.ok) throw new Error(d?.error || "GAS ok=false"); })
+        .catch(e => { if (f) f(e); else console.error("GAS call failed:", e); });
+    }
+  });
+}
 
   window.google = window.google || {};
   window.google.script = window.google.script || {};
