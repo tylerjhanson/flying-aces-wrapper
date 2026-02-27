@@ -7,81 +7,34 @@
 
 <style>
 /* =========================================================
-   1. ORIGINAL SCORING STYLES (Preserved exactly)
+   1. HEADER STYLES (Identical to matchups.html)
    ========================================================= */
-html, body {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%; 
-  font-family: "Segoe UI", Roboto, Arial, sans-serif; 
-  background: #f7f8fa; 
-  margin: 0; 
-  padding: 4px; 
-  color: #222; 
-  touch-action: manipulation;
+:root{ --fa-header-offset: 0px; --btn-angle: 135deg; }
+.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; border-bottom: none; padding: 0 !important; box-sizing: border-box; }
+.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; margin: 0 !important; background: transparent !important; }
+.fa-header .fa-tabs button, .fa-header .fa-submenu button{
+  -webkit-appearance:none !important; appearance:none !important; display:flex !important; align-items:center !important; justify-content:center !important; width:100% !important; font-family:"Segoe UI", Roboto, Arial, sans-serif !important; font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important; letter-spacing: .2px !important; line-height: 1 !important; height: 40px !important; border-radius: 8px !important; border: 0 !important; background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important; box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important; cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important;
 }
-.teams{
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;                 
-  max-width: 1600px;
-  margin: 0 auto;
-  align-items: start;
-}
-.team { 
-  background: #fff; 
-  border-radius: 8px; 
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1); 
-  padding: 10px; 
-  box-sizing: border-box;
-}
-.team-left{
-  grid-column: span 1;
-  border-top: 5px solid #111;
-  min-width: 96px;
-}
-.team-right{
-  grid-column: span 3;
-  border-top: 5px solid #111;
-  min-width: 0;
-}
+.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
+#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
+.fa-submenu{ position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001; opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none; transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms; }
+.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
+.fa-submenu .inner{ background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12); box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden; padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px); }
+
+/* =========================================================
+   2. SCORING STYLES (Single Column Layout)
+   ========================================================= */
+html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #f7f8fa; margin: 0; padding: 4px; color: #222; touch-action: manipulation; }
+
+/* ✅ Force single column for mobile readability */
+.scoring-wrapper { display: flex; flex-direction: column; gap: 10px; max-width: 600px; margin: 0 auto; }
+
+.team { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 10px; box-sizing: border-box; border-top: 5px solid #111; }
+
 .input-group { margin-bottom: 10px; }
-label{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height: 26px;              
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .3px;
-  text-transform: uppercase;
-  background: #000;
-  color: #fff;
-  border-radius: 8px;
-}
-select{
-  width: 100%;
-  box-sizing: border-box;
-  height: 42px;
-  font-size: 18px;
-  font-weight: 900;
-  color: #333;
-  -webkit-text-fill-color: #333;
-  background-color: #fff;
-  text-align: center;
-  text-align-last: center;
-  border: 1.5px solid #ddd;
-  border-radius: 8px;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  line-height: 1.15;
-  padding: 9px 30px 9px 16px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'><path fill='%23666' d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px 16px;
-}
+label{ display:flex; align-items:center; justify-content:center; height: 26px; margin-bottom: 4px; font-size: 11px; font-weight: 900; letter-spacing: .3px; text-transform: uppercase; background: #000; color: #fff; border-radius: 8px; }
+select{ width: 100%; box-sizing: border-box; height: 42px; font-size: 18px; font-weight: 900; color: #333; background-color: #fff; text-align: center; text-align-last: center; border: 1.5px solid #ddd; border-radius: 8px; -webkit-appearance: none; appearance: none; line-height: 1.15; padding: 9px 30px 9px 16px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'><path fill='%23666' d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px 16px; }
+
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
 .stat-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 6px 2px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
 .stat-label { font-size: 0.82em; color: #555; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
@@ -90,46 +43,28 @@ select{
 .stat-aces .stat-label, .stat-aces .stat-value { color: white; }
 .stat-opp { background: linear-gradient(145deg, #333333, #000000); border-color: #111; }
 .stat-opp .stat-label, .stat-opp .stat-value { color: white; }
+
 table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.75em; } 
-th, td { padding: 5px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
+th, td { padding: 8px 2px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
 th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em; text-transform: uppercase; }
 .res-win { color: #28a745; }
 .res-loss { color: #dc3545; }
 .res-tie  { color: #ffc107; }
-
-/* =========================================================
-   2. HEADER STYLES (Preserved exactly from header.html)
-   ========================================================= */
-.fa-header{ position: sticky; top: 0; z-index: 1000; background: #f7f8fa; border-bottom: none; padding: 0 !important; box-sizing: border-box; }
-.fa-header .fa-tabs{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px !important; padding: 8px 0 !important; margin: 0 !important; background: transparent !important; }
-.fa-header .fa-tabs button, .fa-header .fa-submenu button{ -webkit-appearance:none !important; appearance:none !important; display:flex !important; align-items:center !important; justify-content:center !important; width:100% !important; font-family:"Segoe UI", Roboto, Arial, sans-serif !important; font-weight:900 !important; font-size: clamp(12px, 3.6vw, 16px) !important; letter-spacing: .2px !important; line-height: 1 !important; height: 40px !important; border-radius: 8px !important; border: 0 !important; background: linear-gradient(180deg, #f9f9f9 0%, #ededed 100%) !important; box-shadow: 0 1px 4px rgba(0,0,0,.10) !important; color: #222 !important; cursor: pointer !important; transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .08s ease, filter .12s ease !important; }
-.fa-header .fa-tabs button.active{ background: linear-gradient(135deg,#ff3b3b 0%, #e40000 100%) !important; color: #ffffff !important; box-shadow: 0 1px 6px rgba(228,0,0,.22) !important; filter: brightness(1.06); }
-#nav-menu{ padding: 0 10px !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; }
-.fa-submenu{ position: absolute; top: 100%; left: 0; padding: 8px 0 0; z-index: 1001; opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none; transition: opacity 140ms ease, transform 140ms ease, visibility 0s linear 140ms; }
-.fa-submenu.show{ opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity 140ms ease, transform 140ms ease; }
-.fa-submenu .inner{ background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.12); box-shadow: 0 12px 26px rgba(0,0,0,.16); border-radius: 14px; overflow: hidden; padding: 8px; display: grid; grid-template-columns: 1fr; gap: 8px; backdrop-filter: blur(10px); }
 </style>
 </head>
 
 <body>
-  <script>
-    window.EXEC_BASE = ''; // Initialized for static host
-    window.__SCORING_BOOTSTRAP = null; // Will fetch via polyfill
-  </script>
-
   <div class="fa-header fa-submenu-wrap">
     <nav class="fa-tabs">
-      <button id="nav-scoring"  type="button" data-page="scoring">SCORING</button>
+      <button id="nav-scoring" class="active" type="button" data-page="scoring">SCORING</button>
       <button id="nav-rosters"  type="button" data-page="rosters">ROSTERS</button>
       <button id="nav-matchups" type="button" data-page="matchups">MATCHUPS</button>
-      <button id="nav-menu" type="button" data-key="menu" aria-expanded="false" aria-label="More">
-        <img class="menu-logo" src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" alt="" style="height:18px;">
-        <svg class="hamburger-icon" viewBox="0 0 24 24" aria-hidden="true" width="24" height="24">
-          <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
-        </svg>
+      <button id="nav-menu" type="button" data-key="menu">
+        <img src="https://lufberydiscgolf.com/wp-content/uploads/2025/05/lufberyflyingace_logo-1.png?w=64&h=32" style="height:18px;">
+        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
       </button>
     </nav>
-    <div class="fa-submenu" id="faMoreMenu" aria-hidden="true">
+    <div class="fa-submenu" id="faMoreMenu">
       <div class="inner">
         <button data-page="rankings">RANKINGS</button>
         <button data-page="stats">STATS</button>
@@ -140,18 +75,18 @@ th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em
     </div>
   </div>
 
-  <div class="teams">
-    <div class="team team-left">
+  <div class="scoring-wrapper">
+    <div class="team">
       <div class="input-group">
         <label>ROUND 1</label>
         <select id="b1" onchange="runCalc()">
-          <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
+          <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
         </select>
       </div>
       <div class="input-group">
         <label>ROUND 2</label>
         <select id="b2" onchange="runCalc()">
-          <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
+          <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24" selected>24</option><option value="25">25</option><option value="26">26</option>
         </select>
       </div>
       <div style="border-top: 1px dashed #ccc; margin: 10px 0;"></div>
@@ -160,60 +95,38 @@ th { background-color: #f0f0f0; color: #444; font-weight: 800; font-size: 0.70em
         <select id="b9" onchange="runCalc()"></select>
       </div>
     </div>
-    <div class="team team-right">
+
+    <div class="team">
       <div class="stats-grid">
         <div class="stat-box stat-aces"><span class="stat-label">Aces</span><span class="stat-value" id="displayB9">0</span></div>
         <div class="stat-box stat-opp"><span class="stat-label">Opp</span><span class="stat-value" id="b10">0</span></div>
         <div class="stat-box"><span class="stat-label">Total</span><span class="stat-value" id="b5">0</span></div>
         <div class="stat-box"><span class="stat-label">Need</span><span class="stat-value" id="b6">0</span></div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Dubs</th><th>Single</th><th>Aces</th><th>Opp</th><th>Result</th></tr></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
+      <table>
+        <thead><tr><th>Dubs</th><th>Single</th><th>Aces</th><th>Opp</th><th>Result</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
     </div>
   </div>
 
 <script>
-// =========================================================
-// MAGIC POLYFILL: Rewires google.script.run to native fetch
-// =========================================================
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec"; 
 
+/* --- 1. MAGIC POLYFILL --- */
 window.google = { script: { run: new Proxy({}, { get: (t, prop) => createProxy(null, null)[prop] }) } };
-function createProxy(onSuccess, onFailure) {
+function createProxy(s, f) {
   return new Proxy({}, {
-    get: function(target, prop) {
-      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, onFailure);
-      if (prop === 'withFailureHandler') return (cb) => createProxy(onSuccess, cb);
-      return function(...args) {
-        fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
-        .then(r => r.json()).then(data => { if (data.ok && onSuccess) onSuccess(data.result); })
-        .catch(err => { if (onFailure) onFailure(err); else console.error("API Error:", err); });
-      };
+    get: (t, prop) => {
+      if (prop === 'withSuccessHandler') return (cb) => createProxy(cb, f);
+      if (prop === 'withFailureHandler') return (cb) => createProxy(s, cb);
+      return (...args) => fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: prop, args: args }) })
+        .then(r => r.json()).then(d => { if(d.ok && s) s(d.result); }).catch(e => { if(f) f(e); });
     }
   });
 }
 
-// =========================================================
-// HEADER NAVIGATION (Preserved from header.html script)
-// =========================================================
-(function(){
-  const menuBtn = document.getElementById("nav-menu"), menuEl = document.getElementById("faMoreMenu");
-  function toggleMenu(){ menuEl.classList.toggle("show"); }
-  menuBtn.onclick = toggleMenu;
-  function navigate(p){ window.location.href = p + ".html"; }
-  document.querySelectorAll("[data-page]").forEach(btn => {
-    btn.onclick = () => navigate(btn.dataset.page);
-  });
-  document.getElementById("nav-scoring").classList.add("active");
-})();
-
-// =========================================================
-// SCORING LOGIC (Preserved exactly from scoring.html)
-// =========================================================
+/* --- 2. ORIGINAL LOGIC (Preserved) --- */
 function populateAcesDropdown() {
   const select = document.getElementById('b9');
   if (!select || select.options.length) return;
@@ -223,14 +136,41 @@ function populateAcesDropdown() {
 }
 
 let __saveTimer = null;
-function saveToCloudDebounced(payload){
+function runCalc() {
+  const b1 = parseFloat(document.getElementById('b1').value), b2 = parseFloat(document.getElementById('b2').value), b9 = parseFloat(document.getElementById('b9').value), b3 = 1;
   if (__saveTimer) clearTimeout(__saveTimer);
-  __saveTimer = setTimeout(() => { google.script.run.saveToCloud(payload); }, 400);
+  __saveTimer = setTimeout(() => { google.script.run.saveToCloud({ b1, b2, b9 }); }, 400);
+
+  const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3), b6 = (b5 / 2) + 0.5, b10 = b1 - b9;
+  document.getElementById('b5').innerText = b5; document.getElementById('b6').innerText = b6; document.getElementById('b10').innerText = b10; document.getElementById('displayB9').innerText = b9;
+
+  const tbody = document.getElementById('tableBody');
+  const numD = Math.floor(b2/2), hasE = (b2 % 2 === 1);
+  let html = "";
+  for (let d = 0; d <= numD; d++) {
+    const sOpts = hasE ? [0, 1] : [0];
+    for (let s of sOpts) {
+      const aces = b9 + (d * 2) + (s * b3), opp = b10 + (numD * 2 + (b2 % 2) * b3) - (d * 2 + s * b3);
+      let rT = "TIE", rC = "res-tie";
+      if (aces > opp) { rT = "WIN"; rC = "res-win"; } else if (aces < opp) { rT = "LOSS"; rC = "res-loss"; }
+      html += `<tr><td>${d}</td><td>${s}</td><td>${aces}</td><td>${opp}</td><td class="${rC}">${rT}</td></tr>`;
+    }
+  }
+  tbody.innerHTML = html;
 }
+
+/* --- 3. NAVIGATION (Consistent) --- */
+(function(){
+  const menuBtn = document.getElementById("nav-menu"), menuEl = document.getElementById("faMoreMenu");
+  menuBtn.onclick = () => menuEl.classList.toggle("show");
+  document.querySelectorAll("[data-page]").forEach(btn => {
+    btn.onclick = () => { window.location.href = btn.dataset.page + ".html"; };
+  });
+})();
 
 window.onload = function() {
   populateAcesDropdown();
-  google.script.run.withSuccessHandler(function(data) {
+  google.script.run.withSuccessHandler((data) => {
     if (data) {
       document.getElementById('b1').value = data.b1 ?? 24;
       document.getElementById('b2').value = data.b2 ?? 24;
@@ -239,43 +179,6 @@ window.onload = function() {
     runCalc();
   }).loadFromCloud();
 };
-
-function runCalc() {
-  const b1 = parseFloat(document.getElementById('b1').value);
-  const b2 = parseFloat(document.getElementById('b2').value);
-  const b9 = parseFloat(document.getElementById('b9').value);
-  const b3 = 1;
-
-  saveToCloudDebounced({ b1, b2, b9 });
-
-  const b5 = b1 + (Math.floor(b2/2)*2) + ((b2%2)*b3);
-  const b6 = (b5 / 2) + 0.5;
-  const b10 = b1 - b9;
-
-  document.getElementById('b5').innerText = b5;
-  document.getElementById('b6').innerText = b6;
-  document.getElementById('b10').innerText = b10;
-  document.getElementById('displayB9').innerText = b9;
-
-  const tbody = document.getElementById('tableBody');
-  const numDubsRows = Math.floor(b2/2);
-  const hasExtraSingle = (b2 % 2 === 1);
-  let html = "";
-
-  for (let d = 0; d <= numDubsRows; d++) {
-    const singlesOptions = hasExtraSingle ? [0, 1] : [0];
-    for (let si = 0; si < singlesOptions.length; si++) {
-      const s = singlesOptions[si];
-      const acesTotal = b9 + (d * 2) + (s * b3);
-      const oppTotal  = b10 + ((numDubsRows * 2) + ((b2 % 2) * b3)) - ((d * 2) + (s * b3));
-      let resultText = "TIE", resultClass = "res-tie";
-      if (acesTotal > oppTotal) { resultText = "WIN"; resultClass = "res-win"; }
-      else if (acesTotal < oppTotal) { resultText = "LOSS"; resultClass = "res-loss"; }
-      html += `<tr><td>${d}</td><td>${s}</td><td>${acesTotal}</td><td>${oppTotal}</td><td class="${resultClass}">${resultText}</td></tr>`;
-    }
-  }
-  tbody.innerHTML = html;
-}
 </script>
 </body>
 </html>
