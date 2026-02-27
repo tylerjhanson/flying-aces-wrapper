@@ -1216,11 +1216,40 @@ async function runGs(fn, args) {
 
 async function load(){
   try{
-    // Adjustments editor is always available on this page.
     const isAdmin = true;
     const adjWrap = $("adjWrap");
     if (adjWrap) adjWrap.style.display = "";
 
+    // ==========================================
+    // 1. INSTANT LOAD FROM PHONE MEMORY (CACHE)
+    // ==========================================
+    const cachedLogRaw = localStorage.getItem("fa_cache_log");
+    const cachedAdjRaw = localStorage.getItem("fa_cache_adj");
+    
+    if (cachedLogRaw) {
+      try {
+        let log = JSON.parse(cachedLogRaw);
+        let adj = cachedAdjRaw ? JSON.parse(cachedAdjRaw) : {rows: []};
+        const adjRows = (adj && adj.ok) ? (adj.rows || []) : [];
+        
+        // Render instantly using old data while we wait for Google
+        const computed = computeFromMatchLog(log.rows || [], adjRows);
+        _lastMatchups = computed.matchupList || [];
+        renderStandings(computed.standings, computed.matchupCount);
+        fillTeamDropdowns(computed.standings);
+        initSimulator(computed.standings);
+        renderMatchups(_lastMatchups);
+        renderUpsets(_lastMatchups);
+        renderAdjustments(adjRows);
+        wireAdjustmentForm();
+      } catch(e) {
+        console.warn("Cache render failed, waiting for network...", e);
+      }
+    }
+
+    // ==========================================
+    // 2. BACKGROUND FETCH FROM GOOGLE
+    // ==========================================
     const [logRaw, adjRaw] = await Promise.all([
       runGs("faGetMatchLogRows_v1", {}),
       runGs("faGetStandingsAdjustments_v1", {})
@@ -1228,12 +1257,19 @@ async function load(){
 
     let log = logRaw;
     try{ if (typeof log === "string") log = JSON.parse(log); }catch(_){}
-    if (!log || log.ok === false) throw new Error((log && log.message) ? log.message : "MatchLog load failed (faGetMatchLogRows_v1).");
+    if (!log || log.ok === false) throw new Error((log && log.message) ? log.message : "MatchLog load failed.");
 
     let adj = adjRaw;
     try{ if (typeof adj === "string") adj = JSON.parse(adj); }catch(_){}
     const adjRows = (adj && adj.ok) ? (adj.rows || []) : [];
 
+    // Save the fresh data to the phone's memory for next time!
+    localStorage.setItem("fa_cache_log", JSON.stringify(log));
+    localStorage.setItem("fa_cache_adj", JSON.stringify(adj));
+
+    // ==========================================
+    // 3. SILENTLY UPDATE THE UI WITH FRESH DATA
+    // ==========================================
     const computed = computeFromMatchLog(log.rows || [], adjRows);
     _lastMatchups = computed.matchupList || [];
     renderStandings(computed.standings, computed.matchupCount);
@@ -1242,9 +1278,10 @@ async function load(){
     renderMatchups(_lastMatchups);
     renderUpsets(_lastMatchups);
     renderAdjustments(adjRows);
-      wireAdjustmentForm();
+    wireAdjustmentForm();
+
   }catch(err){
-        const metaEl = $("meta");
+    const metaEl = $("meta");
     if (metaEl) metaEl.textContent = "Load failed: " + (err && err.message ? err.message : err);
     console.error(err);
   }
@@ -1255,3 +1292,4 @@ load();
 
 </body>
 </html>
+
