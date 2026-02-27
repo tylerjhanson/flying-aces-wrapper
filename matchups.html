@@ -2,6 +2,8 @@
 <html>
 <head>
 <link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#f7f8fa">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
@@ -386,11 +388,51 @@ button.ctrlBtn:disabled{
   .ctrlBtn{ padding: 10px 0; font-size: 0.95rem; border-radius: 9px; }
   .roundBtn{ height: 32px; font-size: 1.15rem; }
 }
-
+#faSplash{
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8fa; /* MUST match manifest background_color */
+  transition: opacity .28s ease;
+}
+#faSplash img{
+  width: min(70vw, 340px);
+  height: auto;
+  object-fit: contain;
+}
+#faSplash.hide{
+  opacity: 0;
+  pointer-events: none;
+}
 </style>
 </head>
+<script>
+  (function(){
+    var MIN_MS = 900;            // change this to 1200, 1500, etc.
+    var start = Date.now();
 
+    function hide(){
+      var el = document.getElementById('faSplash');
+      if(!el) return;
+      el.classList.add('hide');
+      setTimeout(function(){ try{ el.remove(); }catch(e){} }, 350);
+    }
+
+    window.addEventListener('load', function(){
+      var elapsed = Date.now() - start;
+      var wait = Math.max(0, MIN_MS - elapsed);
+      setTimeout(hide, wait);
+    });
+  })();
+</script>
 <body>
+<div id="faSplash" aria-hidden="true">
+  <img src="/icons/icon-512.png" alt="">
+</div>
+   
 <div id="syncBanner" style="display:none; background: linear-gradient(135deg, #ffd65a 0%, #ffc107 100%); color: #000; text-align: center; padding: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 9999;">
   <span style="display:inline-block; animation: fa-spin 1s linear infinite;">↻</span>
 </div>
