@@ -1589,7 +1589,7 @@ html, body { touch-action: pan-x pan-y; }
 </details>
 
 <!-- RESULTS BY OPPONENT -->
-<details class="panel collapsible">
+<details class="panel collapsible" id="oppResults">
   <summary>Results by opponent<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
     <div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
@@ -1661,30 +1661,21 @@ let FA_PLAYER_CACHE = Object.create(null);
 
 /* ---------- stats cache (localStorage) ---------- */
 function statsCacheKey(teamId){ return "FA_STATS_CACHE_V3_" + _key(teamId || (window.FA_ACES_TEAM || "Flying Aces")); }
-const FA_STATS_RECENT_LIMIT = 200; // must match refreshStats recentLimit
-
-function _statsClientKey(teamId){
-  const ver = String(window.FA_STATS_VERSION || "");
-  const tKey = _key(teamId || (window.FA_ACES_TEAM || "Flying Aces"));
-  return ver + "|T:" + tKey + "|R:" + FA_STATS_RECENT_LIMIT;
-}
+const STATS_CACHE_VER = "FA_STATS_VER_V2";
 
 function loadCachedStats(teamId){
   try{
+    const ver  = localStorage.getItem(STATS_CACHE_VER) || "";
     const json = localStorage.getItem(statsCacheKey(teamId));
-    if (!json) return null;
-    const obj = JSON.parse(json);
-    if (obj && obj.stats) return obj; // { key, ts, stats }
-    // backwards compat: raw stats object stored
-    return { key:"", ts:0, stats: obj };
+    return json ? { version: ver, stats: JSON.parse(json) } : null;
   }catch(e){ return null; }
 }
-function saveCachedStats(teamId, key, stats){
+function saveCachedStats(teamId, version, stats){
   try{
-    localStorage.setItem(statsCacheKey(teamId), JSON.stringify({ key: String(key||""), ts: Date.now(), stats: stats || {} }));
+    localStorage.setItem(STATS_CACHE_VER, String(version || ""));
+    localStorage.setItem(statsCacheKey(teamId), JSON.stringify(stats || {}));
   }catch(e){}
 }
-
 
 function setDiag(msg){
   const d = $("diag");
@@ -1810,86 +1801,49 @@ function setStatsTeam(teamId){
   teamId = String(teamId || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
   window.FA_STATS_TEAM = teamId;
 
-  // persist last selection (so reloads don't jump back to Aces)
-  try{ localStorage.setItem("FA_STATS_LAST_TEAM", teamId); }catch(e){}
+  // persist last chosen team (helps future visits)
+  try{ localStorage.setItem("FA_STATS_LAST_TEAM", teamId); }catch(_){}
 
   const el = $("statsTeamPick");
   if (el) el.value = teamId;
 
-  // ✅ reset player dropdown + hide player section when switching teams
+  // reset dependent UI (prevents "previous team" bleed)
   try{
     if ($("playerPick")){
       fillSelectSimple("playerPick", [], "Select a player…");
       $("playerPick").value = "";
     }
     if (typeof setPlayerEmpty === "function") setPlayerEmpty();
-  }catch(e){}
-
-  
-  // ✅ clear visible bodies on team switch so old team doesn't linger
-  try{
-    FA_STATS_OBJ = null;
-
-    // reset opponent filter dropdown (Results by Opponent)
     if ($("oppFilter")) $("oppFilter").value = "";
-
-    // rosters
-    if ($("scoutRosterMenBody")) $("scoutRosterMenBody").innerHTML =
-      `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    if ($("scoutRosterWomenBody")) $("scoutRosterWomenBody").innerHTML =
-      `<tr><td colspan="3" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-
-    // main tables
-    if ($("singlesBody")) $("singlesBody").innerHTML =
-      `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    if ($("doublesPlayerBody")) $("doublesPlayerBody").innerHTML =
-      `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    if ($("doublesPairBody")) $("doublesPairBody").innerHTML =
-      `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-
-    // player modal/cards section (if present)
-    if ($("playerMeta")) $("playerMeta").textContent = "";
-    if ($("playerSummaryBody")) $("playerSummaryBody").innerHTML = "";
-    if ($("playerPartnersBody")) $("playerPartnersBody").innerHTML = "";
-    if ($("playerCards")) $("playerCards").innerHTML = "";
-  }catch(e){}
-
-// clear old opponent cards immediately to avoid wrong-team flash
-  try{
-    FA_RECENT_CACHE = [];
+    // clear opponent cards immediately; they'll re-render on demand
     if ($("oppResultsCards")) $("oppResultsCards").innerHTML = `<div class="muted" style="padding:6px 2px; font-weight:900;">Loading…</div>`;
+    if ($("oppResultsMeta")) $("oppResultsMeta").textContent = "";
   }catch(e){}
 
-  // load player list + rosters for the selected team
   loadPlayersForTeam(teamId);
   try{ if (typeof updateRostersForTeam === 'function') updateRostersForTeam(teamId); }catch(e){}
 
-  // show cached stats immediately (even if stale), as long as it matches the selected team
+  // ✅ Instant paint: show any cached stats for this team (even if stale)
+  let painted = false;
   try{
     const cached = loadCachedStats(teamId);
-    if (cached && cached.stats && cached.stats.ok !== false){
-      const cTeam = cached.stats.teamId ? _key(cached.stats.teamId) : _key(teamId);
-      if (!cached.stats.teamId || cTeam === _key(teamId)){
-        applyStats(cached.stats);
-      }
+    if (cached && cached.stats){
+      applyStats(cached.stats);
+      painted = true;
     }
   }catch(e){}
 
-  // clear table bodies if we don't have cached data
-  try{
-    if ($("singlesBody") && (!$("singlesBody").textContent || $("singlesBody").textContent.trim()==="")) {
-      $("singlesBody").innerHTML = `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    }
-    if ($("doublesPlayerBody") && (!$("doublesPlayerBody").textContent || $("doublesPlayerBody").textContent.trim()==="")) {
-      $("doublesPlayerBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    }
-    if ($("doublesPairBody") && (!$("doublesPairBody").textContent || $("doublesPairBody").textContent.trim()==="")) {
-      $("doublesPairBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
-    }
-  }catch(e){}
+  // If we have no cache, show loading placeholders for the summary tables
+  if (!painted){
+    try{
+      if ($("singlesBody")) $("singlesBody").innerHTML = `<tr><td colspan="5" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+      if ($("doublesPlayerBody")) $("doublesPlayerBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+      if ($("doublesPairBody")) $("doublesPairBody").innerHTML = `<tr><td colspan="4" class="muted" style="padding:14px; font-weight:900;">Loading…</td></tr>`;
+    }catch(e){}
+  }
 
-  // revalidate in background (team-aware, avoids wrong cache writes)
-  refreshStats(teamId);
+  // Always revalidate in background (server-side cache makes this fast)
+  refreshStats(teamId, { silent: true });
 }
 
 
@@ -3575,9 +3529,29 @@ try{
 
   // Cache recent list for opponent filtering UI
   FA_RECENT_CACHE = (stats.recent || []).slice();
-  if ($("oppResultsCards")) { try{ loadEloPack(() => renderOpponentResults()); }catch(e){ renderOpponentResults(); } }
+
+  // Heavy sections: render only when their panels are open
+  try{
+    const oppDet = $("oppResults");
+    const linksDet = $("singlesLinks");
+    window.__FA_OPP_NEEDS_RENDER__ = true;
+    window.__FA_LINKS_NEEDS_RENDER__ = true;
+
+    if (oppDet && oppDet.open){
+      window.__FA_OPP_NEEDS_RENDER__ = false;
+      try{ loadEloPack(() => renderOpponentResults()); }catch(e){ renderOpponentResults(); }
+    }
+    if (linksDet && linksDet.open){
+      window.__FA_LINKS_NEEDS_RENDER__ = false;
+      scheduleScoutUpdate();
+    }
+  }catch(e){
+    // fallback: old behavior
+    try{ if ($("oppResultsCards")) { try{ loadEloPack(() => renderOpponentResults()); }catch(e2){ renderOpponentResults(); } } }catch(_){}
+    try{ scheduleScoutUpdate(); }catch(_){}
+  }
+
   if (isManageOpen()) renderManageList();
-  scheduleScoutUpdate();
 }
 
 /* ---------- player view ---------- */
@@ -3700,16 +3674,8 @@ function bootstrap(){
 
         // ✅ set initial stats team so Player dropdown + stats load correctly
         if (typeof setStatsTeam === "function"){
-          // pick initial team (restore last selection if present)
-          var savedTeam = "";
-          try{ savedTeam = localStorage.getItem("FA_STATS_LAST_TEAM") || ""; }catch(e){}
-          var initialTeam = window.FA_ACES_TEAM;
-          try{
-            if (savedTeam && (window.FA_LEAGUE_TEAMS || []).some(t => _key(t) === _key(savedTeam))){
-              initialTeam = savedTeam;
-            }
-          }catch(e){}
-          setStatsTeam(initialTeam);
+          const lastTeam = (function(){ try{ return localStorage.getItem("FA_STATS_LAST_TEAM") || ""; }catch(_){ return ""; }})();
+          setStatsTeam(lastTeam || window.FA_ACES_TEAM);
         } else {
           // fallback: at least set the global so refreshStats has a team
           window.FA_STATS_TEAM = window.FA_ACES_TEAM;
@@ -3748,96 +3714,82 @@ let FA_STATS_REFRESH_INFLIGHT = false;
 let FA_STATS_REFRESH_PENDING = false;
 
 
-let FA_STATS_REQ_ID = 0;
-let FA_STATS_PENDING_TEAM = "";
+let FA_STATS_REQ_SEQ = 0;
+let FA_STATS_LAST_RENDER = Object.create(null); // teamKey -> version
 
-function refreshStats(teamOverride){
-  const reqTeam = String(teamOverride || getStatsTeam() || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
-  const reqKey  = _statsClientKey(reqTeam);
-  const reqId   = ++FA_STATS_REQ_ID;
+function refreshStats(teamId, opts){
+  opts = opts || {};
+  const silent = !!opts.silent;
+
+  // default to current selected team
+  teamId = String(teamId || getStatsTeam() || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
+  const teamKey = _key(teamId);
+  const reqId = ++FA_STATS_REQ_SEQ;
+  const curPickAtCall = teamKey;
 
   if (FA_STATS_REFRESH_INFLIGHT){
+    // allow a "pending" refresh, but keep the latest team requested
     FA_STATS_REFRESH_PENDING = true;
-    FA_STATS_PENDING_TEAM = reqTeam;
+    window.__FA_STATS_PENDING_TEAM__ = teamId;
     return;
   }
   FA_STATS_REFRESH_INFLIGHT = true;
 
-  setDiag("");
+  if (!silent) setDiag("");
 
-  function handleData(data){
-    FA_STATS_REFRESH_INFLIGHT = false;
+  google.script.run
+    .withSuccessHandler(data => {
+      FA_STATS_REFRESH_INFLIGHT = false;
 
-    try{
-      if (data == null){
-        // no change for this (version,team,recentLimit) key
-        return;
-      }
-      if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
-      if (!data) throw new Error("No data returned from server.");
-      if (data.ok === false) throw new Error(data.error || "Stats load failed.");
+      try{
+        if (typeof data === "string") { try{ data = JSON.parse(data); }catch(_){ } }
+        if (!data) throw new Error("No data returned from server.");
+        if (data.ok === false) throw new Error(data.error || "Stats load failed.");
 
-      const respTeam = String(data.teamId || reqTeam);
-      const respVer  = String(data.version || window.FA_STATS_VERSION || "");
-      if (respVer) window.FA_STATS_VERSION = respVer;
+        // keep version in sync so caches align across pages
+        if (data.version != null) window.FA_STATS_VERSION = String(data.version || "");
 
-      const saveKey = respVer + "|T:" + _key(respTeam) + "|R:" + FA_STATS_RECENT_LIMIT;
-      saveCachedStats(respTeam, saveKey, data);
+        // Always save under the TEAM REQUESTED (prevents cross-team cache corruption)
+        saveCachedStats(teamId, window.FA_STATS_VERSION || (data.version || ""), data);
 
-      // Only apply if user is still viewing this team AND this is the latest request
-      if (reqId === FA_STATS_REQ_ID && _key(getStatsTeam()) === _key(respTeam)){
-        applyStats(data);
-      }
-
-      // optional: prefetch match index (kept but harmless)
-      try{ setTimeout(function(){ loadLeagueMatchIndex(function(){}); }, 250); }catch(_){ }
-
-    }catch(e){
-      console.error(e);
-      setDiag("Stats render error: " + (e && e.message ? e.message : e));
-      google.script.run.withSuccessHandler(info=>{
-        if (typeof info === "string") { try{ info = JSON.parse(info); }catch(_){ } }
-        if (info && info.ok){
-          setDiag(( $("diag").textContent || "" ) + " | Diag: sheet=" + info.sheet + " rows=" + info.lastRow + " cols=" + info.lastCol);
+        // Only apply if the user is STILL on the same team and this is the latest request
+        if (_key(getStatsTeam()) === curPickAtCall && reqId === FA_STATS_REQ_SEQ){
+          // Skip heavy re-render if nothing changed for this team
+          const ver = String(window.FA_STATS_VERSION || data.version || "");
+          if (FA_STATS_OBJ && _key(FA_STATS_OBJ.teamId || teamId) === curPickAtCall && ver && FA_STATS_LAST_RENDER[curPickAtCall] === ver){
+            // nothing to do
+          } else {
+            applyStats(data);
+            if (ver) FA_STATS_LAST_RENDER[curPickAtCall] = ver;
+          }
         }
-      }).faStatsDiag_v2();
-    } finally {
+
+      }catch(e){
+        console.error(e);
+        if (!silent) setDiag("Stats render error: " + (e && e.message ? e.message : e));
+      }
+
       if (FA_STATS_REFRESH_PENDING){
         FA_STATS_REFRESH_PENDING = false;
-        const t = FA_STATS_PENDING_TEAM || getStatsTeam();
-        FA_STATS_PENDING_TEAM = "";
-        setTimeout(function(){ refreshStats(t); }, 0);
-      }
-    }
-  }
-
-  function handleFail(err){
-    FA_STATS_REFRESH_INFLIGHT = false;
-    console.error(err);
-    setDiag("Stats load error: " + (err && err.message ? err.message : err));
-    if (FA_STATS_REFRESH_PENDING){
-      FA_STATS_REFRESH_PENDING = false;
-      const t = FA_STATS_PENDING_TEAM || getStatsTeam();
-      FA_STATS_PENDING_TEAM = "";
-      setTimeout(function(){ refreshStats(t); }, 0);
-    }
-  }
-
-  // Prefer IfNewer to avoid heavy work when unchanged; fallback to full if backend doesn't support it.
-  google.script.run
-    .withSuccessHandler(handleData)
-    .withFailureHandler(function(err){
-      // fallback: full fetch
-      try{
-        google.script.run
-          .withSuccessHandler(handleData)
-          .withFailureHandler(handleFail)
-          .faGetStatsData_v2({ recentLimit: FA_STATS_RECENT_LIMIT, teamId: reqTeam });
-      }catch(e){
-        handleFail(err);
+        const nextTeam = window.__FA_STATS_PENDING_TEAM__ || getStatsTeam();
+        window.__FA_STATS_PENDING_TEAM__ = "";
+        setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
       }
     })
-    .faGetStatsDataIfNewer_v2(reqKey, { recentLimit: FA_STATS_RECENT_LIMIT, teamId: reqTeam });
+    .withFailureHandler(err => {
+      FA_STATS_REFRESH_INFLIGHT = false;
+      console.error(err);
+      if (!silent) setDiag("Stats load error: " + (err && err.message ? err.message : err));
+
+      // If pending refresh exists, try it
+      if (FA_STATS_REFRESH_PENDING){
+        FA_STATS_REFRESH_PENDING = false;
+        const nextTeam = window.__FA_STATS_PENDING_TEAM__ || getStatsTeam();
+        window.__FA_STATS_PENDING_TEAM__ = "";
+        setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
+      }
+    })
+    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId });
 }
 
 
@@ -4003,6 +3955,26 @@ function wireOnce(){
   if ($("statsTeamPick")){
     $("statsTeamPick").addEventListener("change", ()=> setStatsTeam(getStatsTeam()));
   }
+
+  // Lazy-render heavy panels on open
+  try{
+    if ($("oppResults")){
+      $("oppResults").addEventListener("toggle", () => {
+        if ($("oppResults").open && window.__FA_OPP_NEEDS_RENDER__){
+          window.__FA_OPP_NEEDS_RENDER__ = false;
+          try{ loadEloPack(() => renderOpponentResults()); }catch(e){ renderOpponentResults(); }
+        }
+      });
+    }
+    if ($("singlesLinks")){
+      $("singlesLinks").addEventListener("toggle", () => {
+        if ($("singlesLinks").open && window.__FA_LINKS_NEEDS_RENDER__){
+          window.__FA_LINKS_NEEDS_RENDER__ = false;
+          scheduleScoutUpdate();
+        }
+      });
+    }
+  }catch(_){}
   if ($("playerPick")){
   $("playerPick").addEventListener("change", loadPlayerStats);
 }
@@ -4354,17 +4326,8 @@ function tryApplyStatsBootstrapFromCache(){
 
     // Initial team render (uses cached stats if version matches)
     try{
-      if (typeof setStatsTeam === "function"){ // pick initial team (restore last selection if present)
-        var savedTeam = "";
-        try{ savedTeam = localStorage.getItem("FA_STATS_LAST_TEAM") || ""; }catch(e){}
-        var initialTeam = window.FA_ACES_TEAM;
-        try{
-          if (savedTeam && (window.FA_LEAGUE_TEAMS || []).some(t => _key(t) === _key(savedTeam))){
-            initialTeam = savedTeam;
-          }
-        }catch(e){}
-        setStatsTeam(initialTeam);
-      } else {
+      if (typeof setStatsTeam === "function") setStatsTeam(window.FA_ACES_TEAM);
+      else {
         window.FA_STATS_TEAM = window.FA_ACES_TEAM;
         if ($("statsTeamPick")) $("statsTeamPick").value = window.FA_ACES_TEAM;
         try{ fillSelectSimple("playerPick", data.aces || [], "Select player…"); }catch(_){}
