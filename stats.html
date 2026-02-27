@@ -356,7 +356,7 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   color:#475569;
   font-size:11px;
   font-weight:900;
-  margin-top:4px;
+  margin-top:0;
 }
 
 .match-card + .match-card{ margin-top:10px; }
@@ -378,11 +378,11 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   min-width:0;
   font-weight: inherit; /* keep names non-bold */
 }
-.mc-left{ text-align:left; }
-.mc-right{ text-align:right; }
+.mc-left{ text-align:center; }
+.mc-right{ text-align:center; }
 
-.mc-left .mc-side-team{ text-align:left; }
-.mc-right .mc-side-team{ text-align:right; }
+.mc-left .mc-side-team{ text-align:center; }
+.mc-right .mc-side-team{ text-align:center; }
 
 .mc-name{
   line-height:1.12;
@@ -392,11 +392,42 @@ details.collapsible .collap-body{ padding:0 14px 14px; }
   flex-wrap:wrap;
   min-width:0;
 }
-.mc-right .mc-name{ justify-content:flex-end; }
-.mc-left .mc-name{ justify-content:flex-start; }
+.mc-right .mc-name{ justify-content:center; }
+.mc-left .mc-name{ justify-content:center; }
 
 .mc-name .nm{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .mc-name a{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+/* 3-col layout tweak: each side is centered and uses Team / (Rank+Elo) / Name */
+.mc-player{
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin-top:0;
+}
+.mc-player + .mc-player{ margin-top:10px; }
+.mc-pills{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.mc-player-name{
+  line-height:1.12;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-player-name a{
+  color:inherit;
+  text-decoration:none;
+}
+.mc-player-name a:hover{ text-decoration:underline; }
+
 .elo-pill{ flex:0 0 auto; }
 .mc-mid{
   display:flex;
@@ -1580,7 +1611,7 @@ html, body { touch-action: pan-x pan-y; }
 <details class="panel collapsible" id="indivResults">
   <summary>Individual Results<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
-<div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
+<div class="form-grid" style="margin-top:0; grid-template-columns: 1fr;">
     <div class="field">
       <select id="playerPick"><option value="">Loading…</option></select>
     </div>
@@ -1620,7 +1651,7 @@ html, body { touch-action: pan-x pan-y; }
 <details class="panel collapsible" id="oppResults">
   <summary>Results by opponent<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
-    <div class="form-grid" style="margin-top:4px; grid-template-columns: 1fr;">
+    <div class="form-grid" style="margin-top:0; grid-template-columns: 1fr;">
       <div class="field">
         <select id="oppFilter"><option value="">Loading…</option></select>
       </div>
@@ -2300,7 +2331,7 @@ function renderScout(d){
 
   let html = "";
   html += "<div style='font-weight:900; margin-top:6px;'>Top singles (opponent)</div>";
-  if (!singles.length) html += "<div class='muted' style='margin-top:4px;'>No singles data yet.</div>";
+  if (!singles.length) html += "<div class='muted' style='margin-top:0;'>No singles data yet.</div>";
   else {
     html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>PLAYER</th><th>W-L-T</th><th>WIN%</th><th>ELO</th></tr></thead><tbody>";
     singles.forEach(p => {
@@ -2311,7 +2342,7 @@ function renderScout(d){
   }
 
   html += "<div style='font-weight:900; margin-top:12px;'>Top doubles pairs (opponent)</div>";
-  if (!pairs.length) html += "<div class='muted' style='margin-top:4px;'>No doubles data yet.</div>";
+  if (!pairs.length) html += "<div class='muted' style='margin-top:0;'>No doubles data yet.</div>";
   else {
     html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>PAIR</th><th>W-L-T</th><th>WIN%</th><th>ELO</th></tr></thead><tbody>";
     pairs.forEach(p => {
@@ -2322,7 +2353,7 @@ function renderScout(d){
   }
 
   html += "<div style='font-weight:900; margin-top:12px;'>Best Aces singles matchups (by Elo)</div>";
-  if (!sug.length) html += "<div class='muted' style='margin-top:4px;'>Need more league singles results for suggestions.</div>";
+  if (!sug.length) html += "<div class='muted' style='margin-top:0;'>Need more league singles results for suggestions.</div>";
   else {
     html += "<div class='table-panel' style='margin-top:6px;'><table><thead><tr><th>ACES</th><th>OPP</th><th>WIN%</th></tr></thead><tbody>";
     sug.forEach(s => {
@@ -2612,33 +2643,31 @@ function _buildMatchCardHtml(r, withDelete, opts){
     ].filter(x => x.n);
 
   function nameLine(name, rankVal, pillLeft, pid){
-    const pill = _rankPill_(rankVal, pillLeft ? "left" : "right");
-    const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
-    const linked = playerLinkHTML(name||"", teamRaw, pid);
+  const rankPill = _rankPillNoSide_(rankVal);
+  const teamRaw = pillLeft ? leftTeamRaw : rightTeamRaw;
+  const linked = playerLinkHTML(name||"", teamRaw, pid);
 
-    // Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
-    let eloNum = null;
-    try{
-      if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
-        const n = Math.round(Number(FA_ELO_BY_ID[pid]));
-        if (isFinite(n) && n > 0) eloNum = n;
-      }
-      if (eloNum == null){
-        const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
-        const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
-        const n2 = Math.round(Number(raw));
-        if (isFinite(n2) && n2 > 0) eloNum = n2;
-      }
-    }catch(e){}
+  // Elo lookup: prefer ID map (from server) -> fallback to league Elo pack by name
+  let eloNum = null;
+  try{
+    if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
+      const n = Math.round(Number(FA_ELO_BY_ID[pid]));
+      if (isFinite(n) && n > 0) eloNum = n;
+    }
+    if (eloNum == null){
+      const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
+      const raw = (er && (er.eloOverall != null ? er.eloOverall : (er.elo != null ? er.elo : null)));
+      const n2 = Math.round(Number(raw));
+      if (isFinite(n2) && n2 > 0) eloNum = n2;
+    }
+  }catch(e){}
 
-    const nmSpan = `<span class="nm">${linked || esc(name||"")}</span>`;
-    const eloHtml = (eloNum == null) ? "" : `<div class="elo-pill">${eloNum}</div>`;
+  const eloHtml = (eloNum == null) ? "" : `<span class="elo-pill">${eloNum}</span>`;
+  const pills = (rankPill || eloHtml) ? `<div class="mc-pills">${rankPill}${eloHtml}</div>` : "";
+  const nm = linked || esc(name||"");
 
-    return `<div class="mc-name">`
-      + (pillLeft ? (pill + nmSpan) : (nmSpan + pill))
-      + eloHtml
-      + `</div>`;
-  }
+  return `<div class="mc-player">${pills}<div class="mc-player-name">${nm}</div></div>`;
+}
 
   const leftHtml  = (leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : "")
                   + aces.map(x => nameLine(x.n, x.rr, true, x.id)).join("");
@@ -2730,19 +2759,58 @@ function renderMatchCards(containerId, list, withDelete, emptyText, opts){
 
 /* ---------- opponent-filtered results table ---------- */
 function _fmtDateYMD(ts){
+  // Returns YYYY-MM-DD for a wide range of inputs:
+  // - ISO strings, YYYY-MM-DD, M/D/YY, M/D/YYYY, Date, epoch ms
   if (!ts) return "";
   try{
-    if (typeof ts === "string"){
-      // ISO string: "YYYY-MM-DDTHH:MM:SSZ"
-      if (ts.length >= 10) return ts.slice(0,10);
-      return ts;
+    if (ts instanceof Date && !isNaN(ts.getTime())){
+      const y = ts.getFullYear();
+      const m = String(ts.getMonth()+1).padStart(2,"0");
+      const d = String(ts.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
     }
-    const d = (ts instanceof Date) ? ts : new Date(ts);
-    if (!isNaN(d.getTime())){
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const dd = String(d.getDate()).padStart(2,"0");
-      return `${y}-${m}-${dd}`;
+    if (typeof ts === "number"){
+      const d0 = new Date(ts);
+      if (!isNaN(d0.getTime())){
+        const y = d0.getFullYear();
+        const m = String(d0.getMonth()+1).padStart(2,"0");
+        const d = String(d0.getDate()).padStart(2,"0");
+        return `${y}-${m}-${d}`;
+      }
+    }
+
+    const s = String(ts||"").trim();
+    if (!s) return "";
+
+    // YYYY-MM-DD or ISO
+    if (s.length >= 10 && s.charAt(4) === "-" && s.charAt(7) === "-"){
+      return s.slice(0,10);
+    }
+    if (s.includes("T") && s.length >= 10){
+      return s.slice(0,10);
+    }
+
+    // M/D/YY or M/D/YYYY (with optional time after)
+    const mm = s.match(/^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (mm){
+      const mo = parseInt(mm[1],10);
+      const da = parseInt(mm[2],10);
+      let yy = parseInt(mm[3],10);
+      if (String(mm[3]).length === 2){
+        yy = (yy <= 79) ? (2000 + yy) : (1900 + yy);
+      }
+      const m2 = String(mo).padStart(2,"0");
+      const d2 = String(da).padStart(2,"0");
+      return `${yy}-${m2}-${d2}`;
+    }
+
+    // last resort
+    const d1 = new Date(s);
+    if (!isNaN(d1.getTime())){
+      const y = d1.getFullYear();
+      const m = String(d1.getMonth()+1).padStart(2,"0");
+      const d = String(d1.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
     }
   }catch(_){}
   return "";
