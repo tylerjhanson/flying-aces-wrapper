@@ -1752,10 +1752,18 @@ html, body { touch-action: pan-x pan-y; }
 <details class="panel collapsible" id="singlesLinks">
   <summary>SINGLES LINKS (ACES ONLY)<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
-        <div class="grid" style="grid-template-columns: 1fr; margin-top:6px;">
+    <div class="muted" style="font-weight:900; margin:0 0 10px;">
+      Shows “Flying Aces → intermediary → selected team” when the intermediary appears in both teams’ recent singles matches.
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr; margin-top:6px;">
       <div class="field">
         <div class="label">Opponent team</div>
-              <div class="field">
+        <select id="scoutOpp" disabled></select>
+        <div class="small">Select an opponent team to generate transitive singles links.</div>
+      </div>
+
+      <div class="field">
         <div class="label">Opponent player filter</div>
         <select id="transitiveOppPick" disabled></select>
         <div class="small">Filter to links that end with a specific player on the selected team.</div>
