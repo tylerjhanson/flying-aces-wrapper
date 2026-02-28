@@ -391,7 +391,7 @@ button.ctrlBtn:disabled{
 </head>
 
 <body>
-<div id="syncBanner" style="display:none; background: linear-gradient(135deg, #ffd65a 0%, #ffc107 100%); color: #000; text-align: center; padding: 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 9999;">
+<div id="syncBanner" style="display:none; position:fixed; top:calc(env(safe-area-inset-top) + 8px); left:50%; transform:translateX(-50%); background:rgba(255,214,90,.95); color:#111; text-align:center; padding:6px 10px; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing:1px; border-radius:999px; box-shadow:0 6px 18px rgba(0,0,0,.14); border:1px solid rgba(0,0,0,.10); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:99999; pointer-events:none;">
   <span style="display:inline-block; animation: fa-spin 1s linear infinite;">↻</span>
 </div>
 <style>@keyframes fa-spin { 100% { transform: rotate(360deg); } }</style>
