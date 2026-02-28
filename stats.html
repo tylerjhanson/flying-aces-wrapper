@@ -2755,15 +2755,36 @@ function _buildMatchCardHtml(r, withDelete, opts){
       { n:r.o3, rr:r.o3Rank, id:r.o3Id }
     ].filter(x => x.n);
 
-  function _eloFor(name, pid){
+  function _eloFor(name, pid, teamRaw){
     let eloNum = null;
+    const nm = String(name||"").trim();
+    const nk = _nameKey_(nm);
+    const team = dispTeamName(teamRaw||"");
+    const tk = _key(team);
     try{
-      if (pid && FA_ELO_BY_ID && FA_ELO_BY_ID[pid] != null){
-        const n = Math.round(Number(FA_ELO_BY_ID[pid]));
+      // 1) Prefer an explicit id
+      let pid2 = String(pid||"").trim();
+
+      // 2) If id missing, try to resolve from the (team,name)->id map built from PlayersDB rosters
+      if (!pid2 && tk && nm && typeof getPlayerId === "function"){
+        pid2 = String(getPlayerId(team, nm) || "");
+      }
+
+      // 3) id->elo
+      if (pid2 && FA_ELO_BY_ID && FA_ELO_BY_ID[pid2] != null){
+        const n = Math.round(Number(FA_ELO_BY_ID[pid2]));
         if (isFinite(n) && n > 0) eloNum = n;
       }
-      if (eloNum == null){
-        const er = FA_ELO_BY_PLAYER[_nameKey_(name)] || null;
+
+      // 4) team+name->elo (handles missing ids in recent stats + avoids collisions)
+      if (eloNum == null && tk && nk && FA_ELO_BY_TEAM_NAME){
+        const n3 = Math.round(Number(FA_ELO_BY_TEAM_NAME[tk + "|" + nk]));
+        if (isFinite(n3) && n3 > 0) eloNum = n3;
+      }
+
+      // 5) name-only fallback
+      if (eloNum == null && nk){
+        const er = FA_ELO_BY_PLAYER[nk] || null;
         const raw = (er && (er.elo != null ? er.elo : (er.eloOverall != null ? er.eloOverall : null)));
         const n2 = Math.round(Number(raw));
         if (isFinite(n2) && n2 > 0) eloNum = n2;
@@ -2775,7 +2796,7 @@ function _buildMatchCardHtml(r, withDelete, opts){
   function personBlock(x, isLeft){
     const teamRaw = isLeft ? leftTeamRaw : rightTeamRaw;
     const linked = playerLinkHTML(x.n||"", teamRaw, x.id) || esc(x.n||"");
-    const eloNum = _eloFor(x.n||"", x.id);
+    const eloNum = _eloFor(x.n||"", x.id, teamRaw);
     const eloPill = (eloNum == null) ? "" : `<span class="eloMini">${eloNum}</span>`;
     const rb = _rankPillNoSide_(x.rr);
     return `
@@ -3406,6 +3427,8 @@ let FA_ELO_PACK = null;
 let FA_ELO_BY_PLAYER = Object.create(null);
 let FA_ELO_LOADED_AT = 0;
 let FA_ELO_BY_ID = Object.create(null);
+// Prefer team+name when IDs are missing from match rows (common in recent-stats payloads)
+let FA_ELO_BY_TEAM_NAME = Object.create(null); // key: _key(team)+'|'+_nameKey_(name) -> numeric elo
 
 /* --- Elo match lookup (for showing per-match +/- in Stats modals/cards) --- */
 var FA_ELO_MATCH_SIG_MAP = null;          // strict signature (includes score)
@@ -3416,6 +3439,7 @@ function _eloIndexPack_(pack){
   // Pack shape (same as Elo page): { ok:true, players:[{id,name,elo,...}], matches:[...], teams:{...} }
   FA_ELO_BY_PLAYER = Object.create(null);
   FA_ELO_BY_ID = Object.create(null);
+  FA_ELO_BY_TEAM_NAME = Object.create(null);
 
   const players = (pack && Array.isArray(pack.players)) ? pack.players : [];
   players.forEach(p => {
@@ -3426,6 +3450,17 @@ function _eloIndexPack_(pack){
       const n = Math.round(Number(p.elo));
       if (isFinite(n) && n > 0) FA_ELO_BY_ID[String(p.id)] = n;
     }
+
+    // Team+name index (avoids name collisions + lets us resolve elo even when ids are missing)
+    try{
+      const tRaw = (p && (p.team || p.teamName || p.teamId)) ? String(p.team || p.teamName || p.teamId) : "";
+      const t = dispTeamName(tRaw);
+      const tk = _key(t);
+      if (tk && k){
+        const n3 = Math.round(Number(p && (p.elo != null ? p.elo : (p.eloOverall != null ? p.eloOverall : null))));
+        if (isFinite(n3) && n3 > 0) FA_ELO_BY_TEAM_NAME[tk + "|" + k] = n3;
+      }
+    }catch(_){ }
   });
 }
 
@@ -3941,6 +3976,50 @@ function renderScoutTransitiveFiltered(){
 
 let FA_SCOUT_REQ = 0;
 
+// Ensure (team,name)->id map includes both Flying Aces and the selected opponent team.
+// This matters because faGetStatsData_v2 recent rows often omit ids, but our Elo pills can resolve via id.
+function primeIdMapForTeams(teams, cb){
+  cb = cb || function(){};
+  try{
+    teams = (teams || []).map(t => String(t||"").trim()).filter(Boolean);
+    // de-dupe
+    const seen = Object.create(null);
+    teams = teams.filter(t => { const k=_key(t); if(!k||seen[k]) return false; seen[k]=1; return true; });
+    if (!teams.length){ cb(); return; }
+
+    let pending = teams.length;
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      cb();
+    };
+
+    // safety: never block rendering if the roster lookup is slow
+    setTimeout(done, 1200);
+
+    teams.forEach(teamId => {
+      try{
+        google.script.run
+          .withSuccessHandler(res => {
+            try{ if (typeof res === "string") res = JSON.parse(res); }catch(_){ }
+            const rows = (res && typeof res === "object" && Array.isArray(res.playerRows)) ? res.playerRows
+                       : (res && typeof res === "object" && Array.isArray(res.rows)) ? res.rows
+                       : [];
+            try{ if (rows && rows.length && typeof setPlayerIdMap === "function") setPlayerIdMap(rows); }catch(_){ }
+            if (--pending <= 0) done();
+          })
+          .withFailureHandler(_err => {
+            if (--pending <= 0) done();
+          })
+          .faGetTeamPlayers_v2(teamId);
+      }catch(e){
+        if (--pending <= 0) done();
+      }
+    });
+  }catch(e){ cb(); }
+}
+
 function updateScout(){
   const sel = $("scoutOpp");
   // If the Singles Links UI isn't present, do nothing.
@@ -3984,19 +4063,27 @@ function updateScout(){
 
       const links = buildTransitiveLinks(myRecent, scoutRecent);
 
-      // cache + render (supports dropdown filtering)
-      FA_SCOUT_TRANSITIVE_ALL = links;
-      FA_SCOUT_TRANSITIVE_MY_TEAM = myTeam;
-      FA_SCOUT_TRANSITIVE_TEAM = scoutTeam;
+      const afterElo = () => {
+        // Make sure we can resolve ids for BOTH teams (so elo pills don't depend on brittle name-only matching)
+        primeIdMapForTeams([myTeam, scoutTeam], () => {
+          // cache + render (supports dropdown filtering)
+          FA_SCOUT_TRANSITIVE_ALL = links;
+          FA_SCOUT_TRANSITIVE_MY_TEAM = myTeam;
+          FA_SCOUT_TRANSITIVE_TEAM = scoutTeam;
 
-      populateTransitiveOppPick(links, true);
-      renderScoutTransitiveFiltered();
+          populateTransitiveOppPick(links, true);
+          renderScoutTransitiveFiltered();
 
-      if (meta){
-        meta.textContent = links.length
-          ? `${links.length} link${links.length===1?"":"s"} found vs ${dispTeamName(scoutTeam)}.`
-          : `No links found vs ${dispTeamName(scoutTeam)}.`;
-      }
+          if (meta){
+            meta.textContent = links.length
+              ? `${links.length} link${links.length===1?"":"s"} found vs ${dispTeamName(scoutTeam)}.`
+              : `No links found vs ${dispTeamName(scoutTeam)}.`;
+          }
+        });
+      };
+
+      // Ensure Elo pack is indexed before we render link cards (otherwise some elo pills can be blank)
+      try{ loadEloPack(() => afterElo()); }catch(e){ afterElo(); }
     });
   });
 }
