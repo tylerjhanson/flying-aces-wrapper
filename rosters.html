@@ -1224,10 +1224,11 @@ function canonDisplay(id){
 const IS_ANDROID = /Android/i.test(navigator.userAgent || '');
 const IS_TOUCH = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
 function rebuildMatchedDoubles(){
+  // matchedDoublesPlayers is expected to be an array of Player IDs
   MATCHED_DOUBLES = new Set((STATE.matchedDoublesPlayers || []).map(canonName).filter(Boolean));
 }
-function isMatchedDoubles(name){
-  return MATCHED_DOUBLES.has(canonName(name));
+function isMatchedDoubles(playerId){
+  return MATCHED_DOUBLES.has(canonName(playerId));
 }
 
 let currentSet = "DEFAULT";
@@ -1770,7 +1771,7 @@ function makeRosterCell(setName, side, rowIdx, val){
 
   const v = norm(val);
   if (v) {
-    cell.className = 'tile';
+    cell.className = 'tile' + (isMatchedDoubles(v) ? ' matched' : '');
     cell.textContent = displayName(v);
     cell.dataset.playerId = v;
     cell.draggable = !IS_TOUCH;  } else {
@@ -1795,7 +1796,7 @@ function makeListRow(setName, zone, index, name, isUnavailable){
 
   const v = norm(name);
   if (v) {
-    cell.className = 'tile' + (isUnavailable ? ' unavailable' : '');
+    cell.className = 'tile' + (isUnavailable ? ' unavailable' : '') + (!isUnavailable && isMatchedDoubles(v) ? ' matched' : '');
     cell.textContent = displayName(v);
     cell.dataset.playerId = v;
     cell.draggable = !IS_TOUCH;  } else {
