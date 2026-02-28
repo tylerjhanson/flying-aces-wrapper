@@ -690,6 +690,47 @@ a.playerLink:hover{ text-decoration:underline; }
 }
 @keyframes faSpin{ to{ transform: rotate(360deg); } }
 
+/* =========================
+   Individual Results column alignment (W/L/T/Win%)
+   ========================= */
+#playerSection table.stats-5 th:nth-child(2),
+#playerSection table.stats-5 td:nth-child(2),
+#playerSection table.stats-5 th:nth-child(3),
+#playerSection table.stats-5 td:nth-child(3),
+#playerSection table.stats-5 th:nth-child(4),
+#playerSection table.stats-5 td:nth-child(4){
+  width: 46px;
+  min-width: 46px;
+  text-align: center;
+}
+#playerSection table.stats-5 th:nth-child(5),
+#playerSection table.stats-5 td:nth-child(5){
+  width: 78px;
+  min-width: 78px;
+  text-align: center;
+}
+#playerSection table.stats-4 th:nth-child(2),
+#playerSection table.stats-4 td:nth-child(2),
+#playerSection table.stats-4 th:nth-child(3),
+#playerSection table.stats-4 td:nth-child(3){
+  width: 46px;
+  min-width: 46px;
+  text-align: center;
+}
+#playerSection table.stats-4 th:nth-child(4),
+#playerSection table.stats-4 td:nth-child(4){
+  width: 78px;
+  min-width: 78px;
+  text-align: center;
+}
+/* keep name column flexible */
+#playerSection table.stats-5 th:first-child,
+#playerSection table.stats-5 td:first-child,
+#playerSection table.stats-4 th:first-child,
+#playerSection table.stats-4 td:first-child{
+  width: auto;
+}
+
 </style>
 </head>
 
@@ -1752,22 +1793,16 @@ html, body { touch-action: pan-x pan-y; }
 <details class="panel collapsible" id="singlesLinks">
   <summary>SINGLES LINKS (ACES ONLY)<span class="collap-chevron">▾</span></summary>
   <div class="collap-body">
-    <div class="muted" style="font-weight:900; margin:0 0 10px;">
-      Shows “Flying Aces → intermediary → selected team” when the intermediary appears in both teams’ recent singles matches.
-    </div>
-
-    <div class="grid" style="grid-template-columns: 1fr; margin-top:6px;">
+<div class="grid" style="grid-template-columns: 1fr; margin-top:6px;">
       <div class="field">
         <div class="label">Opponent team</div>
         <select id="scoutOpp" disabled></select>
-        <div class="small">Select an opponent team to generate transitive singles links.</div>
-      </div>
+</div>
 
       <div class="field">
         <div class="label">Opponent player filter</div>
         <select id="transitiveOppPick" disabled></select>
-        <div class="small">Filter to links that end with a specific player on the selected team.</div>
-      </div>
+</div>
     </div>
 
     <div id="scoutMeta" class="muted" style="font-weight:900; margin:8px 0 6px;"></div>
