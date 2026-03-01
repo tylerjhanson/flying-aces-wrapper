@@ -400,8 +400,8 @@ tbody td:nth-child(5){
   color:#111;
 }
 .modal-body{
-  padding:10px 12px;
-  max-height: calc(100vh - 170px);
+  padding:0;
+  max-height: calc(100vh - 120px);
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
@@ -410,10 +410,10 @@ tbody td:nth-child(5){
 .md-sticky-head{
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 50;
   background:#fff;
-  padding:6px 0 8px;
-  margin: -2px 0 8px;
+  padding:6px 12px;
+  margin:0 0 6px;
   border-bottom:1px solid #eef2f7;
 }
 .md-sticky-grid{
@@ -431,19 +431,21 @@ tbody td:nth-child(5){
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  text-align:center;
 }
-.md-team.right{ text-align:right; }
-.md-team.left{ text-align:left; }
+.md-team.right{ text-align:center; }
+.md-team.left{ text-align:center; }
 
 .md-list{
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:4px;
+  padding:0 12px 10px;
 }
 
 /* Modal footer (Home Team selector at bottom) */
 .modal-foot{
-  padding:10px 14px;
+  padding:10px 12px;
   border-top:1px solid #eef2f7;
   background:#fff;
 }
@@ -471,9 +473,14 @@ tbody td:nth-child(5){
   font-size:11.5px;
 }
 #mdCards .mc-player-name{ font-weight:700; }
+#mdCards .mc-player-name{ font-weight:600; }
+#mdCards .mc-player-stack{ font-weight:600; }
+#mdCards .mc-player-stack .mc-player-line{ font-weight:600; }
+#mdCards .match-card{ padding:6px 8px; border-radius:14px; gap:6px; }
+#mdCards .match-card + .match-card{ margin-top:0; }
 #mdCards .mc-player-stack{ font-weight:700; }
 #mdCards .mc-player-stack .mc-player-line{ font-weight:700; }
-#mdCards .match-card + .match-card{ margin-top:6px; }
+#mdCards .match-card + .match-card{ margin-top:0; }
 
 /* quick form row inside modal */
 .modal-meta{
@@ -1528,12 +1535,12 @@ html, body { touch-action: pan-x pan-y; }
     </div>
     <div class="modal-body" id="mdBody">
       <div id="mdCards"></div>
-    </div>
 
-    <div class="modal-foot">
-      <div class="field">
-        <div class="label">Home Team</div>
-        <select id="mdLoc"></select>
+      <div class="modal-foot">
+        <div class="field">
+          <div class="label">Home Team</div>
+          <select id="mdLoc"></select>
+        </div>
       </div>
     </div>
   </div>
