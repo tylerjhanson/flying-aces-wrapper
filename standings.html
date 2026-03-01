@@ -55,6 +55,21 @@ tbody td{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+/* Column widths (mobile-friendly) */
+thead th:nth-child(1), tbody td:nth-child(1){ width:38%; text-align:left; }
+thead th:nth-child(2), tbody td:nth-child(2){ width:8%; }
+thead th:nth-child(3), tbody td:nth-child(3){ width:8%; }
+thead th:nth-child(4), tbody td:nth-child(4){ width:14%; }
+thead th:nth-child(5), tbody td:nth-child(5){ width:14%; }
+thead th:nth-child(6), tbody td:nth-child(6){ width:18%; }
+
+/* Prevent PS/PA/% truncation */
+thead th:nth-child(2), thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5), thead th:nth-child(6),
+tbody td:nth-child(2), tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5), tbody td:nth-child(6){
+  overflow:visible;
+  text-overflow:clip;
+}
 tbody td:first-child{ text-align:left; }
 thead th:nth-child(n+2),
 tbody td:nth-child(n+2){ text-align:center; }
@@ -1447,6 +1462,56 @@ function normTeam(s){
     .trim();
 }
 
+/* =========================
+   Server bridge: runGs()
+   - Apps Script: google.script.run
+   - Static hosting fallback: window.GAS_API_URL (exec endpoint)
+   ========================= */
+async function runGs(fn, args){
+  // Apps Script HTML service
+  if (window.google && google.script && google.script.run){
+    return await new Promise((resolve, reject)=>{
+      try{
+        let r = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(err=>{
+            try{
+              const msg = (err && (err.message || err.toString())) ? (err.message || err.toString()) : String(err||"Server error");
+              reject(new Error(msg));
+            }catch(_e){ reject(err); }
+          });
+
+        if (Array.isArray(args)) r[fn].apply(r, args);
+        else if (args == null) r[fn]();
+        else r[fn](args);
+      }catch(e){ reject(e); }
+    });
+  }
+
+  // Static hosting fallback
+  const url = window.GAS_API_URL;
+  if (!url) throw new Error("runGs is not available (missing google.script.run and window.GAS_API_URL). ");
+
+  const bodyArgs = Array.isArray(args) ? args : (args == null ? [] : [args]);
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: fn, args: bodyArgs })
+  });
+
+  const t = await resp.text();
+  if (!t) throw new Error("Empty response from GAS.");
+
+  let data;
+  try{ data = JSON.parse(t); }catch(e){ console.error("Non-JSON response:", t.slice(0,300)); throw e; }
+
+  if (data && typeof data === "object"){
+    if (data.ok === false) throw new Error(data.error || data.message || "Server error");
+    if (Object.prototype.hasOwnProperty.call(data, "result")) return data.result;
+  }
+  return data;
+}
+
 function pointsForMode(mode){
   mode = String(mode||"").toLowerCase().trim();
   if (mode === "singles") return 1;
@@ -2272,14 +2337,17 @@ function _renderMatchDetailsCards_(m, disp, rows){
     const resLeft = swapped ? _invertResult_(resA) : resA;
     const cls = (resLeft === "W") ? "score-win" : (resLeft === "L") ? "score-loss" : "score-tie";
 
+    const leftTxt = leftPlayers.length ? leftPlayers.join(" / ") : "—";
+    const rightTxt = rightPlayers.length ? rightPlayers.join(" / ") : "—";
+
     const leftHtml = `
       <div class="mc-player">
-        ${(leftPlayers.length ? leftPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
+        <div class="mc-player-name">${esc(leftTxt)}</div>
       </div>
     `;
     const rightHtml = `
       <div class="mc-player">
-        ${(rightPlayers.length ? rightPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
+        <div class="mc-player-name">${esc(rightTxt)}</div>
       </div>
     `;
 
@@ -2355,12 +2423,12 @@ async function openMatchDetailsModal(m){
 
     const optHR = document.createElement("option");
     optHR.value = "home:" + disp.rightTeam;
-    optHR.textContent = "Home: " + disp.rightTeam;
+    optHR.textContent = disp.rightTeam;
     locSel.appendChild(optHR);
 
     const optHL = document.createElement("option");
     optHL.value = "home:" + disp.leftTeam;
-    optHL.textContent = "Home: " + disp.leftTeam;
+    optHL.textContent = disp.leftTeam;
     locSel.appendChild(optHL);
 
     const curMeta = getMatchMeta(m.matchupKey);
