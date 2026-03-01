@@ -400,11 +400,80 @@ tbody td:nth-child(5){
   color:#111;
 }
 .modal-body{
-  padding:12px 14px;
-  max-height: calc(100vh - 150px);
+  padding:10px 12px;
+  max-height: calc(100vh - 170px);
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
+
+/* Sticky team header inside the modal (floats while scrolling) */
+.md-sticky-head{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background:#fff;
+  padding:6px 0 8px;
+  margin: -2px 0 8px;
+  border-bottom:1px solid #eef2f7;
+}
+.md-sticky-grid{
+  display:grid;
+  grid-template-columns: 1fr 86px 1fr;
+  gap:6px;
+  align-items:center;
+}
+.md-team{
+  font-weight:950;
+  font-size:10.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#334155;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.md-team.right{ text-align:right; }
+.md-team.left{ text-align:left; }
+
+.md-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* Modal footer (Home Team selector at bottom) */
+.modal-foot{
+  padding:10px 14px;
+  border-top:1px solid #eef2f7;
+  background:#fff;
+}
+.modal-foot .field{ display:flex; flex-direction:column; gap:6px; }
+.modal-foot .label{ font-size:10px; font-weight:950; color:#667085; letter-spacing:.06em; text-transform:uppercase; }
+.modal-foot select{
+  height:36px;
+  border-radius:12px;
+  border:1px solid #e5e7eb;
+  padding:0 10px;
+  font-weight:900;
+  background:#fff;
+  width:100%;
+}
+
+/* Condense match rows in the modal only */
+#mdCards .match-card{
+  padding:6px 8px;
+  border-radius:14px;
+  gap:6px;
+}
+#mdCards .mc-score{
+  padding:3px 6px;
+  min-width:60px;
+  font-size:11.5px;
+}
+#mdCards .mc-player-name{ font-weight:700; }
+#mdCards .mc-player-stack{ font-weight:700; }
+#mdCards .mc-player-stack .mc-player-line{ font-weight:700; }
+#mdCards .match-card + .match-card{ margin-top:6px; }
 
 /* quick form row inside modal */
 .modal-meta{
@@ -1458,13 +1527,14 @@ html, body { touch-action: pan-x pan-y; }
       <button class="icon-btn" id="mdCloseBtn" type="button" aria-label="Close"><span>×</span></button>
     </div>
     <div class="modal-body" id="mdBody">
-      <div class="modal-meta">
-        <div class="field">
-          <div class="label">Home Team</div>
-          <select id="mdLoc"></select>
-        </div>
-      </div>
       <div id="mdCards"></div>
+    </div>
+
+    <div class="modal-foot">
+      <div class="field">
+        <div class="label">Home Team</div>
+        <select id="mdLoc"></select>
+      </div>
     </div>
   </div>
 </div>
@@ -2337,9 +2407,21 @@ function _renderMatchDetailsCards_(m, disp, rows){
 
   const totals = _calcTotals_(sorted, disp);
 
-  let html = "<div style='display:grid; gap:10px;'>";
+  const totalL = totals.singles.L + totals.doubles.L;
+  const totalR = totals.singles.R + totals.doubles.R;
 
-    function rowCard(row){
+  let html = `
+    <div class="md-sticky-head">
+      <div class="md-sticky-grid">
+        <div class="md-team left">${esc(disp.leftTeam)}</div>
+        <div></div>
+        <div class="md-team right">${esc(disp.rightTeam)}</div>
+      </div>
+    </div>
+    <div class="md-list">
+  `;
+
+  function rowCard(row){
     const rowTeamA = String(row.teamA ?? row["Team A"] ?? row.team_a ?? "").trim() || _pickFirst_(row, ["teamAName","TeamAName"]);
     const rowTeamB = String(row.teamB ?? row["Team B"] ?? row.team_b ?? "").trim() || _pickFirst_(row, ["teamBName","TeamBName"]);
 
@@ -2400,6 +2482,11 @@ function _renderMatchDetailsCards_(m, disp, rows){
   }
 
 
+
+  if (singlesMP.length || doubles.length){
+    html += _summaryCardHtml_("TOTAL", totalL, totalR);
+  }
+
   html += "</div>";
   cardsEl.innerHTML = html;
 }
@@ -2417,10 +2504,7 @@ async function openMatchDetailsModal(m){
   const dateLbl = String(m.dateShort || fmtDateShort(String(m.dateKey||"")) || m.dateKey || "").trim();
 
   if (titleEl){
-    titleEl.textContent =
-      (dateLbl ? (dateLbl + " • ") : "") +
-      disp.leftTeam + " vs " + disp.rightTeam + " • " +
-      fmtPts(disp.leftPts) + "–" + fmtPts(disp.rightPts);
+    titleEl.textContent = dateLbl || "MATCH DETAILS";
   }
 
   // Home Team select (league-wide)
@@ -2470,10 +2554,7 @@ async function openMatchDetailsModal(m){
       try{
         const disp2 = _applyMetaToMatchup_(m);
         if (titleEl){
-          titleEl.textContent =
-            (dateLbl ? (dateLbl + " • ") : "") +
-            disp2.leftTeam + " vs " + disp2.rightTeam + " • " +
-            fmtPts(disp2.leftPts) + "–" + fmtPts(disp2.rightPts);
+          titleEl.textContent = dateLbl || "MATCH DETAILS";
         }
         if (m._rowsCache) _renderMatchDetailsCards_(m, disp2, m._rowsCache);
       }catch(_){}
