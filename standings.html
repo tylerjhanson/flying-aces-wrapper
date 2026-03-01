@@ -283,11 +283,15 @@ details.collapsible .detailsBody{ padding:0 14px 14px; }
 /* Team names always neutral; only scores are colored */
 .mc-side-team{ color:#111 !important; }
 
-/* Tighten W/L columns and give TEAM more room */
+/* Tighten W/L/PS/PA columns and give TEAM more room */
 thead th:nth-child(2),
 thead th:nth-child(3),
+thead th:nth-child(4),
+thead th:nth-child(5),
 tbody td:nth-child(2),
-tbody td:nth-child(3){
+tbody td:nth-child(3),
+tbody td:nth-child(4),
+tbody td:nth-child(5){
   padding-left:6px;
   padding-right:6px;
 }
@@ -1183,21 +1187,25 @@ html, body { touch-action: pan-x pan-y; }
   <div class="table-wrap" style="margin-top:10px;">
     <table>
       <colgroup>
-        <col style="width:56%;">
-        <col style="width:8%;">
-        <col style="width:8%;">
-        <col style="width:28%;">
+        <col style="width:44%;">
+        <col style="width:7%;">
+        <col style="width:7%;">
+        <col style="width:12%;">
+        <col style="width:12%;">
+        <col style="width:18%;">
       </colgroup>
       <thead>
         <tr>
           <th style="text-align:left;">TEAM</th>
           <th>W</th>
           <th>L</th>
+          <th>PS</th>
+          <th>PA</th>
           <th>POINTS %</th>
         </tr>
       </thead>
       <tbody id="body">
-        <tr><td colspan="4" class="small" style="padding:14px;">Loading…</td></tr>
+        <tr><td colspan="6" class="small" style="padding:14px;">Loading…</td></tr>
       </tbody>
     </table>
   
@@ -1367,7 +1375,7 @@ function computeFromMatchLog(rows, adjustments){
 
   function ensureLeagueTeam(teamKey, teamName){
     if (!teamTotals.has(teamKey)){
-      teamTotals.set(teamKey, { key:teamKey, team:teamName, w:0, l:0, t:0, points:0, possible:0 });
+      teamTotals.set(teamKey, { key:teamKey, team:teamName, w:0, l:0, t:0, points:0, pa:0, possible:0 });
     }
     return teamTotals.get(teamKey);
   }
@@ -1468,8 +1476,8 @@ function computeFromMatchLog(rows, adjustments){
     const LT = ensureLeagueTeam(L.key, L.name);
     const RT = ensureLeagueTeam(R.key, R.name);
 
-    LT.points += L.pts; LT.possible += L.possible;
-    RT.points += R.pts; RT.possible += R.possible;
+    LT.points += L.pts; LT.pa += R.pts; LT.possible += L.possible;
+    RT.points += R.pts; RT.pa += L.pts; RT.possible += R.possible;
 
     if (L.pts > R.pts){ LT.w++; RT.l++; }
     else if (R.pts > L.pts){ LT.l++; RT.w++; }
@@ -1492,7 +1500,7 @@ function computeFromMatchLog(rows, adjustments){
     const games = s.w + s.l + s.t;
     const winPct = games ? ((s.w + 0.5*s.t) / games) : 0;
     const pointsPct = s.possible ? (s.points / s.possible) : 0;
-    return { team:s.team, key:s.key, w:s.w, l:s.l, t:s.t, points:s.points, possible:s.possible, winPct, pointsPct };
+    return { team:s.team, key:s.key, w:s.w, l:s.l, t:s.t, points:s.points, pa:s.pa, possible:s.possible, winPct, pointsPct };
   });
 
   standings.sort((a,b)=>{
@@ -1726,12 +1734,12 @@ function initSimulator(standingsRows){
 // -------------------------------------------------------------------
 
 function renderStandings(rows, matchupCount){
-  
+
   const tb = $("body");
   tb.innerHTML = "";
 
   if (!rows.length){
-    tb.innerHTML = "<tr><td colspan='4' class='small' style='padding:14px;'>No league matches yet.</td></tr>";
+    tb.innerHTML = "<tr><td colspan='6' class='small' style='padding:14px;'>No league matches yet.</td></tr>";
     return;
   }
 
@@ -1742,10 +1750,13 @@ function renderStandings(rows, matchupCount){
       "<td style='font-weight:950; text-align:left;'>" + esc(dispTeamName(r.team)) + "</td>" +
       "<td>" + Number(r.w||0) + "</td>" +
       "<td>" + Number(r.l||0) + "</td>" +
+      "<td>" + esc(fmtPts(r.points)) + "</td>" +
+      "<td>" + esc(fmtPts(r.pa)) + "</td>" +
       "<td style='font-weight:950;'><span class='pill'>" + pp + "</span></td>";
     tb.appendChild(tr);
   });
 }
+
 
 function renderMatchups(matchups){
   const root = $("results");
