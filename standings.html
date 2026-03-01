@@ -254,7 +254,7 @@ details.collapsible .detailsBody{ padding:0 14px 14px; }
 
 
 /* --- Match Results list ONLY: plain date + plain scores (no pills) --- */
-#results .mc-date-pill{
+#results .mc-date-pill, #upsets .mc-date-pill{
   background: transparent !important;
   border: none !important;
   padding: 0 !important;
@@ -262,7 +262,7 @@ details.collapsible .detailsBody{ padding:0 14px 14px; }
   box-shadow: none !important;
   display: block !important;
 }
-#results .mc-score{
+#results .mc-score, #upsets .mc-score{
   background: transparent !important;
   border: none !important;
   padding: 0 !important;
@@ -273,14 +273,14 @@ details.collapsible .detailsBody{ padding:0 14px 14px; }
   line-height: 1.1 !important;
 }
 /* winning/losing colors (scores only) */
-#results .mc-scoreline .score-win, #results .mc-score .score-win{ color:#15803d !important; }
-#results .mc-scoreline .score-loss, #results .mc-score .score-loss{ color:#b91c1c !important; }
-#results .mc-scoreline .score-tie, #results .mc-score .score-tie{ color:#a16207 !important; }
+#results .mc-scoreline .score-win, #results .mc-score .score-win, #upsets .mc-scoreline .score-win, #upsets .mc-score .score-win{ color:#15803d !important; }
+#results .mc-scoreline .score-loss, #results .mc-score .score-loss, #upsets .mc-scoreline .score-loss, #upsets .mc-score .score-loss{ color:#b91c1c !important; }
+#results .mc-scoreline .score-tie, #results .mc-score .score-tie, #upsets .mc-scoreline .score-tie, #upsets .mc-score .score-tie{ color:#a16207 !important; }
 /* Team names stay neutral even if a class is applied */
-#results .mc-name .score-win, #results .mc-name .score-loss, #results .mc-name .score-tie{ color:#111 !important; }
+#results .mc-name .score-win, #results .mc-name .score-loss, #results .mc-name .score-tie, #upsets .mc-name .score-win, #upsets .mc-name .score-loss, #upsets .mc-name .score-tie{ color:#111 !important; }
 
 /* Team names always neutral; only scores are colored */
-#results .mc-side-team{ color:#111 !important; }
+#results .mc-side-team, #upsets .mc-side-team{ color:#111 !important; }
 
 /* Tighten W/L/PS/PA columns and give TEAM more room */
 thead th:nth-child(2),
@@ -303,7 +303,8 @@ tbody td:nth-child(5){
 .month-head{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:center;
+  text-align:center;
   padding:8px 10px;
   border-radius:14px;
   border:1px solid #eef2f7;
@@ -1333,12 +1334,12 @@ html, body { touch-action: pan-x pan-y; }
   <div class="table-wrap" style="margin-top:10px;">
     <table>
       <colgroup>
-        <col style="width:44%;">
+        <col style="width:38%;">
         <col style="width:7%;">
         <col style="width:7%;">
-        <col style="width:12%;">
-        <col style="width:12%;">
-        <col style="width:18%;">
+        <col style="width:16%;">
+        <col style="width:16%;">
+        <col style="width:16%;">
       </colgroup>
       <thead>
         <tr>
@@ -1347,7 +1348,7 @@ html, body { touch-action: pan-x pan-y; }
           <th>L</th>
           <th>PS</th>
           <th>PA</th>
-          <th>POINTS %</th>
+          <th>%</th>
         </tr>
       </thead>
       <tbody id="body">
@@ -1425,12 +1426,8 @@ html, body { touch-action: pan-x pan-y; }
     <div class="modal-body" id="mdBody">
       <div class="modal-meta">
         <div class="field">
-          <div class="label">Location</div>
+          <div class="label">Home Team</div>
           <select id="mdLoc"></select>
-        </div>
-        <div class="field" style="flex:1 1 auto; min-width:180px;">
-          <div class="label">Info</div>
-          <div class="small" id="mdMetaLine"></div>
         </div>
       </div>
       <div id="mdCards"></div>
@@ -1925,7 +1922,7 @@ function renderStandings(rows, matchupCount){
       "<td style='font-weight:950; text-align:left;'>" + esc(dispTeamName(r.team)) + "</td>" +
       "<td>" + Number(r.w||0) + "</td>" +
       "<td>" + Number(r.l||0) + "</td>" +
-      "<td>" + esc(fmtPts(r.points)) + "</td>" +
+      "<td>" + esc(fmtPts(r.ps)) + "</td>" +
       "<td>" + esc(fmtPts(r.pa)) + "</td>" +
       "<td style='font-weight:950;'><span class='pill'>" + pp + "</span></td>";
     tb.appendChild(tr);
@@ -2123,9 +2120,18 @@ function _pickFirst_(r, keys){
 function _buildPlayers_(r, side){
   // side "A" or "B"
   const isA = (side === "A");
-  const p1 = _pickFirst_(r, isA ? ["a1","A1","teamA1","TeamA1","playerA1","PlayerA1"] : ["b1","B1","o1","O1","teamB1","TeamB1","playerB1","PlayerB1"]);
-  const p2 = _pickFirst_(r, isA ? ["a2","A2","teamA2","TeamA2","playerA2","PlayerA2"] : ["b2","B2","o2","O2","teamB2","TeamB2","playerB2","PlayerB2"]);
-  const p3 = _pickFirst_(r, isA ? ["a3","A3","teamA3","TeamA3","playerA3","PlayerA3"] : ["b3","B3","o3","O3","teamB3","TeamB3","playerB3","PlayerB3"]);
+
+  const A1 = ["a1","A1","teamA1","TeamA1","playerA1","PlayerA1","aces 1","Aces 1","aces1","Aces1","team a player 1","Team A Player 1","teamAPlayer1"];
+  const A2 = ["a2","A2","teamA2","TeamA2","playerA2","PlayerA2","aces 2","Aces 2","aces2","Aces2","team a player 2","Team A Player 2","teamAPlayer2"];
+  const A3 = ["a3","A3","teamA3","TeamA3","playerA3","PlayerA3","aces 3","Aces 3","aces3","Aces3","team a player 3","Team A Player 3","teamAPlayer3"];
+
+  const B1 = ["b1","B1","o1","O1","teamB1","TeamB1","playerB1","PlayerB1","opp 1","Opp 1","opp1","Opp1","team b player 1","Team B Player 1","teamBPlayer1"];
+  const B2 = ["b2","B2","o2","O2","teamB2","TeamB2","playerB2","PlayerB2","opp 2","Opp 2","opp2","Opp2","team b player 2","Team B Player 2","teamBPlayer2"];
+  const B3 = ["b3","B3","o3","O3","teamB3","TeamB3","playerB3","PlayerB3","opp 3","Opp 3","opp3","Opp3","team b player 3","Team B Player 3","teamBPlayer3"];
+
+  const p1 = _pickFirst_(r, isA ? A1 : B1);
+  const p2 = _pickFirst_(r, isA ? A2 : B2);
+  const p3 = _pickFirst_(r, isA ? A3 : B3);
   return [p1,p2,p3].filter(Boolean);
 }
 
@@ -2168,25 +2174,175 @@ function _modeLabel_(r){
   return stroke ? "STROKE" : "MATCH";
 }
 
-function openMatchDetailsModal(m){
+
+function _matchplayText_(row, resLeft){
+  const mp = _pickFirst_(row, ["mpScore","MPScore","matchScore","MatchScore","score","Score","aScore","AScore","acesScore"]);
+  const s = String(mp||"").trim();
+  if (s) return s;
+  if (resLeft === "T") return "PUSH";
+  return resLeft || "—";
+}
+
+function _calcTotals_(rows, disp){
+  const tieShare = 0.5;
+  let sL=0, sR=0, dL=0, dR=0;
+  for (const r0 of (rows||[])){
+    const row = r0 || {};
+    const mode = String(row.mode ?? row.Mode ?? "").toLowerCase();
+    const isStroke = _isStrokeRow_(row);
+    const isD = mode.includes("double") || mode.includes("triple");
+    const isS = mode.includes("single") || mode === "s";
+
+    const p = pointsForMode(mode);
+
+    // Align row with displayed left/right
+    const rowTeamA = String(row.teamA ?? row["Team A"] ?? row.team_a ?? "").trim() || _pickFirst_(row, ["teamAName","TeamAName"]);
+    const rowTeamB = String(row.teamB ?? row["Team B"] ?? row.team_b ?? "").trim() || _pickFirst_(row, ["teamBName","TeamBName"]);
+    let swapped = false;
+    if (_keyStr_(rowTeamA) === _keyStr_(disp.rightTeam) && _keyStr_(rowTeamB) === _keyStr_(disp.leftTeam)) swapped = true;
+
+    const resA = String(row.result ?? row.Result ?? "").toUpperCase().trim();
+    const resLeft = swapped ? _invertResult_(resA) : resA;
+
+    const add = (bucket)=>{
+      if (resLeft === "W") { bucket.L += p; }
+      else if (resLeft === "L") { bucket.R += p; }
+      else { bucket.L += p * tieShare; bucket.R += p * tieShare; }
+    };
+
+    if (isS && !isStroke){
+      const b = {L:0,R:0}; add(b); sL += b.L; sR += b.R;
+    } else if (isD){
+      const b = {L:0,R:0}; add(b); dL += b.L; dR += b.R;
+    }
+  }
+  return { singles:{L:sL,R:sR}, doubles:{L:dL,R:dR} };
+}
+
+function _summaryCardHtml_(label, leftVal, rightVal){
+  return `
+    <div class="match-card score-tie" style="border-style:dashed; opacity:.95;">
+      <div class="mc-left">
+        <div class="mc-player"><div class="mc-player-name">${esc(fmtPts(leftVal))}</div></div>
+      </div>
+      <div class="mc-mid">
+        <div class="mc-score" style="font-size:11px; font-weight:950; letter-spacing:.06em;">${esc(label)}</div>
+      </div>
+      <div class="mc-right">
+        <div class="mc-player" style="align-items:flex-end;"><div class="mc-player-name">${esc(fmtPts(rightVal))}</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function _renderMatchDetailsCards_(m, disp, rows){
+  const cardsEl = $("mdCards");
+  if (!cardsEl) return;
+
+  const sorted = _sortMatchRowsForModal_(rows || []);
+  const singlesMP = [];
+  const doubles = [];
+  const singlesStroke = [];
+
+  for (const r of sorted){
+    const mode = String(r.mode ?? r.Mode ?? "").toLowerCase();
+    const isStroke = _isStrokeRow_(r);
+    const isD = mode.includes("double") || mode.includes("triple");
+    const isS = mode.includes("single") || mode === "s";
+    if (isS && !isStroke) singlesMP.push(r);
+    else if (isD) doubles.push(r);
+    else singlesStroke.push(r);
+  }
+
+  const totals = _calcTotals_(sorted, disp);
+
+  let html = "<div style='display:grid; gap:10px;'>";
+
+  function rowCard(row){
+    const rowTeamA = String(row.teamA ?? row["Team A"] ?? row.team_a ?? "").trim() || _pickFirst_(row, ["teamAName","TeamAName"]);
+    const rowTeamB = String(row.teamB ?? row["Team B"] ?? row.team_b ?? "").trim() || _pickFirst_(row, ["teamBName","TeamBName"]);
+
+    let swapped = false;
+    if (_keyStr_(rowTeamA) === _keyStr_(disp.rightTeam) && _keyStr_(rowTeamB) === _keyStr_(disp.leftTeam)) swapped = true;
+
+    const leftPlayers  = swapped ? _buildPlayers_(row, "B") : _buildPlayers_(row, "A");
+    const rightPlayers = swapped ? _buildPlayers_(row, "A") : _buildPlayers_(row, "B");
+
+    const resA = String(row.result ?? row.Result ?? "").toUpperCase().trim();
+    const resLeft = swapped ? _invertResult_(resA) : resA;
+    const cls = (resLeft === "W") ? "score-win" : (resLeft === "L") ? "score-loss" : "score-tie";
+
+    const leftHtml = `
+      <div class="mc-player">
+        ${(leftPlayers.length ? leftPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
+      </div>
+    `;
+    const rightHtml = `
+      <div class="mc-player">
+        ${(rightPlayers.length ? rightPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
+      </div>
+    `;
+
+    let scoreHtml = "";
+    if (_isStrokeRow_(row)){
+      let a = _pickFirst_(row, ["teamAScore","acesScore","scoreA","strokeA","aScore","AScore"]);
+      let b = _pickFirst_(row, ["teamBScore","oppScore","scoreB","strokeB","bScore","BScore"]);
+      if (swapped){ const t=a; a=b; b=t; }
+      const scoreTxt = (String(a||"").trim() || String(b||"").trim()) ? ((a||"") + "–" + (b||"")) : "—";
+      scoreHtml = `<div class="mc-score mc-score-stroke">${esc(scoreTxt)}</div>`;
+    } else {
+      const mpTxt = _matchplayText_(row, resLeft);
+      scoreHtml = `<div class="mc-score">${esc(mpTxt)}</div>`;
+    }
+
+    return `
+      <div class="match-card ${cls}">
+        <div class="mc-left">${leftHtml}</div>
+        <div class="mc-mid">${scoreHtml}</div>
+        <div class="mc-right">${rightHtml}</div>
+      </div>
+    `;
+  }
+
+  for (const r of singlesMP) html += rowCard(r);
+  if (singlesMP.length){
+    html += _summaryCardHtml_("SINGLES TOTAL", totals.singles.L, totals.singles.R);
+  }
+
+  for (const r of doubles) html += rowCard(r);
+  if (doubles.length){
+    html += _summaryCardHtml_("DOUBLES TOTAL", totals.doubles.L, totals.doubles.R);
+  }
+
+  for (const r of singlesStroke) html += rowCard(r);
+
+  html += "</div>";
+  cardsEl.innerHTML = html;
+}
+
+async function openMatchDetailsModal(m){
   if (!m) return;
   const modal = $("matchDetailsModal");
   if (!modal) return;
 
   const titleEl = $("mdTitle");
-  const metaLine = $("mdMetaLine");
   const cardsEl = $("mdCards");
   const locSel = $("mdLoc");
 
   const disp = _applyMetaToMatchup_(m);
+  const dateLbl = String(m.dateShort || fmtDateShort(String(m.dateKey||"")) || m.dateKey || "").trim();
 
-  // Title
-  const dateLbl = String(m.dateShort || m.dateKey || "").trim();
-  if (titleEl) titleEl.textContent = (dateLbl ? (dateLbl + " • ") : "") + disp.leftTeam + " vs " + disp.rightTeam;
+  if (titleEl){
+    titleEl.textContent =
+      (dateLbl ? (dateLbl + " • ") : "") +
+      disp.leftTeam + " vs " + disp.rightTeam + " • " +
+      fmtPts(disp.leftPts) + "–" + fmtPts(disp.rightPts);
+  }
 
-  // Location select (league-wide)
+  // Home Team select (league-wide)
   if (locSel){
     locSel.innerHTML = "";
+
     const opt0 = document.createElement("option");
     opt0.value = "unspecified";
     opt0.textContent = "Unspecified";
@@ -2194,17 +2350,17 @@ function openMatchDetailsModal(m){
 
     const optN = document.createElement("option");
     optN.value = "neutral";
-    optN.textContent = "Neutral (list under Neutral)";
+    optN.textContent = "Neutral";
     locSel.appendChild(optN);
 
     const optHR = document.createElement("option");
     optHR.value = "home:" + disp.rightTeam;
-    optHR.textContent = "Home: " + disp.rightTeam + " (right)";
+    optHR.textContent = "Home: " + disp.rightTeam;
     locSel.appendChild(optHR);
 
     const optHL = document.createElement("option");
     optHL.value = "home:" + disp.leftTeam;
-    optHL.textContent = "Home: " + disp.leftTeam + " (right)";
+    optHL.textContent = "Home: " + disp.leftTeam;
     locSel.appendChild(optHL);
 
     const curMeta = getMatchMeta(m.matchupKey);
@@ -2212,102 +2368,55 @@ function openMatchDetailsModal(m){
     else if (curMeta.mode === "neutral") locSel.value = "neutral";
     else if (curMeta.mode === "home" && curMeta.homeTeam){
       locSel.value = "home:" + String(curMeta.homeTeam);
-      if (!Array.from(locSel.options).some(o=>o.value === locSel.value)){
-        // fallback
-        locSel.value = "unspecified";
-      }
+      if (!Array.from(locSel.options).some(o=>o.value === locSel.value)) locSel.value = "unspecified";
     } else locSel.value = "unspecified";
 
     locSel.onchange = async ()=>{
       const v = String(locSel.value||"");
       if (v === "unspecified"){
-        setMatchMeta(m.matchupKey, { mode:"unspecified" });
+        await setMatchMeta(m.matchupKey, { mode:"unspecified" });
       } else if (v === "neutral"){
-        setMatchMeta(m.matchupKey, { mode:"neutral" });
+        await setMatchMeta(m.matchupKey, { mode:"neutral" });
       } else if (v.startsWith("home:")){
         const homeTeam = v.slice(5);
-        setMatchMeta(m.matchupKey, { mode:"home", homeTeam });
+        await setMatchMeta(m.matchupKey, { mode:"home", homeTeam });
       }
-      // Re-render list to update month grouping + home-on-right
       try{ renderMatchups(_lastMatchups || []); }catch(_){}
-      // Update modal title immediately
-      try{ openMatchDetailsModal(m); }catch(_){}
+      // Update title + cards with new ordering, without refetching match rows
+      try{
+        const disp2 = _applyMetaToMatchup_(m);
+        if (titleEl){
+          titleEl.textContent =
+            (dateLbl ? (dateLbl + " • ") : "") +
+            disp2.leftTeam + " vs " + disp2.rightTeam + " • " +
+            fmtPts(disp2.leftPts) + "–" + fmtPts(disp2.rightPts);
+        }
+        if (m._rowsCache) _renderMatchDetailsCards_(m, disp2, m._rowsCache);
+      }catch(_){}
     };
   }
 
-  // Meta line
-  if (metaLine){
-    metaLine.innerHTML = "Tap Location to set home/neutral (saved league-wide).";
-  }
-
-  // Build cards
-  const rawRows = (m.rows || []);
-  const rows = _sortMatchRowsForModal_(rawRows);
-
-  if (!rows.length){
-    if (cardsEl) cardsEl.innerHTML = "<div class='small' style='padding:8px 2px;'>No individual match rows found for this matchup.</div>";
-  } else {
-    let html = "<div style='display:grid; gap:10px;'>";
-    for (const r0 of rows){
-      const row = r0 || {};
-      const rowTeamA = String(row.teamA ?? row["Team A"] ?? row.team_a ?? "").trim() || _pickFirst_(row, ["teamAName","TeamAName"]);
-      const rowTeamB = String(row.teamB ?? row["Team B"] ?? row.team_b ?? "").trim() || _pickFirst_(row, ["teamBName","TeamBName"]);
-
-      let swapped = false;
-      // Align row with the displayed left/right teams
-      if (_keyStr_(rowTeamA) === _keyStr_(disp.rightTeam) && _keyStr_(rowTeamB) === _keyStr_(disp.leftTeam)){
-        swapped = true;
-      }
-
-      const leftPlayers  = swapped ? _buildPlayers_(row, "B") : _buildPlayers_(row, "A");
-      const rightPlayers = swapped ? _buildPlayers_(row, "A") : _buildPlayers_(row, "B");
-
-      // Result from left perspective
-      const resA = String(row.result ?? row.Result ?? "").toUpperCase().trim();
-      const resLeft = swapped ? _invertResult_(resA) : resA;
-      const cls = (resLeft === "W") ? "score-win" : (resLeft === "L") ? "score-loss" : "score-tie";
-
-      const leftHtml = `
-        <div class="mc-player">
-          ${(leftPlayers.length ? leftPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
-          <div class="mc-team-tag">${esc(disp.leftTeam)}</div>
-        </div>
-      `;
-
-      const rightHtml = `
-        <div class="mc-player">
-          ${(rightPlayers.length ? rightPlayers.map(p=>`<div class="mc-player-name">${esc(p)}</div>`).join("") : `<div class="mc-player-name">—</div>`)}
-          <div class="mc-team-tag">${esc(disp.rightTeam)}</div>
-        </div>
-      `;
-
-      const scoreTxt = _scoreText_(row, swapped);
-      const modeTxt = _modeLabel_(row);
-      const scoreHtml = _isStrokeRow_(row)
-        ? `<div class="mc-score mc-score-stroke">${esc(scoreTxt)}</div>`
-        : `<div class="mc-score">${esc(scoreTxt)}</div>`;
-
-      html += `
-        <div class="match-card ${cls}">
-          <div class="mc-left">${leftHtml}</div>
-          <div class="mc-mid">
-            <div class="mc-date-pill">${esc(dateLbl)}</div>
-            ${scoreHtml}
-            <div class="mc-mode-tag">${esc(modeTxt)}</div>
-          </div>
-          <div class="mc-right">${rightHtml}</div>
-        </div>
-      `;
-    }
-    html += "</div>";
-    if (cardsEl) cardsEl.innerHTML = html;
-  }
-
-  // Show
+  // Show modal immediately (so it feels instant)
   modal.classList.add("show");
   modal.setAttribute("aria-hidden","false");
   try{ document.body.classList.add("modal-open"); }catch(_){}
+
+  // Load rows if needed
+  if (!m._rowsCache){
+    if (cardsEl) cardsEl.innerHTML = "<div class='small' style='padding:8px 2px;'>Loading match details…</div>";
+    try{
+      const res = await runGs("faGetMatchdayRows_v1", [String(m.matchupKey||"")]);
+      const rows = (res && res.ok) ? (res.rows || []) : (res && res.rows ? res.rows : []);
+      m._rowsCache = rows;
+    }catch(e){
+      if (cardsEl) cardsEl.innerHTML = "<div class='small' style='padding:8px 2px;'>Couldn’t load match details.</div>";
+      return;
+    }
+  }
+
+  _renderMatchDetailsCards_(m, _applyMetaToMatchup_(m), m._rowsCache || []);
 }
+
 
 function closeMatchDetailsModal(){
   const modal = $("matchDetailsModal");
@@ -2388,8 +2497,7 @@ function renderMatchups(matchups){
 
     const h = document.createElement("div");
     h.className = "month-head";
-    const count = arr.length;
-    h.innerHTML = `<div>${esc(label)}</div><div class="month-sub">${count} match${count===1?"":"es"}</div>`;
+    h.innerHTML = `<div>${esc(label)}</div>`;
     sec.appendChild(h);
 
     for (const m of arr){
@@ -2432,159 +2540,92 @@ function renderMatchups(matchups){
 }
 
 
-function renderUpsets(matchups){
+function renderUpsets(upsets){
   const root = $("upsets");
   if (!root) return;
 
-  if (!matchups || !matchups.length){
-    root.innerHTML = "<div class='small' style='padding:8px 2px;'>No matchups found.</div>";
-    return;
-  }
-
-  // Rolling TEAM-ELO (matchday-level, not per individual match row).
-  // This avoids "over-confidence" that happens when Elo is updated 30+ times per matchday.
-  //
-  // - Seed: current PlayersDB team-average Elo (same source as SIMULATE MATCHUP)
-  // - Update cadence: ONE Elo update per matchup per date (batched by date)
-  // - Win%: pre-match win probability from the rolling Elo at that time
-  if (!_teamEloLoaded || !_teamEloMap){
-    root.innerHTML = "<div class='small' style='padding:8px 2px;'>Loading team Elo…</div>";
-    return;
-  }
-
-  const BASE_ELO   = 1500;
-  const K_MATCHUP  = 14;  // tuned for matchday totals (keeps win% in a reasonable range)
-  // Win-prob curve is eloWinProb() (125-point scale) — same as the simulator.
-
-  // 1) Group by date so same-day matchups don’t influence each other’s pre-match Elo.
-  const byDate = new Map();
-  for (const m of matchups){
-    const dk = String(m.dateKey || "").trim() || "unknown";
-    if (!byDate.has(dk)) byDate.set(dk, []);
-    byDate.get(dk).push(m);
-  }
-
-  const dates = Array.from(byDate.keys()).sort((a,b)=>{
-    if (a === "unknown" && b !== "unknown") return 1;
-    if (b === "unknown" && a !== "unknown") return -1;
-    return a.localeCompare(b);
-  });
-
-  // teamKey -> current Elo (rolling)
-  const elo = Object.create(null);
-
-  function getSeededElo(teamName){
-    const k = normTeam(teamName);
-    if (!k) return BASE_ELO;
-    if (isFinite(elo[k])) return elo[k];
-
-    const seed = (_teamEloMap && isFinite(_teamEloMap[k])) ? Number(_teamEloMap[k]) : NaN;
-    elo[k] = isFinite(seed) ? seed : BASE_ELO;
-    return elo[k];
-  }
-
-  const upsets = [];
-
-  // 2) Walk forward in time, batch updates within each date.
-  for (const dk of dates){
-    const games = byDate.get(dk) || [];
-    const deltas = Object.create(null); // teamKey -> delta to apply at end of day
-
-    for (const m of games){
-      const leftTeam  = String(m.leftTeam || "").trim();
-      const rightTeam = String(m.rightTeam || "").trim();
-      if (!leftTeam || !rightTeam) continue;
-
-      const kL = normTeam(leftTeam);
-      const kR = normTeam(rightTeam);
-      if (!kL || !kR || kL === kR) continue;
-
-      const lp = Number(m.leftPts || 0);
-      const rp = Number(m.rightPts || 0);
-      if (!isFinite(lp) || !isFinite(rp)) continue;
-
-      const eloL = getSeededElo(leftTeam);
-      const eloR = getSeededElo(rightTeam);
-
-      // Expected chance LEFT wins (pre-match)
-      const pLeft = eloWinProb(eloL, eloR);
-
-      // Actual score for LEFT (winner is usually already on the LEFT, but handle safety)
-      let sLeft = 0.5;
-      if (lp > rp) sLeft = 1;
-      else if (lp < rp) sLeft = 0;
-
-      // Record upset when winner's pre-match win% < 50%
-      if (sLeft !== 0.5){
-        const leftWon = (sLeft === 1);
-        const pWin = leftWon ? pLeft : (1 - pLeft);
-        if (pWin < 0.5){
-          const winnerName = leftWon ? leftTeam : rightTeam;
-          const loserName  = leftWon ? rightTeam : leftTeam;
-          const winnerPts  = leftWon ? lp : rp;
-          const loserPts   = leftWon ? rp : lp;
-
-          upsets.push({
-            dateKey: dk,
-            dateShort: m.dateShort || fmtDateShort(dk),
-            leftTeam: winnerName,
-            rightTeam: loserName,
-            leftPts: winnerPts,
-            rightPts: loserPts,
-            pWin: pWin
-          });
-        }
-      }
-
-      // Elo update (batched per date)
-      const dLeft = K_MATCHUP * (sLeft - pLeft);
-      deltas[kL] = (deltas[kL] || 0) + dLeft;
-      deltas[kR] = (deltas[kR] || 0) - dLeft;
-    }
-
-    // Apply deltas at end of day
-    for (const k in deltas){
-      if (!Object.prototype.hasOwnProperty.call(deltas, k)) continue;
-      if (!isFinite(elo[k])) elo[k] = BASE_ELO;
-      elo[k] += deltas[k];
-    }
-  }
-
-  upsets.sort((a,b)=>{
-    if (a.pWin !== b.pWin) return a.pWin - b.pWin;
-    if ((a.dateKey||"") !== (b.dateKey||"")) return (a.dateKey||"").localeCompare(b.dateKey||"");
-    const x = (a.leftTeam + " vs " + a.rightTeam);
-    const y = (b.leftTeam + " vs " + b.rightTeam);
-    return x.localeCompare(y);
-  });
-
-  const top = upsets.slice(0, 10);
-  if (!top.length){
-    root.innerHTML = "<div class='small' style='padding:8px 2px;'>No upsets found (rolling team Elo).</div>";
+  if (!upsets || !upsets.length){
+    root.innerHTML = "<div class='small' style='padding:8px 2px;'>No upsets found.</div>";
     return;
   }
 
   let html = "<div style='display:grid; gap:10px;'>";
-  let rank = 1;
-  for (const u of top){
-    const pct = fmtPct(u.pWin);
-    html +=
-      "<div class='match-card score-win' style='grid-template-columns: 1fr 86px 1fr;'>" +
-        "<div class='mc-left'><div class='mc-name'><span class='nm'>" + esc(u.leftTeam) + "</span></div></div>" +
-        "<div class='mc-mid'>" +
-          "<div class='mc-date-pill'>" + esc(u.dateShort || u.dateKey || '') + "</div>" +
-          "<div class='mc-score mc-score-stroke'>" +
-            "<span class='score-win'>" + esc(fmtPts(u.leftPts)) + "</span>" +
-            "<span style='opacity:.5;'>–</span>" +
-            "<span class='score-loss'>" + esc(fmtPts(u.rightPts)) + "</span>" +
-          "</div>" +
-          "<div class='small' style='font-weight:950; letter-spacing:.02em; margin-top:2px;'>#" + (rank++) + " • WIN " + esc(pct) + "</div>" +
-        "</div>" +
-        "<div class='mc-right'><div class='mc-name'><span class='nm'>" + esc(u.rightTeam) + "</span></div></div>" +
-      "</div>";
+
+  for (let i=0; i<upsets.length; i++){
+    const u = upsets[i] || {};
+    const rank = i + 1;
+
+    const label = `#${rank} • WIN ${fmtPct(u.expected)}`;
+
+    const leftTeam = String(u.winner || "");
+    const rightTeam = String(u.loser || "");
+    const leftPts = Number(u.winPts || 0);
+    const rightPts = Number(u.losePts || 0);
+
+    const leftCls = (leftPts > rightPts) ? "score-win" : (rightPts > leftPts) ? "score-loss" : "score-tie";
+    const rightCls = (rightPts > leftPts) ? "score-win" : (leftPts > rightPts) ? "score-loss" : "score-tie";
+    const cls = (leftPts > rightPts) ? "score-win" : (rightPts > leftPts) ? "score-loss" : "score-tie";
+
+    // Find matchday record for modal (fallback is fine — modal fetches rows by matchupKey)
+    const m = (_lastMatchups || []).find(x=>String(x.matchupKey||"") === String(u.matchupKey||"")) || {
+      matchupKey: u.matchupKey,
+      dateKey: u.dateKey,
+      dateShort: u.dateKey ? fmtDateShort(String(u.dateKey)) : "",
+      leftTeam: leftTeam,
+      rightTeam: rightTeam,
+      leftPts: leftPts,
+      rightPts: rightPts
+    };
+
+    html += `
+      <div class="match-card ${cls}" style="cursor:pointer;" data-no-ptr="1">
+        <div class="mc-left">
+          <div class="mc-name"><span class="nm">${esc(leftTeam)}</span></div>
+        </div>
+
+        <div class="mc-mid">
+          <div class="mc-date-pill" style="width:100%; text-align:center; font-weight:950;">${esc(label)}</div>
+          <div class="mc-score mc-score-stroke">
+            <span class="${leftCls}">${esc(fmtPts(leftPts))}</span>
+            <span style="opacity:.5;">–</span>
+            <span class="${rightCls}">${esc(fmtPts(rightPts))}</span>
+          </div>
+        </div>
+
+        <div class="mc-right">
+          <div class="mc-name"><span class="nm">${esc(rightTeam)}</span></div>
+        </div>
+      </div>
+    `;
   }
+
   html += "</div>";
   root.innerHTML = html;
+
+  root.querySelectorAll(".match-card").forEach(card=>{
+    card.addEventListener("click", ()=>{
+      const key = card.getAttribute("data-matchup-key");
+      // derive match object by winner/loser fallback above
+      // easiest: locate by closest matching inner text via data index isn't needed
+    });
+  });
+
+  // Delegate click handler to open modal
+  root.querySelectorAll(".match-card").forEach((card, idx)=>{
+    card.addEventListener("click", ()=>{
+      const u = upsets[idx];
+      const m = (_lastMatchups || []).find(x=>String(x.matchupKey||"") === String((u||{}).matchupKey||"")) || {
+        matchupKey: (u||{}).matchupKey,
+        dateKey: (u||{}).dateKey,
+        dateShort: (u||{}).dateKey ? fmtDateShort(String((u||{}).dateKey)) : "",
+        leftTeam: String((u||{}).winner||""),
+        rightTeam: String((u||{}).loser||""),
+        leftPts: Number((u||{}).winPts||0),
+        rightPts: Number((u||{}).losePts||0)
+      };
+      openMatchDetailsModal(m);
+    });
+  });
 }
 
 function renderAdjustments(rows){
@@ -2640,7 +2681,7 @@ function renderAdjustments(rows){
         const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
-          await reloadAdjustmentsAndRecalc();
+          await reloadAllFromServer();
         } else {
           $("adjMsg").textContent = (res && res.message) ? res.message : "Delete failed.";
         }
@@ -2667,25 +2708,25 @@ function wireAdjustmentForm(){
   saveBtn.addEventListener("click", async ()=>{
     const id = saveBtn.getAttribute("data-id") || "";
     const dateKey = String($("adjDate").value||"").trim();
-    const dateDisp = dateKey ? fmtDateShort(dateKey) : "";
+    const dateDisp = dateKey ? fmtDateShort(dateKey) : ""; // for UI only
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
     const note = "";
 
     const delta = Number(deltaStr);
-    if (!dateDisp || !team || !opp || !isFinite(delta)){
+    if (!dateKey || !team || !opp || !isFinite(delta)){
       $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a numeric Delta.";
       return;
     }
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateDisp, team, opp, delta, note });
+      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateKey, team, opp, delta, note });
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
-        await reloadAdjustmentsAndRecalc();
+        await reloadAllFromServer();
       } else {
         $("adjMsg").textContent = (res && res.message) ? res.message : "Save failed.";
       }
@@ -2695,100 +2736,44 @@ function wireAdjustmentForm(){
   });
 }
 
-async function reloadAdjustmentsAndRecalc(){
-  const adjRaw = await runGs("faGetStandingsAdjustments_v1", {});
-  let adj = adjRaw;
-  try{ if (typeof adj === "string") adj = JSON.parse(adj); }catch(_){}
-  const adjRows = (adj && adj.ok) ? (adj.rows || []) : [];
-  renderAdjustments(adjRows);
+async function reloadAllFromServer(){
+  const packRaw = await runGs("faGetStandingsPack_v1", { upsetLimit: 15 });
+  let pack = packRaw;
+  try{ if (typeof pack === "string") pack = JSON.parse(pack); }catch(_){}
+  if (!pack || pack.ok === false) throw new Error((pack && pack.message) ? pack.message : "Standings pack load failed.");
 
-  const logRaw = await runGs("faGetMatchLogRows_v1", {});
-  let log = logRaw;
-  try{ if (typeof log === "string") log = JSON.parse(log); }catch(_){}
-  if (!log || log.ok === false) return;
-
-  const computed = computeFromMatchLog(log.rows || [], adjRows);
-  _lastMatchups = computed.matchupList || [];
-  renderStandings(computed.standings, computed.matchupCount);
-  fillTeamDropdowns(computed.standings);
-  initSimulator(computed.standings);
-  renderMatchups(_lastMatchups);
-  renderUpsets(_lastMatchups);}
-
-// =========================================================
-// NEW NATIVE FETCH ROUTER
-// =========================================================
-const GAS_API_URL = window.GAS_API_URL || "https://script.google.com/macros/s/AKfycbxlyif58qdt0l90lSvHOm0TxlPffdfMqajwzhGDQlddsNNn82Bg37CGoMpjBKBuZoNK/exec";
-window.GAS_API_URL = GAS_API_URL; 
-
-async function runGs(fn, args) {
-  try {
-    const response = await fetch(GAS_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // text/plain prevents CORS preflight blocks
-      body: JSON.stringify({ action: fn, args: (Array.isArray(args) ? args : (args == null ? [] : [args])) })
-    });
-    
-    const _txt = await response.text();
-    if (!_txt) throw new Error("Empty response from GAS. Check FA_GAS_API_URL + deployment access.");
-    let data;
-    try{ data = JSON.parse(_txt); }catch(e){ console.error("Non-JSON response:", _txt.slice(0,300)); throw e; }
-    if (!data.ok) throw new Error(data.error);
-    return data.result;
-    
-  } catch (err) {
-    console.error("API Error in " + fn + ":", err);
-    throw err;
+  // League-wide match meta (home/neutral)
+  try{
+    if (pack.meta) _setMatchMetaMapFromServer_(pack.meta);
+    _matchMetaLoaded = true;
+  }catch(e){
+    console.warn("MatchMeta parse failed:", e);
+    _matchMetaLoaded = true;
   }
+
+  const standings = pack.standings || [];
+  const matchdays = (pack.matchdays || []).map(m=>{
+    const dk = String(m.dateKey||"").trim();
+    return Object.assign({}, m, { dateShort: dk ? fmtDateShort(dk) : "" });
+  });
+
+  _lastMatchups = matchdays;
+
+  renderStandings(standings, matchdays.length);
+  fillTeamDropdowns(standings);
+  initSimulator(standings);
+
+  renderMatchups(matchdays);
+  renderUpsets(pack.upsets || []);
+  renderAdjustments(pack.adjustments || []);
 }
 
 async function load(){
   try{
-    const isAdmin = true;
     const adjWrap = $("adjWrap");
     if (adjWrap) adjWrap.style.display = "";
 
-    // ==========================================
-    // 2. FETCH FROM GOOGLE
-    // ==========================================
-    const [logRaw, adjRaw, metaRaw] = await Promise.all([
-      runGs("faGetMatchLogRows_v1", {}),
-      runGs("faGetStandingsAdjustments_v1", {}),
-      runGs("faGetMatchMeta_v1", {})
-    ]);
-
-    let log = logRaw;
-    try{ if (typeof log === "string") log = JSON.parse(log); }catch(_){}
-    if (!log || log.ok === false) throw new Error((log && log.message) ? log.message : "MatchLog load failed.");
-
-    let adj = adjRaw;
-    try{ if (typeof adj === "string") adj = JSON.parse(adj); }catch(_){}
-    const adjRows = (adj && adj.ok) ? (adj.rows || []) : [];
-
-// League-wide match meta (home/neutral) — DO NOT cache to device
-try{
-  let metaRes = metaRaw;
-  if (typeof metaRes === "string") metaRes = JSON.parse(metaRes);
-  if (metaRes && metaRes.ok && metaRes.meta) _setMatchMetaMapFromServer_(metaRes.meta);
-  _matchMetaLoaded = true;
-}catch(e){
-  console.warn("MatchMeta parse failed:", e);
-  _matchMetaLoaded = true;
-}
-
-
-
-    // ==========================================
-    // 3. SILENTLY UPDATE THE UI WITH FRESH DATA
-    // ==========================================
-    const computed = computeFromMatchLog(log.rows || [], adjRows);
-    _lastMatchups = computed.matchupList || [];
-    renderStandings(computed.standings, computed.matchupCount);
-    fillTeamDropdowns(computed.standings);
-    initSimulator(computed.standings);
-    renderMatchups(_lastMatchups);
-    renderUpsets(_lastMatchups);
-    renderAdjustments(adjRows);
+    await reloadAllFromServer();
     wireAdjustmentForm();
 
   }catch(err){
