@@ -443,6 +443,25 @@ tbody td:nth-child(5){
   white-space:nowrap;
   max-width:100%;
 }
+
+.mc-player-stack{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  font-weight:900;
+  line-height:1.12;
+  min-width:0;
+  max-width:100%;
+}
+.mc-player-stack .mc-player-line{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-player.right{ align-items:flex-end; text-align:right; }
+.mc-player-stack.right{ align-items:flex-end; text-align:right; }
+
 .mc-team-tag{
   font-size:10px;
   font-weight:900;
@@ -2277,7 +2296,7 @@ function _calcTotals_(rows, disp){
 
     if (isS && !isStroke){
       const b = {L:0,R:0}; add(b); sL += b.L; sR += b.R;
-    } else if (isD){
+    } else if (isD || (isS && isStroke)){
       const b = {L:0,R:0}; add(b); dL += b.L; dR += b.R;
     }
   }
@@ -2287,14 +2306,14 @@ function _calcTotals_(rows, disp){
 function _summaryCardHtml_(label, leftVal, rightVal){
   return `
     <div class="match-card score-tie" style="border-style:dashed; opacity:.95;">
-      <div class="mc-left">
-        <div class="mc-player"><div class="mc-player-name">${esc(fmtPts(leftVal))}</div></div>
+      <div class="mc-left" style="display:flex; justify-content:center;">
+        <div class="mc-player"><div class="mc-player-name" style="width:100%; text-align:center;">${esc(fmtPts(leftVal))}</div></div>
       </div>
       <div class="mc-mid">
         <div class="mc-score" style="font-size:11px; font-weight:950; letter-spacing:.06em;">${esc(label)}</div>
       </div>
-      <div class="mc-right">
-        <div class="mc-player" style="align-items:flex-end;"><div class="mc-player-name">${esc(fmtPts(rightVal))}</div></div>
+      <div class="mc-right" style="display:flex; justify-content:center;">
+        <div class="mc-player right"><div class="mc-player-name" style="width:100%; text-align:center;">${esc(fmtPts(rightVal))}</div></div>
       </div>
     </div>
   `;
@@ -2307,23 +2326,20 @@ function _renderMatchDetailsCards_(m, disp, rows){
   const sorted = _sortMatchRowsForModal_(rows || []);
   const singlesMP = [];
   const doubles = [];
-  const singlesStroke = [];
-
   for (const r of sorted){
     const mode = String(r.mode ?? r.Mode ?? "").toLowerCase();
     const isStroke = _isStrokeRow_(r);
     const isD = mode.includes("double") || mode.includes("triple");
     const isS = mode.includes("single") || mode === "s";
     if (isS && !isStroke) singlesMP.push(r);
-    else if (isD) doubles.push(r);
-    else singlesStroke.push(r);
+    else if (isD || (isS && isStroke)) doubles.push(r);
   }
 
   const totals = _calcTotals_(sorted, disp);
 
   let html = "<div style='display:grid; gap:10px;'>";
 
-  function rowCard(row){
+    function rowCard(row){
     const rowTeamA = String(row.teamA ?? row["Team A"] ?? row.team_a ?? "").trim() || _pickFirst_(row, ["teamAName","TeamAName"]);
     const rowTeamB = String(row.teamB ?? row["Team B"] ?? row.team_b ?? "").trim() || _pickFirst_(row, ["teamBName","TeamBName"]);
 
@@ -2337,19 +2353,20 @@ function _renderMatchDetailsCards_(m, disp, rows){
     const resLeft = swapped ? _invertResult_(resA) : resA;
     const cls = (resLeft === "W") ? "score-win" : (resLeft === "L") ? "score-loss" : "score-tie";
 
-    const leftTxt = leftPlayers.length ? leftPlayers.join(" / ") : "—";
-    const rightTxt = rightPlayers.length ? rightPlayers.join(" / ") : "—";
+    const playersCell = (players, alignRight)=>{
+      if (!players || !players.length){
+        return `<div class="mc-player${alignRight ? " right" : ""}"><div class="mc-player-name">—</div></div>`;
+      }
+      if (players.length === 1){
+        return `<div class="mc-player${alignRight ? " right" : ""}"><div class="mc-player-name">${esc(players[0])}</div></div>`;
+      }
+      // stack (2v2 / 3v3)
+      const lines = players.map(p=>`<div class="mc-player-line">${esc(p)}</div>`).join("");
+      return `<div class="mc-player${alignRight ? " right" : ""}"><div class="mc-player-stack${alignRight ? " right" : ""}">${lines}</div></div>`;
+    };
 
-    const leftHtml = `
-      <div class="mc-player">
-        <div class="mc-player-name">${esc(leftTxt)}</div>
-      </div>
-    `;
-    const rightHtml = `
-      <div class="mc-player">
-        <div class="mc-player-name">${esc(rightTxt)}</div>
-      </div>
-    `;
+    const leftHtml  = playersCell(leftPlayers, false);
+    const rightHtml = playersCell(rightPlayers, true);
 
     let scoreHtml = "";
     if (_isStrokeRow_(row)){
@@ -2370,7 +2387,7 @@ function _renderMatchDetailsCards_(m, disp, rows){
         <div class="mc-right">${rightHtml}</div>
       </div>
     `;
-  }
+  }  }
 
   for (const r of singlesMP) html += rowCard(r);
   if (singlesMP.length){
@@ -2382,7 +2399,6 @@ function _renderMatchDetailsCards_(m, disp, rows){
     html += _summaryCardHtml_("DOUBLES TOTAL", totals.doubles.L, totals.doubles.R);
   }
 
-  for (const r of singlesStroke) html += rowCard(r);
 
   html += "</div>";
   cardsEl.innerHTML = html;
