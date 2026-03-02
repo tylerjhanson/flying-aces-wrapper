@@ -4141,13 +4141,14 @@ function _fmtScore(r){
 function renderOpponentResults(){
   const meta = $("oppResultsMeta");
   const selected = $("oppFilter") ? $("oppFilter").value : "";
+  const selKey = _key(stripOppPrefix(selected));
 
   const src = (FA_RECENT_CACHE || []).slice();
 
   // Filter by selected opponent (or show all)
   const list = src.filter(r => {
     if (!selected) return true;
-    return _key(stripOppPrefix(String(r.oppTeam || r.opponentTeam || ""))) === _key(stripOppPrefix(String(selected||"")));
+    return _key(stripOppPrefix(r.oppTeam || r.opponentTeam || "")) === selKey;
   });
 
   // Sort helper for rows within a single opponent group:
