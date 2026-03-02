@@ -1548,7 +1548,6 @@ html, body { touch-action: pan-x pan-y; }
 
 <script>
 const $ = (id)=>document.getElementById(id);
-console.log("[Standings] v2026-03-01 exec-args-array fix loaded. GAS_API_URL=", window.GAS_API_URL, "has google.script.run=", !!(window.google&&google.script&&google.script.run));
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function dispTeamName(s){ return String(s||"").replace(/^OPP\s*-\s*/i,"").trim(); }
 function normTeam(s){
@@ -1607,37 +1606,6 @@ async function runGs(fn, args){
     if (Object.prototype.hasOwnProperty.call(data, "result")) return data.result;
   }
   return data;
-}
-
-/* =========================
-   Resilient bridge calls:
-   Some exec deployments route args positionally, others accept a single object.
-   Try a few calling conventions and use the first that succeeds.
-   ========================= */
-async function runGsFirstOk(fn, variants){
-  let lastErr = null;
-  for (const v of (variants||[])){
-    try{
-      const res = await runGs(fn, v.args);
-      if (res && res.ok) {
-        console.log(`[Standings] ${fn} OK via ${v.label}`);
-        return res;
-      }
-      // Some handlers return raw true / result objects
-      if (res === true) {
-        console.log(`[Standings] ${fn} OK(true) via ${v.label}`);
-        return { ok:true, result:true };
-      }
-      // Treat {ok:false} / missing ok as failure
-      const msg = (res && (res.message || res.error)) ? (res.message || res.error) : "Call failed.";
-      lastErr = new Error(msg);
-      console.warn(`[Standings] ${fn} failed via ${v.label}:`, msg, res);
-    }catch(e){
-      lastErr = e;
-      console.warn(`[Standings] ${fn} threw via ${v.label}:`, e && e.message ? e.message : e);
-    }
-  }
-  throw lastErr || new Error("Call failed.");
 }
 
 function pointsForMode(mode){
@@ -2885,10 +2853,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGsFirstOk("faDeleteStandingsAdjustment_v1", [
-          { label:"object", args:{ id } },
-          { label:"array", args:[id] }
-        ]);
+        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2935,13 +2900,27 @@ function wireAdjustmentForm(){
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const payload = { id, dateKey, team, opp, delta, note };
-      const res = await runGsFirstOk("faUpsertStandingsAdjustment_v1", [
-        { label:"object", args: payload },
-        { label:"array_id_first", args:[id, dateKey, team, opp, delta, note] },
-        { label:"array_id_last",  args:[dateKey, team, opp, delta, note, id] },
-        { label:"array_iso",      args:[id, dateIso, team, opp, delta, note] }
-      ]);
+      const payloadObj = { id, dateKey, team, opp, delta, note };
+let res;
+// Try positional args first (common for /exec bridges)
+try{
+  res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
+}catch(e1){
+  // Fallback: single object argument
+  try{
+    res = await runGs("faUpsertStandingsAdjustment_v1", payloadObj);
+  }catch(e2){
+    // Fallback: without id (server may auto-generate)
+    try{
+      res = await runGs("faUpsertStandingsAdjustment_v1", [dateKey, team, opp, delta, note]);
+    }catch(e3){
+      // Re-throw the most informative error
+      const msg = (e2 && e2.message) ? e2.message : ((e1 && e1.message) ? e1.message : String(e3||e2||e1));
+      throw new Error(msg);
+    }
+  }
+}
+
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
@@ -2972,34 +2951,25 @@ async function reloadAllFromServer(){
 
   const standingsBase = pack.standings || [];
 const adjRows = pack.adjustments || [];
-const adjPsByTeam = Object.create(null);
-const adjPaByTeam = Object.create(null);
-
-// For each adjustment record (team vs opp, delta):
-// - add delta to TEAM's PS
-// - add delta to OPPONENT's PA (points allowed)
+const adjByTeam = Object.create(null);
 for (const a of adjRows){
   const t = String(a.team||"").trim();
-  const o = String(a.opp||"").trim();
+  if (!t) continue;
   const d = Number(a.delta||0);
   if (!isFinite(d) || d === 0) continue;
-  if (t) adjPsByTeam[t] = (adjPsByTeam[t] || 0) + d;
-  if (o) adjPaByTeam[o] = (adjPaByTeam[o] || 0) + d;
+  adjByTeam[t] = (adjByTeam[t] || 0) + d;
 }
 
 const standings = standingsBase.map(r=>{
   const t = String(r.team||"").trim();
   const ps0 = Number(r.ps||0);
   const pa0 = Number(r.pa||0);
-
-  const psAdj = ps0 + Number(adjPsByTeam[t]||0);
-  const paAdj = pa0 + Number(adjPaByTeam[t]||0);
-
-  const denom = psAdj + paAdj;
+  const adj = Number(adjByTeam[t]||0);
+  const psAdj = ps0 + adj;
+  const denom = psAdj + pa0;
   const pointsPctAdj = denom > 0 ? (psAdj / denom) : null;
-
   // keep base fields but also provide adjusted ones for display/sorting
-  return Object.assign({}, r, { psAdj, paAdj, pointsPctAdj, pointsPct: pointsPctAdj });
+  return Object.assign({}, r, { psAdj, pointsPctAdj, pointsPct: pointsPctAdj });
 }).sort((a,b)=>{
   const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
   const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
