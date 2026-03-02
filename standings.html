@@ -2963,7 +2963,6 @@ const standings = standingsBase.map(r=>{
     paAdj,
     pointsPctAdj
   });
-});
 }).sort((a,b)=>{
   const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
   const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
@@ -3013,5 +3012,4 @@ load();
 
 </body>
 </html>
-
 
