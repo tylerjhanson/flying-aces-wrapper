@@ -4178,7 +4178,7 @@ function renderOpponentResults(){
     const groups = Object.create(null);
 
     list.forEach(r => {
-      const team = stripOppPrefix(String(r.oppTeam || r.opponentTeam || "") || "(No team)");
+      const team = String(r.oppTeam || r.opponentTeam || "") || "(No team)";
       (groups[team] ||= []).push(r);
     });
 
@@ -4512,7 +4512,7 @@ function refreshStats(teamId, opts){
         setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
       }
     })
-    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId, force: !!opts.force });
+    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId });
 }
 
 
