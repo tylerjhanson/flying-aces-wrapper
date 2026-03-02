@@ -2853,7 +2853,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
+        const res = await runGs("faDeleteStandingsAdjustment_v1", [id]);
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2900,27 +2900,7 @@ function wireAdjustmentForm(){
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const payloadObj = { id, dateKey, team, opp, delta, note };
-let res;
-// Try positional args first (common for /exec bridges)
-try{
-  res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
-}catch(e1){
-  // Fallback: single object argument
-  try{
-    res = await runGs("faUpsertStandingsAdjustment_v1", payloadObj);
-  }catch(e2){
-    // Fallback: without id (server may auto-generate)
-    try{
-      res = await runGs("faUpsertStandingsAdjustment_v1", [dateKey, team, opp, delta, note]);
-    }catch(e3){
-      // Re-throw the most informative error
-      const msg = (e2 && e2.message) ? e2.message : ((e1 && e1.message) ? e1.message : String(e3||e2||e1));
-      throw new Error(msg);
-    }
-  }
-}
-
+      const res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
