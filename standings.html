@@ -1510,9 +1510,9 @@ html, body { touch-action: pan-x pan-y; }
     <div style="margin-top:10px; border-top:1px solid #eef2f7; padding-top:10px;">
             <div class="adj-grid">
         <div><div class="small">Date</div><input id="adjDate" type="date" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
-        <div><div class="small">Add penalty points</div><select id="adjTeam" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900; background:#fff;"></select></div>
+        <div><div class="small">Add points</div><select id="adjTeam" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900; background:#fff;"></select></div>
         <div><div class="small">Opponent team</div><select id="adjOpp" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900; background:#fff;"></select></div>
-        <div><div class="small">Penalty Points</div><input id="adjDelta" placeholder="4" inputmode="decimal" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
+        <div><div class="small">Points</div><input id="adjDelta" placeholder="4" inputmode="decimal" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
       </div>      <div style="display:flex; gap:10px; margin-top:10px; align-items:center; flex-wrap:wrap;">
         <button id="adjSave" style="border:0; border-radius:14px; padding:10px 14px; font-weight:1000; color:#fff; background:linear-gradient(var(--btn-angle), #ff3b3b, #e40000);">SAVE</button>        <div class="small" id="adjMsg"></div>
       </div>
@@ -2065,6 +2065,32 @@ function initSimulator(standingsRows){
   updateSimOut();
 }
 // -------------------------------------------------------------------
+
+
+function applyStandingsAdjustments(rows, adjustments){
+  const byTeam = new Map();
+  (adjustments || []).forEach(a=>{
+    const team = String(a.team||"").trim();
+    if (!team) return;
+    const d = Number(a.delta||0);
+    if (!isFinite(d) || Math.abs(d) < 1e-9) return;
+    byTeam.set(team, (byTeam.get(team)||0) + d);
+  });
+  if (byTeam.size === 0) return rows || [];
+
+  return (rows || []).map(r=>{
+    const t = String(r.team||"").trim();
+    const adj = byTeam.get(t) || 0;
+    if (!adj) return r;
+
+    const ps = Number(r.ps||0) + adj;
+    const pa = Number(r.pa||0);
+    const denom = ps + pa;
+    const pointsPct = denom > 0 ? (ps/denom) : 0;
+
+    return Object.assign({}, r, { ps, pointsPct, adjDelta: adj });
+  });
+}
 
 function renderStandings(rows, matchupCount){
 
@@ -2816,7 +2842,7 @@ function renderAdjustments(rows){
     const line =
       esc(dateLabel) + " • " +
       esc((r.team||"").trim()) + " vs " + esc((r.opp||"").trim()) +
-      " • " + esc(fmtPts(Math.abs(Number(r.delta||0)))) + " pts";
+      " • " + ((Number(r.delta||0) >= 0) ? "+" : "") + esc(fmtPts(r.delta));
     html += "<div style='border:1px solid #eef2f7; border-radius:14px; padding:10px; background:#fff;'>" +
               "<div style='display:flex; justify-content:space-between; gap:10px; align-items:flex-start;'>" +
                 "<div style='font-weight:950;'>" + line + "</div>" +
@@ -2838,8 +2864,7 @@ function renderAdjustments(rows){
       $("adjDate").value = (parseDateKey(r.dateKey || r.dateDisp || "") || "");
       $("adjTeam").value = r.team || "";
       $("adjOpp").value = r.opp || "";
-      const d = Number(r.delta ?? 0);
-      $("adjDelta").value = (isFinite(d) ? String(Math.abs(d)) : "");
+      $("adjDelta").value = String(Math.abs(Number(r.delta ?? 0)));
       $("adjSave").setAttribute("data-id", String(r.id||""));
       $("adjMsg").textContent = "Editing adjustment…";
     });
@@ -2889,9 +2914,9 @@ function wireAdjustmentForm(){
     const note = "";
 
     const rawDelta = Number(deltaStr);
-    const delta = -Math.abs(rawDelta); // user enters positive penalty points; we store as negative delta
-    if (!dateKey || !team || !opp || !isFinite(rawDelta) || Math.abs(rawDelta) < 1e-9){
-      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a positive Penalty Points value.";
+    const delta = Math.abs(rawDelta); // user enters positive points awarded to the selected team
+    if (!dateKey || !team || !opp || !isFinite(rawDelta) || delta <= 0){
+      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a positive Points value.";
       return;
     }
 
@@ -2934,13 +2959,16 @@ async function reloadAllFromServer(){
 
   _lastMatchups = matchdays;
 
-  renderStandings(standings, matchdays.length);
-  fillTeamDropdowns(standings);
-  initSimulator(standings);
+  const adjustments = pack.adjustments || [];
+  const standingsAdj = applyStandingsAdjustments(standings, adjustments);
+
+  renderStandings(standingsAdj, matchdays.length);
+  fillTeamDropdowns(standingsAdj);
+  initSimulator(standingsAdj);
 
   renderMatchups(matchdays);
   renderUpsets(pack.upsets || []);
-  renderAdjustments(pack.adjustments || []);
+  renderAdjustments(adjustments);
 }
 
 async function load(){
