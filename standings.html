@@ -2066,32 +2066,6 @@ function initSimulator(standingsRows){
 }
 // -------------------------------------------------------------------
 
-
-function applyStandingsAdjustments(rows, adjustments){
-  const byTeam = new Map();
-  (adjustments || []).forEach(a=>{
-    const team = String(a.team||"").trim();
-    if (!team) return;
-    const d = Number(a.delta||0);
-    if (!isFinite(d) || Math.abs(d) < 1e-9) return;
-    byTeam.set(team, (byTeam.get(team)||0) + d);
-  });
-  if (byTeam.size === 0) return rows || [];
-
-  return (rows || []).map(r=>{
-    const t = String(r.team||"").trim();
-    const adj = byTeam.get(t) || 0;
-    if (!adj) return r;
-
-    const ps = Number(r.ps||0) + adj;
-    const pa = Number(r.pa||0);
-    const denom = ps + pa;
-    const pointsPct = denom > 0 ? (ps/denom) : 0;
-
-    return Object.assign({}, r, { ps, pointsPct, adjDelta: adj });
-  });
-}
-
 function renderStandings(rows, matchupCount){
 
   const tb = $("body");
@@ -2104,13 +2078,16 @@ function renderStandings(rows, matchupCount){
 
   rows.forEach(r=>{
     const tr = document.createElement("tr");
-    const pp = (r.pointsPct==null) ? "" : (Math.round(Number(r.pointsPct)*10000)/100).toFixed(2)+"%";
+    const ps = Number((r.psAdj!=null) ? r.psAdj : r.ps) || 0;
+    const pa = Number((r.paAdj!=null) ? r.paAdj : r.pa) || 0;
+    const pctVal = (r.pointsPctAdj!=null) ? r.pointsPctAdj : r.pointsPct;
+    const pp = (pctVal==null) ? "" : (Math.round(Number(pctVal)*10000)/100).toFixed(2)+"%";
     tr.innerHTML =
       "<td style='font-weight:950; text-align:left;'>" + esc(dispTeamName(r.team)) + "</td>" +
       "<td>" + Number(r.w||0) + "</td>" +
       "<td>" + Number(r.l||0) + "</td>" +
-      "<td>" + esc(fmtPts(r.ps)) + "</td>" +
-      "<td>" + esc(fmtPts(r.pa)) + "</td>" +
+      "<td>" + esc(fmtPts(ps)) + "</td>" +
+      "<td>" + esc(fmtPts(pa)) + "</td>" +
       "<td style='font-weight:950;'><span class='pill'>" + pp + "</span></td>";
     tb.appendChild(tr);
   });
@@ -2842,7 +2819,7 @@ function renderAdjustments(rows){
     const line =
       esc(dateLabel) + " • " +
       esc((r.team||"").trim()) + " vs " + esc((r.opp||"").trim()) +
-      " • " + ((Number(r.delta||0) >= 0) ? "+" : "") + esc(fmtPts(r.delta));
+      " • " + esc(fmtPts(Math.abs(Number(r.delta||0))));
     html += "<div style='border:1px solid #eef2f7; border-radius:14px; padding:10px; background:#fff;'>" +
               "<div style='display:flex; justify-content:space-between; gap:10px; align-items:flex-start;'>" +
                 "<div style='font-weight:950;'>" + line + "</div>" +
@@ -2864,7 +2841,7 @@ function renderAdjustments(rows){
       $("adjDate").value = (parseDateKey(r.dateKey || r.dateDisp || "") || "");
       $("adjTeam").value = r.team || "";
       $("adjOpp").value = r.opp || "";
-      $("adjDelta").value = String(Math.abs(Number(r.delta ?? 0)));
+      $("adjDelta").value = String((r.delta==null||r.delta==="") ? "" : Math.abs(Number(r.delta)));
       $("adjSave").setAttribute("data-id", String(r.id||""));
       $("adjMsg").textContent = "Editing adjustment…";
     });
@@ -2906,18 +2883,18 @@ function wireAdjustmentForm(){
   saveBtn.addEventListener("click", async ()=>{
     const id = saveBtn.getAttribute("data-id") || "";
     const dateRaw = String($("adjDate").value||"").trim();
-    const dateIso = dateRaw ? parseDateKey(dateRaw) : "";  // normalize to YYYY-MM-DD
-    const dateKey = dateIso ? fmtDateShort(dateIso) : "";  // backend expects m/d/yy
+    const dateIso = parseDateKey(dateRaw); // normalize to YYYY-MM-DD
+    const dateKey = dateIso ? fmtDateShort(dateIso) : ""; // server expects m/d/yy
     const dateDisp = dateKey; // for UI only
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
     const note = "";
 
-    const rawDelta = Number(deltaStr);
-    const delta = Math.abs(rawDelta); // user enters positive points awarded to the selected team
-    if (!dateKey || !team || !opp || !isFinite(rawDelta) || delta <= 0){
-      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a positive Points value.";
+    const deltaNum = Number(deltaStr);
+    const delta = Math.abs(deltaNum);
+    if (!dateKey || !team || !opp || !isFinite(delta)){
+      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a numeric Points value.";
       return;
     }
 
@@ -2952,7 +2929,40 @@ async function reloadAllFromServer(){
     _matchMetaLoaded = true;
   }
 
-  const standings = pack.standings || [];
+  const standingsBase = pack.standings || [];
+const adjRows = pack.adjustments || [];
+const adjByTeam = Object.create(null);
+for (const a of adjRows){
+  const t = String(a.team||"").trim();
+  if (!t) continue;
+  const d = Number(a.delta||0);
+  if (!isFinite(d) || d === 0) continue;
+  adjByTeam[t] = (adjByTeam[t] || 0) + d;
+}
+
+const standings = standingsBase.map(r=>{
+  const t = String(r.team||"").trim();
+  const ps0 = Number(r.ps||0);
+  const pa0 = Number(r.pa||0);
+  const adj = Number(adjByTeam[t]||0);
+  const psAdj = ps0 + adj;
+  const denom = psAdj + pa0;
+  const pointsPctAdj = denom > 0 ? (psAdj / denom) : null;
+  // keep base fields but also provide adjusted ones for display/sorting
+  return Object.assign({}, r, { psAdj, pointsPctAdj, pointsPct: pointsPctAdj });
+}).sort((a,b)=>{
+  const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
+  const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
+  if (bp !== ap) return bp - ap;
+
+  const aps = Number(a.psAdj||0), bps = Number(b.psAdj||0);
+  if (bps !== aps) return bps - aps;
+
+  const aw = Number(a.w||0), bw = Number(b.w||0);
+  if (bw !== aw) return bw - aw;
+
+  return String(a.team||"").localeCompare(String(b.team||""));
+});
   const matchdays = (pack.matchdays || []).map(m=>{
     const dk = String(m.dateKey||"").trim();
     return Object.assign({}, m, { dateShort: dk ? fmtDateShort(dk) : "" });
@@ -2960,16 +2970,13 @@ async function reloadAllFromServer(){
 
   _lastMatchups = matchdays;
 
-  const adjustments = pack.adjustments || [];
-  const standingsAdj = applyStandingsAdjustments(standings, adjustments);
-
-  renderStandings(standingsAdj, matchdays.length);
-  fillTeamDropdowns(standingsAdj);
-  initSimulator(standingsAdj);
+  renderStandings(standings, matchdays.length);
+  fillTeamDropdowns(standings);
+  initSimulator(standings);
 
   renderMatchups(matchdays);
   renderUpsets(pack.upsets || []);
-  renderAdjustments(adjustments);
+  renderAdjustments(adjRows);
 }
 
 async function load(){
