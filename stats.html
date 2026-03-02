@@ -1998,8 +1998,9 @@ function setStatsTeam(teamId){
   let painted = false;
   try{
     const cached = loadCachedStats(teamId);
-    if (cached && cached.stats){
+    if (cached && cached.stats && String(cached.version||"") === String(window.FA_STATS_VERSION||"")){
       applyStats(cached.stats);
+      try{ FA_STATS_LAST_RENDER[_key(teamId)] = String(cached.version||""); }catch(_e){}
       painted = true;
     }
   }catch(e){}
@@ -4141,14 +4142,14 @@ function _fmtScore(r){
 function renderOpponentResults(){
   const meta = $("oppResultsMeta");
   const selected = $("oppFilter") ? $("oppFilter").value : "";
-  const selKey = _key(stripOppPrefix(selected));
 
   const src = (FA_RECENT_CACHE || []).slice();
 
   // Filter by selected opponent (or show all)
   const list = src.filter(r => {
     if (!selected) return true;
-    return _key(stripOppPrefix(r.oppTeam || r.opponentTeam || "")) === selKey;
+    const sk = _key(stripOppPrefix(selected));
+    return _key(stripOppPrefix(r.oppTeam || r.opponentTeam || "")) === sk;
   });
 
   // Sort helper for rows within a single opponent group:
@@ -4444,6 +4445,7 @@ let FA_STATS_LAST_RENDER = Object.create(null); // teamKey -> version
 function refreshStats(teamId, opts){
   opts = opts || {};
   const silent = !!opts.silent;
+  const force = !!opts.force;
 
   // default to current selected team
   teamId = String(teamId || getStatsTeam() || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
@@ -4480,7 +4482,7 @@ function refreshStats(teamId, opts){
         if (_key(getStatsTeam()) === curPickAtCall && reqId === FA_STATS_REQ_SEQ){
           // Skip heavy re-render if nothing changed for this team
           const ver = String(window.FA_STATS_VERSION || data.version || "");
-          if (FA_STATS_OBJ && _key(FA_STATS_OBJ.teamId || teamId) === curPickAtCall && ver && FA_STATS_LAST_RENDER[curPickAtCall] === ver){
+          if (!force && FA_STATS_OBJ && _key(FA_STATS_OBJ.teamId || teamId) === curPickAtCall && ver && FA_STATS_LAST_RENDER[curPickAtCall] === ver){
             // nothing to do
           } else {
             applyStats(data);
@@ -4513,7 +4515,7 @@ function refreshStats(teamId, opts){
         setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
       }
     })
-    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId });
+    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId, force: force });
 }
 
 
