@@ -4147,7 +4147,7 @@ function renderOpponentResults(){
   // Filter by selected opponent (or show all)
   const list = src.filter(r => {
     if (!selected) return true;
-    return _key(stripOppPrefix(r.oppTeam || r.opponentTeam || "")) === _key(stripOppPrefix(selected));
+    return _key(stripOppPrefix(String(r.oppTeam || r.opponentTeam || ""))) === _key(stripOppPrefix(String(selected||"")));
   });
 
   // Sort helper for rows within a single opponent group:
