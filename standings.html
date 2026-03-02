@@ -2853,7 +2853,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
+        const res = await runGs("faDeleteStandingsAdjustment_v1", [id]);
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2900,7 +2900,7 @@ function wireAdjustmentForm(){
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateKey, team, opp, delta, note });
+      const res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
