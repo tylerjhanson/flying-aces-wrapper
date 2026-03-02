@@ -2816,7 +2816,7 @@ function renderAdjustments(rows){
     const line =
       esc(dateLabel) + " • " +
       esc((r.team||"").trim()) + " vs " + esc((r.opp||"").trim()) +
-      " • " + ((Number(r.delta||0) >= 0) ? "+" : "") + esc(fmtPts(r.delta));
+      " • " + esc(fmtPts(Math.abs(Number(r.delta||0)))) + " pts";
     html += "<div style='border:1px solid #eef2f7; border-radius:14px; padding:10px; background:#fff;'>" +
               "<div style='display:flex; justify-content:space-between; gap:10px; align-items:flex-start;'>" +
                 "<div style='font-weight:950;'>" + line + "</div>" +
@@ -2838,7 +2838,8 @@ function renderAdjustments(rows){
       $("adjDate").value = (parseDateKey(r.dateKey || r.dateDisp || "") || "");
       $("adjTeam").value = r.team || "";
       $("adjOpp").value = r.opp || "";
-      $("adjDelta").value = String(r.delta ?? "");
+      const d = Number(r.delta ?? 0);
+      $("adjDelta").value = (isFinite(d) ? String(Math.abs(d)) : "");
       $("adjSave").setAttribute("data-id", String(r.id||""));
       $("adjMsg").textContent = "Editing adjustment…";
     });
@@ -2879,16 +2880,18 @@ function wireAdjustmentForm(){
 
   saveBtn.addEventListener("click", async ()=>{
     const id = saveBtn.getAttribute("data-id") || "";
-    const dateKey = String($("adjDate").value||"").trim();
-    const dateDisp = dateKey ? fmtDateShort(dateKey) : ""; // for UI only
+    const dateIso = String($("adjDate").value||"").trim(); // <input type="date"> gives YYYY-MM-DD
+    const dateKey = dateIso ? fmtDateShort(dateIso) : "";  // backend expects m/d/yy
+    const dateDisp = dateKey; // for UI only
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
     const note = "";
 
-    const delta = Number(deltaStr);
-    if (!dateKey || !team || !opp || !isFinite(delta)){
-      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a numeric Delta.";
+    const rawDelta = Number(deltaStr);
+    const delta = -Math.abs(rawDelta); // user enters positive penalty points; we store as negative delta
+    if (!dateKey || !team || !opp || !isFinite(rawDelta) || Math.abs(rawDelta) < 1e-9){
+      $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a positive Penalty Points value.";
       return;
     }
 
