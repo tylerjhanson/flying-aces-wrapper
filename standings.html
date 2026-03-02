@@ -2854,7 +2854,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
+        const res = await runGs("faDeleteStandingsAdjustment_v1", { id:id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2886,6 +2886,7 @@ function wireAdjustmentForm(){
     const dateRaw = String($("adjDate").value||"").trim();
     const dateIso = parseDateKey(dateRaw); // normalize to YYYY-MM-DD
     const dateKey = dateIso || ""; // server expects YYYY-MM-DD
+    const dateDisp = dateIso ? fmtDateShort(dateIso) : ""; // UI only
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
@@ -2900,7 +2901,8 @@ function wireAdjustmentForm(){
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateKey, team, opp, delta, note });
+      const payload = { id:id, dateKey:dateKey, team:team, opp:opp, delta:delta, note:note };
+      const res = await runGs("faUpsertStandingsAdjustment_v1", payload);
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
@@ -2963,18 +2965,25 @@ const standings = standingsBase.map(r=>{
 
   return Object.assign({}, r, { psAdj, paAdj, pointsPctAdj, pointsPct: pointsPctAdj });
 }).sort((a,b)=>{
+  // 1) Win% (ties count as half-win)
+  const ag = Number(a.w||0) + Number(a.l||0) + Number(a.t||0);
+  const bg = Number(b.w||0) + Number(b.l||0) + Number(b.t||0);
+  const awp = ag ? ((Number(a.w||0) + 0.5*Number(a.t||0)) / ag) : 0;
+  const bwp = bg ? ((Number(b.w||0) + 0.5*Number(b.t||0)) / bg) : 0;
+  if (bwp !== awp) return bwp - awp;
+
+  // 2) Points% (PS / (PS + PA), after adjustments)
   const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
   const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
   if (bp !== ap) return bp - ap;
 
+  // 3) PS (after adjustments)
   const aps = Number(a.psAdj||0), bps = Number(b.psAdj||0);
   if (bps !== aps) return bps - aps;
 
-  const aw = Number(a.w||0), bw = Number(b.w||0);
-  if (bw !== aw) return bw - aw;
-
   return String(a.team||"").localeCompare(String(b.team||""));
 });
+
   const matchdays = (pack.matchdays || []).map(m=>{
     const dk = String(m.dateKey||"").trim();
     return Object.assign({}, m, { dateShort: dk ? fmtDateShort(dk) : "" });
