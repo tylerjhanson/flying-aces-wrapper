@@ -2014,7 +2014,7 @@ function setStatsTeam(teamId){
   }
 
   // Always revalidate in background (server-side cache makes this fast)
-  refreshStats(teamId, { silent: true });
+  refreshStats(teamId, { silent: true, force: true });
 }
 
 
@@ -4141,13 +4141,14 @@ function _fmtScore(r){
 function renderOpponentResults(){
   const meta = $("oppResultsMeta");
   const selected = $("oppFilter") ? $("oppFilter").value : "";
+  const selKey = selected ? _key(selected) : "";
 
   const src = (FA_RECENT_CACHE || []).slice();
 
   // Filter by selected opponent (or show all)
   const list = src.filter(r => {
-    if (!selected) return true;
-    return _key(stripOppPrefix(String(r.oppTeam || r.opponentTeam || ""))) === _key(stripOppPrefix(selected));
+    if (!selKey) return true;
+    return _key(String(r.oppTeam || r.opponentTeam || "")) === selKey;
   });
 
   // Sort helper for rows within a single opponent group:
@@ -4177,25 +4178,28 @@ function renderOpponentResults(){
     // 3) within each opponent group, apply the same category+date sort
     const groups = Object.create(null);
 
+    // Group by normalized opponent key so "OPP - Cranbury" and "Cranbury" are treated the same.
     list.forEach(r => {
-      const team = stripOppPrefix(String(r.oppTeam || r.opponentTeam || "")) || "(No team)";
-      (groups[team] ||= []).push(r);
+      const raw = String(r.oppTeam || r.opponentTeam || "") || "(No team)";
+      const k = (raw === "(No team)") ? raw : _key(raw);
+      if (!groups[k]) groups[k] = { team: raw, rows: [] };
+      groups[k].rows.push(r);
     });
 
-    const groupArr = Object.keys(groups).map(team => {
-      const rows = groups[team];
+    const groupArr = Object.keys(groups).map(k => {
+      const rows = groups[k].rows;
       let latest = 0;
       for (let i=0; i<rows.length; i++){
         const t = _rowDateKey(rows[i]);
         if (t > latest) latest = t;
       }
-      return { team, latest, rows };
+      return { team: groups[k].team, latest, rows };
     });
 
     groupArr.sort((a,b) => {
       if (b.latest !== a.latest) return b.latest - a.latest;
       // stable-ish: alphabetical fallback
-      return a.team.localeCompare(b.team);
+      return stripOppPrefix(a.team).localeCompare(stripOppPrefix(b.team));
     });
 
     groupArr.forEach(g => {
@@ -4443,6 +4447,7 @@ let FA_STATS_LAST_RENDER = Object.create(null); // teamKey -> version
 function refreshStats(teamId, opts){
   opts = opts || {};
   const silent = !!opts.silent;
+  const force  = !!opts.force;
 
   // default to current selected team
   teamId = String(teamId || getStatsTeam() || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
@@ -4512,7 +4517,7 @@ function refreshStats(teamId, opts){
         setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
       }
     })
-    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId });
+    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId, force: force });
 }
 
 
