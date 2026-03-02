@@ -825,7 +825,6 @@ html, body { touch-action: pan-x pan-y; }
 </div>
 <script>
 
-window.__STANDINGS_BUILD = "penaltyfix-2026-03-02b";
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
    =========================== */
@@ -2918,120 +2917,75 @@ function wireAdjustmentForm(){
 }
 
 async function reloadAllFromServer(){
-  const packRaw = await runGs("faGetStandingsPack_v1", { upsetLimit: 15 });
-  let pack = packRaw;
-  try{ if (typeof pack === "string") pack = JSON.parse(pack); }catch(_){}
-  if (!pack || pack.ok === false) throw new Error((pack && pack.message) ? pack.message : "Standings pack load failed.");
+  // We still use the pack for: upsets + league-wide match meta (home/neutral),
+  // but compute standings + matchday totals from MatchLog + StandingsAdjustments
+  // so penalty points always apply correctly.
+  let packRaw = null, pack = {};
+  try{
+    packRaw = await runGs("faGetStandingsPack_v1", { upsetLimit: 15 });
+    pack = packRaw;
+    try{ if (typeof pack === "string") pack = JSON.parse(pack); }catch(_){}
+    if (!pack || pack.ok === false) pack = {};
+  }catch(_e){
+    pack = {};
+  }
 
   // League-wide match meta (home/neutral)
   try{
-    if (pack.meta) _setMatchMetaMapFromServer_(pack.meta);
+    if (pack && pack.meta) _setMatchMetaMapFromServer_(pack.meta);
+    else {
+      // fallback: fetch directly
+      const mm = await runGs("faGetMatchMeta_v1", {});
+      if (mm && mm.ok && mm.meta) _setMatchMetaMapFromServer_(mm.meta);
+    }
     _matchMetaLoaded = true;
   }catch(e){
-    console.warn("MatchMeta parse failed:", e);
+    console.warn("MatchMeta load failed:", e);
     _matchMetaLoaded = true;
   }
 
-  const standingsBase = pack.standings || [];
-
-  // Normalize adjustments (sheet headers often come back TitleCase)
-  const adjRowsRaw = pack.adjustments || [];
-  const adjRows = (adjRowsRaw || []).map(a=>({
-    id: (a && (a.id || a.ID)) || "",
-    dateKey: (a && (a.dateKey || a.DateKey || a.date || a.Date)) || "",
-    dateDisp: (a && (a.dateDisp || a.DateDisp)) || "",
-    team: (a && (a.team || a.Team)) || "",
-    opp: (a && (a.opp || a.Opp || a.opponent || a.Opponent)) || "",
-    delta: (a && (a.delta != null ? a.delta : a.Delta)) || 0,
-    note: (a && (a.note || a.Note)) || "",
-    updatedAt: (a && (a.updatedAt || a.UpdatedAt)) || ""
-  }));
-
-  // Apply adjustments to standings:
-  // - team gets PS += delta
-  // - opponent gets PA += delta
-  // Key by normalized names so casing/spaces don't matter.
-  const adjPS = Object.create(null);
-  const adjPA = Object.create(null);
-  for (const a of adjRows){
-    const team = normTeam(a.team);
-    const opp  = normTeam(a.opp);
-    const d = Number(a.delta||0);
-    if (!team || !isFinite(d) || d === 0) continue;
-    adjPS[team] = (adjPS[team] || 0) + d;
-    if (opp) adjPA[opp] = (adjPA[opp] || 0) + d;
+  // Fetch MatchLog rows (authoritative for point totals)
+  let mlRows = [];
+  try{
+    const ml = await runGs("faGetMatchLogRows_v1", {});
+    if (ml && ml.ok && Array.isArray(ml.rows)) mlRows = ml.rows;
+    else if (Array.isArray(ml)) mlRows = ml;
+  }catch(e){
+    console.warn("MatchLog load failed:", e);
   }
 
-  const standings = standingsBase.map(r=>{
-    const tName = String(r.team||"").trim();
-    const tKey = normTeam(tName);
-    const ps0 = Number(r.ps||0);
-    const pa0 = Number(r.pa||0);
-    const w = Number(r.w||0), l = Number(r.l||0), tt = Number(r.t||0);
-    const games = w + l + tt;
-    const winPct = games ? ((w + 0.5*tt) / games) : 0;
-
-    const psAdj = ps0 + Number(adjPS[tKey] || 0);
-    const paAdj = pa0 + Number(adjPA[tKey] || 0);
-    const denom = psAdj + paAdj;
-    const pointsPctAdj = denom > 0 ? (psAdj / denom) : null;
-
-    return Object.assign({}, r, { psAdj, paAdj, winPct, pointsPctAdj, pointsPct: pointsPctAdj });
-  }).sort((a,b)=>{
-    // 1) overall win% (primary)
-    const awp = Number(a.winPct||0), bwp = Number(b.winPct||0);
-    if (bwp !== awp) return bwp - awp;
-    // 2) points% (tiebreak)
-    const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
-    const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
-    if (bp !== ap) return bp - ap;
-    // 3) points scored
-    const aps = Number(a.psAdj||0), bps = Number(b.psAdj||0);
-    if (bps !== aps) return bps - aps;
-    return String(a.team||"").localeCompare(String(b.team||""));
-  });
-
-  // Apply adjustments to matchday totals so the match cards show the added points.
-  function applyAdjustmentsToMatchdays(matchdays, adjRows){
-    if (!matchdays || !matchdays.length || !adjRows || !adjRows.length) return matchdays;
-
-    const byKey = Object.create(null); // dk|pair -> { teamKey: delta }
-    for (const a of adjRows){
-      const dk = parseDateKey(a.dateKey || a.dateDisp || "");
-      const t1 = normTeam(a.team);
-      const t2 = normTeam(a.opp);
-      const d = Number(a.delta||0);
-      if (!dk || !t1 || !t2 || !isFinite(d) || d===0) continue;
-      const pair = [t1,t2].sort().join("|");
-      const k = dk + "|" + pair;
-      if (!byKey[k]) byKey[k] = Object.create(null);
-      byKey[k][t1] = (byKey[k][t1]||0) + d;
-    }
-
-    return matchdays.map(m=>{
-      const dk = String(m.dateKey||"");
-      const lt = normTeam(m.leftTeam);
-      const rt = normTeam(m.rightTeam);
-      const pair = [lt,rt].sort().join("|");
-      const k = dk + "|" + pair;
-      const deltas = byKey[k];
-      if (!deltas) return m;
-
-      let lp = Number(m.leftPts||0);
-      let rp = Number(m.rightPts||0);
-      if (lt && deltas[lt]) lp += Number(deltas[lt]||0);
-      if (rt && deltas[rt]) rp += Number(deltas[rt]||0);
-      const cls = (lp > rp) ? "score-win" : (rp > lp) ? "score-loss" : "score-tie";
-      return Object.assign({}, m, { leftPts: lp, rightPts: rp, cls });
-    });
+  // Fetch adjustments (authoritative; avoids any pack.adjustments shape issues)
+  let adjRows = [];
+  try{
+    const ar = await runGs("faGetStandingsAdjustments_v1", {});
+    if (ar && ar.ok && Array.isArray(ar.rows)) adjRows = ar.rows;
+    else if (Array.isArray(ar)) adjRows = ar;
+  }catch(e){
+    console.warn("Adjustments load failed:", e);
   }
 
-  let matchdays = (pack.matchdays || []).map(m=>{
-    const dk = String(m.dateKey||"").trim();
-    return Object.assign({}, m, { dateShort: dk ? fmtDateShort(dk) : "" });
+  // Compute standings + matchdays from MatchLog + adjustments
+  const computed = computeFromMatchLog(mlRows, adjRows);
+  const standings = (computed.standings || []).map(r=>{
+    // adapt to renderStandings expectations (w/l/ps/pa/pointsPctAdj)
+    return {
+      team: r.team,
+      w: r.w,
+      l: r.l,
+      t: r.t,
+      psAdj: r.points,
+      paAdj: r.pa,
+      pointsPctAdj: r.pointsPct,
+      pointsPct: r.pointsPct,
+      winPct: r.winPct
+    };
   });
 
-  matchdays = applyAdjustmentsToMatchdays(matchdays, adjRows);
+  // Matchdays for cards
+  const matchdays = (computed.matchupList || []).map(m=>{
+    // keep existing fields used by renderMatchups/modal
+    return Object.assign({}, m, { dateShort: m.dateShort || (m.dateKey ? fmtDateShort(m.dateKey) : "") });
+  });
 
   _lastMatchups = matchdays;
 
@@ -3040,10 +2994,13 @@ async function reloadAllFromServer(){
   initSimulator(standings);
 
   renderMatchups(matchdays);
-  renderUpsets(pack.upsets || []);
+
+  // Upsets: prefer server-computed if available, otherwise clear
+  const upsets = (pack && pack.upsets) ? pack.upsets : [];
+  renderUpsets(upsets);
+
   renderAdjustments(adjRows);
 }
-
 async function load(){
   try{
     const adjWrap = $("adjWrap");
