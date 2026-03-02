@@ -2854,7 +2854,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", [id]);
+        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2885,8 +2885,7 @@ function wireAdjustmentForm(){
     const id = saveBtn.getAttribute("data-id") || "";
     const dateRaw = String($("adjDate").value||"").trim();
     const dateIso = parseDateKey(dateRaw); // normalize to YYYY-MM-DD
-    const dateKey = dateIso ? fmtDateShort(dateIso) : ""; // server expects m/d/yy
-    const dateDisp = dateKey; // for UI only
+    const dateKey = dateIso || ""; // server expects YYYY-MM-DD
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
@@ -2901,7 +2900,7 @@ function wireAdjustmentForm(){
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
+      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateKey, team, opp, delta, note });
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
