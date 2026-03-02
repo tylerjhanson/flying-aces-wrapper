@@ -824,8 +824,8 @@ html, body { touch-action: pan-x pan-y; }
 </div>
 </div>
 <script>
-window.__STANDINGS_BUILD="penaltyfix-2026-03-02";
 
+window.__STANDINGS_BUILD = "penaltyfix-2026-03-02";
 window.__STANDINGS_BUILD = "exec-fix-pspa-2026-03-01";
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
@@ -2856,7 +2856,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", { id:id });
+        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2886,8 +2886,10 @@ function wireAdjustmentForm(){
   saveBtn.addEventListener("click", async ()=>{
     const id = saveBtn.getAttribute("data-id") || "";
     const dateRaw = String($("adjDate").value||"").trim();
-    const dateKeyIso = parseDateKey(dateRaw); // YYYY-MM-DD (server may require this)
-    const dateDisp = dateKeyIso ? fmtDateShort(dateKeyIso) : ""; // m/d/yy (legacy server)
+    const dateIso = parseDateKey(dateRaw); // normalize to YYYY-MM-DD
+    const dateKey = dateIso || ""; // send ISO to server
+    const dateDisp = dateIso ? fmtDateShort(dateIso) : ""; // m/d/yy for legacy/server display
+
     const team = String($("adjTeam").value||"").trim();
     const opp  = String($("adjOpp").value||"").trim();
     const deltaStr = String($("adjDelta").value||"").trim();
@@ -2895,14 +2897,14 @@ function wireAdjustmentForm(){
 
     const deltaNum = Number(deltaStr);
     const delta = Math.abs(deltaNum);
-    if (!dateKeyIso || !team || !opp || !isFinite(delta)){
+    if (!dateKey || !team || !opp || !isFinite(delta)){
       $("adjMsg").textContent = "Please fill Date, Team, Opponent, and a numeric Points value.";
       return;
     }
 
     $("adjMsg").textContent = "Saving…";
     try{
-      const res = await runGs("faUpsertStandingsAdjustment_v1", { id:id, dateKey:dateKeyIso, dateDisp:dateDisp, team:team, opp:opp, delta:delta, note:note });
+      const res = await runGs("faUpsertStandingsAdjustment_v1", { id, dateKey, dateDisp, team, opp, delta, note });
       if (res && res.ok){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
@@ -2965,18 +2967,15 @@ const standings = standingsBase.map(r=>{
 
   return Object.assign({}, r, { psAdj, paAdj, pointsPctAdj, pointsPct: pointsPctAdj });
 }).sort((a,b)=>{
-  const aw = Number(a.w||0), al = Number(a.l||0);
-  const bw = Number(b.w||0), bl = Number(b.l||0);
-  const awp = (aw+al) > 0 ? (aw/(aw+al)) : 0;
-  const bwp = (bw+bl) > 0 ? (bw/(bw+bl)) : 0;
-  if (bwp !== awp) return bwp - awp;
-
   const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
   const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
   if (bp !== ap) return bp - ap;
 
   const aps = Number(a.psAdj||0), bps = Number(b.psAdj||0);
   if (bps !== aps) return bps - aps;
+
+  const aw = Number(a.w||0), bw = Number(b.w||0);
+  if (bw !== aw) return bw - aw;
 
   return String(a.team||"").localeCompare(String(b.team||""));
 });
