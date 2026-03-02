@@ -2535,7 +2535,7 @@ function submitLeagueMatch(){
       // Refresh stats if this match involved the currently-selected stats team
       try{
         const statsTeam = getStatsTeam();
-        if (_key(teamA) === _key(statsTeam) || _key(teamB) === _key(statsTeam)) refreshStats(statsTeam, { silent:true, force:true });
+        if (_key(teamA) === _key(statsTeam) || _key(teamB) === _key(statsTeam)) refreshStats();
       }catch(e){
         console.error(e);
       }
@@ -4147,7 +4147,7 @@ function renderOpponentResults(){
   // Filter by selected opponent (or show all)
   const list = src.filter(r => {
     if (!selected) return true;
-    return _key(String(r.oppTeam || r.opponentTeam || "")) === _key(selected);
+    return _key(stripOppPrefix(String(r.oppTeam || r.opponentTeam || ""))) === _key(stripOppPrefix(selected));
   });
 
   // Sort helper for rows within a single opponent group:
@@ -4178,7 +4178,7 @@ function renderOpponentResults(){
     const groups = Object.create(null);
 
     list.forEach(r => {
-      const team = String(r.oppTeam || r.opponentTeam || "") || "(No team)";
+      const team = stripOppPrefix(String(r.oppTeam || r.opponentTeam || "")) || "(No team)";
       (groups[team] ||= []).push(r);
     });
 
@@ -4443,7 +4443,6 @@ let FA_STATS_LAST_RENDER = Object.create(null); // teamKey -> version
 function refreshStats(teamId, opts){
   opts = opts || {};
   const silent = !!opts.silent;
-  const force  = !!opts.force;
 
   // default to current selected team
   teamId = String(teamId || getStatsTeam() || "").trim() || (window.FA_ACES_TEAM || "Flying Aces");
@@ -4503,7 +4502,7 @@ function refreshStats(teamId, opts){
     .withFailureHandler(err => {
       FA_STATS_REFRESH_INFLIGHT = false;
       console.error(err);
-      setDiag("Stats load error: " + (err && err.message ? err.message : err));
+      if (!silent) setDiag("Stats load error: " + (err && err.message ? err.message : err));
 
       // If pending refresh exists, try it
       if (FA_STATS_REFRESH_PENDING){
@@ -4513,7 +4512,7 @@ function refreshStats(teamId, opts){
         setTimeout(() => refreshStats(nextTeam, { silent:true }), 0);
       }
     })
-    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId, force: force });
+    .faGetStatsData_v2({ recentLimit: 200, teamId: teamId });
 }
 
 
