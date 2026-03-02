@@ -2853,7 +2853,7 @@ function renderAdjustments(rows){
       if (!id) return;
       $("adjMsg").textContent = "Deleting…";
       try{
-        const res = await runGs("faDeleteStandingsAdjustment_v1", [id]);
+        const res = await runGs("faDeleteStandingsAdjustment_v1", { id });
         if (res && res.ok){
           $("adjMsg").textContent = "Deleted.";
           await reloadAllFromServer();
@@ -2901,12 +2901,12 @@ function wireAdjustmentForm(){
     $("adjMsg").textContent = "Saving…";
     try{
       const res = await runGs("faUpsertStandingsAdjustment_v1", [id, dateKey, team, opp, delta, note]);
-      if (res && res.ok){
+      if (res && (res.ok === true || res === true || res.result === true || res.success === true)){
         $("adjMsg").textContent = "Saved.";
         clearAdjForm();
         await reloadAllFromServer();
       } else {
-        $("adjMsg").textContent = (res && res.message) ? res.message : "Save failed.";
+        $("adjMsg").textContent = (res && (res.message || res.error)) ? (res.message || res.error) : "Save failed.";
       }
     }catch(e){
       $("adjMsg").textContent = e && e.message ? e.message : String(e);
@@ -2931,38 +2931,35 @@ async function reloadAllFromServer(){
 
   const standingsBase = pack.standings || [];
 const adjRows = pack.adjustments || [];
-const psAdjByTeam = Object.create(null);
-const paAdjByTeam = Object.create(null);
 
-// Each adjustment row is interpreted as "points awarded to team" (delta can be positive or negative).
-// Those same points should count as points-against (PA) for the opponent in that matchup.
+// Apply adjustments as:
+// - team gets PS += delta
+// - opponent gets PA += delta
+const adjPS = Object.create(null);
+const adjPA = Object.create(null);
+
 for (const a of adjRows){
-  const team = String(a.team||"").trim();
-  const opp  = String(a.opp||a.opponent||"").trim();
+  const t = String(a.team||"").trim();
+  const o = String(a.opp||a.opponent||"").trim();
   const d = Number(a.delta||0);
-  if (!team || !isFinite(d) || d === 0) continue;
+  if (!isFinite(d) || d === 0) continue;
 
-  psAdjByTeam[team] = (psAdjByTeam[team] || 0) + d;
-  if (opp) paAdjByTeam[opp] = (paAdjByTeam[opp] || 0) + d;
+  if (t) adjPS[t] = (adjPS[t] || 0) + d;
+  if (o) adjPA[o] = (adjPA[o] || 0) + d;
 }
 
 const standings = standingsBase.map(r=>{
   const t = String(r.team||"").trim();
   const ps0 = Number(r.ps||0);
   const pa0 = Number(r.pa||0);
-
-  const psAdj = ps0 + Number(psAdjByTeam[t]||0);
-  const paAdj = pa0 + Number(paAdjByTeam[t]||0);
-
+  const psBump = Number(adjPS[t]||0);
+  const paBump = Number(adjPA[t]||0);
+  const psAdj = ps0 + psBump;
+  const paAdj = pa0 + paBump;
   const denom = psAdj + paAdj;
   const pointsPctAdj = denom > 0 ? (psAdj / denom) : null;
-
   // keep base fields but also provide adjusted ones for display/sorting
-  return Object.assign({}, r, {
-    psAdj,
-    paAdj,
-    pointsPctAdj
-  });
+  return Object.assign({}, r, { psAdj, paAdj, ps: psAdj, pa: paAdj, pointsPctAdj, pointsPct: pointsPctAdj });
 }).sort((a,b)=>{
   const ap = (a.pointsPctAdj==null) ? -1 : Number(a.pointsPctAdj);
   const bp = (b.pointsPctAdj==null) ? -1 : Number(b.pointsPctAdj);
@@ -3012,4 +3009,5 @@ load();
 
 </body>
 </html>
+
 
