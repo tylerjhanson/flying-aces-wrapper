@@ -826,7 +826,6 @@ html, body { touch-action: pan-x pan-y; }
 <script>
 
 window.__STANDINGS_BUILD = "penaltyfix-2026-03-02";
-window.__STANDINGS_BUILD = "exec-fix-pspa-2026-03-01";
 /* ===========================
    0) Disable pinch/zoom inside iframe (iOS Safari fallback)
    =========================== */
@@ -1693,15 +1692,18 @@ function computeFromMatchLog(rows, adjustments){
 
   // Build adjustment map: key = dateKey|sortedPair -> [{teamKey, delta}]
   const adjMap = new Map();
-  for (const a of (adjustments||[])){
+  const parsedAdjustments = [];
+  for (const a of (adjustments||[])) {
     const dk = parseDateKey(a.dateKey || a.dateDisp || "");
     const t1 = normTeam(a.team||"");
-    const t2 = normTeam(a.opp||"");
-    if (!dk || !t1 || !t2) continue;
+    const t2 = normTeam(a.opp||"" );
+    const delta = Number(a.delta||0);
+    if (!dk || !t1 || !t2 || !isFinite(delta) || !delta) continue;
     const pair = [t1,t2].sort().join("|");
     const key = dk + "|" + pair;
+    parsedAdjustments.push({ dk: dk, teamKey: t1, oppKey: t2, delta: delta });
     if (!adjMap.has(key)) adjMap.set(key, []);
-    adjMap.get(key).push({ teamKey: t1, delta: Number(a.delta||0) });
+    adjMap.get(key).push({ teamKey: t1, delta: delta });
   }
 
   function ensureLeagueTeam(teamKey, teamName){
@@ -1831,6 +1833,35 @@ function computeFromMatchLog(rows, adjustments){
       cls
     });
   }
+
+
+  // 3) Apply adjustments that don't match any matchup (still count in standings)
+  try{
+    const matchupKeySet = new Set(matchups.keys());
+    for (const ad of (parsedAdjustments||[])){
+      const dk = ad.dk;
+      const tK = ad.teamKey;
+      const oK = ad.oppKey;
+      const d  = Number(ad.delta||0);
+      if (!dk || !tK || !oK || !isFinite(d) || !d) continue;
+      const pair = [tK,oK].sort().join("|");
+      const key = dk + "|" + pair;
+      if (matchupKeySet.has(key)) continue;
+
+      const tExisting = teamTotals.get(tK);
+      const oExisting = teamTotals.get(oK);
+      const tName = tExisting ? tExisting.team : (dispTeamName(tK) || tK);
+      const oName = oExisting ? oExisting.team : (dispTeamName(oK) || oK);
+      const T = ensureLeagueTeam(tK, tName);
+      const O = ensureLeagueTeam(oK, oName);
+
+      T.points += d;
+      O.pa     += d;
+      const poss = Math.abs(d);
+      T.possible += poss;
+      O.possible += poss;
+    }
+  }catch(_){ }
 
   const standings = Array.from(teamTotals.values()).map(s=>{
     const games = s.w + s.l + s.t;
