@@ -2861,7 +2861,7 @@ function _computeUpsetsFromMatchdaysUsingTeamElo_(){
     return String(x.dateKey||"").localeCompare(String(y.dateKey||""));
   });
 
-  return rows.slice(0, 10);
+  return rows.slice(0, 5);
 }
 
 function _renderUpsetsSmart_(){
