@@ -1513,7 +1513,7 @@ html, body { touch-action: pan-x pan-y; }
         <div><div class="small">Date</div><input id="adjDate" type="date" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
         <div><div class="small">Add points</div><select id="adjTeam" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900; background:#fff;"></select></div>
         <div><div class="small">Opponent team</div><select id="adjOpp" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900; background:#fff;"></select></div>
-        <div><div class="small">Points</div><input id="adjDelta" inputmode="decimal" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
+        <div><div class="small">Points</div><input id="adjDelta" placeholder="4" inputmode="decimal" style="width:100%; padding:10px 10px; border:1px solid #e6edf5; border-radius:12px; font-weight:900;"></div>
       </div>      <div style="display:flex; gap:10px; margin-top:10px; align-items:center; flex-wrap:wrap;">
         <button id="adjSave" style="border:0; border-radius:14px; padding:10px 14px; font-weight:1000; color:#fff; background:linear-gradient(var(--btn-angle), #ff3b3b, #e40000);">SAVE</button>        <div class="small" id="adjMsg"></div>
       </div>
@@ -1900,6 +1900,7 @@ function fillTeamDropdowns(standingsRows){
 let _teamEloMap = Object.create(null);
 let _teamEloLoaded = false;
 let _lastMatchups = [];
+let _rawUpsetsFromServer = [];
 
 function isGas(){
   return (typeof google !== "undefined" && google.script && google.script.run);
@@ -1977,6 +1978,7 @@ function loadTeamEloAverages(){
         _teamEloMap[normTeam(t)] = e;
       });
       updateSimOut();
+      _renderUpsetsSmart_();
 })
     .catch(err=>{
       console.error(err);
@@ -2172,7 +2174,8 @@ function _renderFromStandingsPack_(pack){
 
   renderMatchups(matchdays);
 
-  renderUpsets(Array.isArray(pack.upsets) ? pack.upsets : []);
+  _rawUpsetsFromServer = (Array.isArray(pack.upsets) ? pack.upsets : []);
+  _renderUpsetsSmart_();
   renderAdjustments(Array.isArray(pack.adjustments) ? pack.adjustments : []);
 }
 
@@ -2797,6 +2800,82 @@ function renderMatchups(matchups){
   }
 }
 
+
+
+function _computeUpsetsFromMatchdaysUsingTeamElo_(){
+  const matchdays = Array.isArray(_lastMatchups) ? _lastMatchups : [];
+  if (!matchdays.length) return [];
+
+  const getElo = (team)=>{
+    if (!_teamEloMap) return NaN;
+    const e = _teamEloMap[normTeam(team)];
+    return Number(e);
+  };
+
+  const rows = [];
+  for (const m of matchdays){
+    if (!m) continue;
+
+    const aTeam = String(m.leftTeam||"");
+    const bTeam = String(m.rightTeam||"");
+    const aPts  = Number(m.leftPts||0);
+    const bPts  = Number(m.rightPts||0);
+    if (!aTeam || !bTeam) continue;
+
+    // determine winner/loser by points
+    let winner = "", loser = "", winPts = 0, losePts = 0;
+    if (aPts > bPts){
+      winner = aTeam; loser = bTeam; winPts = aPts; losePts = bPts;
+    } else if (bPts > aPts){
+      winner = bTeam; loser = aTeam; winPts = bPts; losePts = aPts;
+    } else {
+      // ignore ties for "upsets" list (no favorite/underdog)
+      continue;
+    }
+
+    const eloW = getElo(winner);
+    const eloL = getElo(loser);
+
+    // If Elo missing, fall back to neutral 50%
+    const expected = (isFinite(eloW) && isFinite(eloL)) ? eloWinProb(eloW, eloL) : 0.5;
+
+    rows.push({
+      matchupKey: m.matchupKey,
+      dateKey: m.dateKey,
+      expected: expected,
+      winner: winner,
+      loser: loser,
+      winPts: winPts,
+      losePts: losePts
+    });
+  }
+
+  // biggest upsets first = lowest expected win chance for the winner
+  rows.sort((x,y)=>{
+    const ax = Number(x.expected); const ay = Number(y.expected);
+    if (ax !== ay) return ax - ay;
+    // tie-breaker: smaller winner margin first (closer win is "less upset"?)
+    const mx = Math.abs(Number(x.winPts) - Number(x.losePts));
+    const my = Math.abs(Number(y.winPts) - Number(y.losePts));
+    if (mx !== my) return mx - my;
+    return String(x.dateKey||"").localeCompare(String(y.dateKey||""));
+  });
+
+  return rows.slice(0, 10);
+}
+
+function _renderUpsetsSmart_(){
+  // If team Elo averages are loaded, compute upsets to match the simulator model.
+  if (_teamEloMap && Object.keys(_teamEloMap).length){
+    const computed = _computeUpsetsFromMatchdaysUsingTeamElo_();
+    if (computed && computed.length){
+      renderUpsets(computed);
+      return;
+    }
+  }
+  // Fallback to server-provided list (still clickable + cached)
+  renderUpsets(Array.isArray(_rawUpsetsFromServer) ? _rawUpsetsFromServer : []);
+}
 
 function renderUpsets(upsets){
   const root = $("upsets");
