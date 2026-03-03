@@ -1944,8 +1944,7 @@ function fillSimTeamSelects(standingsRows){
     Array.from(selB.options).forEach(o=>{ o.disabled = (a && o.value === a); });
     if (selB.value === a) selB.value = "";
     updateSimOut();
-    if (_lastMatchups && _lastMatchups.length) renderUpsets(_lastMatchups);
-  }
+}
   selA.onchange = ()=>{ enforce(); };
   selB.onchange = ()=>{ updateSimOut(); };
 
@@ -1978,8 +1977,7 @@ function loadTeamEloAverages(){
         _teamEloMap[normTeam(t)] = e;
       });
       updateSimOut();
-    if (_lastMatchups && _lastMatchups.length) renderUpsets(_lastMatchups);
-    })
+})
     .catch(err=>{
       console.error(err);
       if (out) out.innerHTML = `<div class="small">Couldn’t load team Elo. Make sure PlayersDB has an <b>ELO</b> column.</div>`;
@@ -2110,6 +2108,73 @@ function _keyStr_(s){ return String(s||"").trim().toLowerCase(); }
 
 let _matchMetaMap = {};      // matchupKey -> { mode:"neutral"|"home", homeTeam?:string }
 let _matchMetaLoaded = false;
+
+// Standings pack + modal row caches (client-side)
+let _standingsVersion = "";         // server stats version (from pack.version)
+let _mdRowsCache = new Map();       // matchupKey -> rows array
+
+function _packCacheKey_(){ return "FA_STANDINGS_PACK_V2_CACHE"; }
+function _readStandingsPackCache_(){
+  try{
+    const raw = localStorage.getItem(_packCacheKey_());
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    const pack = obj && obj.pack ? obj.pack : null;
+    if (!pack || pack.ok === false) return null;
+    return pack;
+  }catch(_){
+    return null;
+  }
+}
+function _writeStandingsPackCache_(pack){
+  try{
+    localStorage.setItem(_packCacheKey_(), JSON.stringify({ ts: Date.now(), pack: pack }));
+  }catch(_){}
+}
+
+function _mdCacheKey_(matchupKey){
+  return "FA_MD_ROWS_V1|" + String(_standingsVersion||"") + "|" + String(matchupKey||"");
+}
+function _readMdRowsCache_(matchupKey){
+  try{
+    const raw = sessionStorage.getItem(_mdCacheKey_(matchupKey));
+    if (!raw) return null;
+    const rows = JSON.parse(raw);
+    return Array.isArray(rows) ? rows : null;
+  }catch(_){
+    return null;
+  }
+}
+function _writeMdRowsCache_(matchupKey, rows){
+  try{
+    sessionStorage.setItem(_mdCacheKey_(matchupKey), JSON.stringify(rows || []));
+  }catch(_){}
+}
+
+function _renderFromStandingsPack_(pack){
+  pack = pack || {};
+  if (pack.meta) _setMatchMetaMapFromServer_(pack.meta);
+  _matchMetaLoaded = true;
+
+  _standingsVersion = String(pack.version || "");
+
+  const standings = Array.isArray(pack.standings) ? pack.standings : [];
+  const matchdays = (Array.isArray(pack.matchdays) ? pack.matchdays : []).map(m=>{
+    m = m || {};
+    return Object.assign({}, m, { dateShort: m.dateShort || (m.dateKey ? fmtDateShort(m.dateKey) : "") });
+  });
+
+  _lastMatchups = matchdays;
+
+  renderStandings(standings, matchdays.length);
+  fillTeamDropdowns(standings);
+  initSimulator(standings);
+
+  renderMatchups(matchdays);
+
+  renderUpsets(Array.isArray(pack.upsets) ? pack.upsets : []);
+  renderAdjustments(Array.isArray(pack.adjustments) ? pack.adjustments : []);
+}
 
 function _normClientMeta_(m){
   if (!m) return null;
@@ -2577,13 +2642,30 @@ async function openMatchDetailsModal(m){
   modal.setAttribute("aria-hidden","false");
   try{ document.body.classList.add("modal-open"); }catch(_){}
 
-  // Load rows if needed
+  // Load rows (use client/session cache, then server)
+  const mdKey = String(m.matchupKey||"");
+  if (!m._rowsCache && mdKey){
+    try{
+      if (_mdRowsCache && _mdRowsCache.has(mdKey)){
+        m._rowsCache = _mdRowsCache.get(mdKey);
+      } else {
+        const sessRows = _readMdRowsCache_(mdKey);
+        if (sessRows){
+          m._rowsCache = sessRows;
+          try{ _mdRowsCache.set(mdKey, sessRows); }catch(_){}
+        }
+      }
+    }catch(_){}
+  }
+
   if (!m._rowsCache){
     if (cardsEl) cardsEl.innerHTML = "<div class='small' style='padding:8px 2px;'>Loading match details…</div>";
     try{
-      const res = await runGs("faGetMatchdayRows_v1", [String(m.matchupKey||"")]);
+      const res = await runGs("faGetMatchdayRows_v1", [mdKey]);
       const rows = (res && res.ok) ? (res.rows || []) : (res && res.rows ? res.rows : []);
       m._rowsCache = rows;
+      try{ _mdRowsCache.set(mdKey, rows); }catch(_){}
+      _writeMdRowsCache_(mdKey, rows);
     }catch(e){
       if (cardsEl) cardsEl.innerHTML = "<div class='small' style='padding:8px 2px;'>Couldn’t load match details.</div>";
       return;
@@ -2754,7 +2836,7 @@ function renderUpsets(upsets){
     };
 
     html += `
-      <div class="match-card ${cls}" style="cursor:pointer;" data-no-ptr="1">
+      <div class="match-card ${cls}" style="cursor:pointer;" data-no-ptr="1" data-matchup-key="${esc(String(u.matchupKey||\"\") )}">
         <div class="mc-left">
           <div class="mc-name"><span class="nm">${esc(leftTeam)}</span></div>
         </div>
@@ -2778,15 +2860,7 @@ function renderUpsets(upsets){
   html += "</div>";
   root.innerHTML = html;
 
-  root.querySelectorAll(".match-card").forEach(card=>{
-    card.addEventListener("click", ()=>{
-      const key = card.getAttribute("data-matchup-key");
-      // derive match object by winner/loser fallback above
-      // easiest: locate by closest matching inner text via data index isn't needed
-    });
-  });
-
-  // Delegate click handler to open modal
+  // Click to open match details
   root.querySelectorAll(".match-card").forEach((card, idx)=>{
     card.addEventListener("click", ()=>{
       const u = upsets[idx];
@@ -2917,89 +2991,39 @@ function wireAdjustmentForm(){
 }
 
 async function reloadAllFromServer(){
-  // We still use the pack for: upsets + league-wide match meta (home/neutral),
-  // but compute standings + matchday totals from MatchLog + StandingsAdjustments
-  // so penalty points always apply correctly.
-  let packRaw = null, pack = {};
+  // Render cached pack immediately (instant paint), then refresh from server.
+  const cachedPack = _readStandingsPackCache_();
+  if (cachedPack){
+    try{ _renderFromStandingsPack_(cachedPack); }catch(e){ console.warn("Cached pack render failed:", e); }
+  }
+
+  let packRaw = null, pack = null;
   try{
-    packRaw = await runGs("faGetStandingsPack_v1", { upsetLimit: 15 });
+    packRaw = await runGs("faGetStandingsPack_v1", { upsetLimit: 10 });
     pack = packRaw;
     try{ if (typeof pack === "string") pack = JSON.parse(pack); }catch(_){}
-    if (!pack || pack.ok === false) pack = {};
-  }catch(_e){
-    pack = {};
+  }catch(e){
+    console.warn("Standings pack load failed:", e);
+    return;
   }
 
-  // League-wide match meta (home/neutral)
+  if (!pack || pack.ok === false){
+    console.warn("Standings pack invalid:", pack);
+    return;
+  }
+
+  // Ensure match meta exists (should be included in pack; this is just a fallback)
   try{
-    if (pack && pack.meta) _setMatchMetaMapFromServer_(pack.meta);
-    else {
-      // fallback: fetch directly
+    if (!pack.meta){
       const mm = await runGs("faGetMatchMeta_v1", {});
-      if (mm && mm.ok && mm.meta) _setMatchMetaMapFromServer_(mm.meta);
+      if (mm && mm.ok && mm.meta) pack.meta = mm.meta;
     }
-    _matchMetaLoaded = true;
   }catch(e){
     console.warn("MatchMeta load failed:", e);
-    _matchMetaLoaded = true;
   }
 
-  // Fetch MatchLog rows (authoritative for point totals)
-  let mlRows = [];
-  try{
-    const ml = await runGs("faGetMatchLogRows_v1", {});
-    if (ml && ml.ok && Array.isArray(ml.rows)) mlRows = ml.rows;
-    else if (Array.isArray(ml)) mlRows = ml;
-  }catch(e){
-    console.warn("MatchLog load failed:", e);
-  }
-
-  // Fetch adjustments (authoritative; avoids any pack.adjustments shape issues)
-  let adjRows = [];
-  try{
-    const ar = await runGs("faGetStandingsAdjustments_v1", {});
-    if (ar && ar.ok && Array.isArray(ar.rows)) adjRows = ar.rows;
-    else if (Array.isArray(ar)) adjRows = ar;
-  }catch(e){
-    console.warn("Adjustments load failed:", e);
-  }
-
-  // Compute standings + matchdays from MatchLog + adjustments
-  const computed = computeFromMatchLog(mlRows, adjRows);
-  const standings = (computed.standings || []).map(r=>{
-    // adapt to renderStandings expectations (w/l/ps/pa/pointsPctAdj)
-    return {
-      team: r.team,
-      w: r.w,
-      l: r.l,
-      t: r.t,
-      psAdj: r.points,
-      paAdj: r.pa,
-      pointsPctAdj: r.pointsPct,
-      pointsPct: r.pointsPct,
-      winPct: r.winPct
-    };
-  });
-
-  // Matchdays for cards
-  const matchdays = (computed.matchupList || []).map(m=>{
-    // keep existing fields used by renderMatchups/modal
-    return Object.assign({}, m, { dateShort: m.dateShort || (m.dateKey ? fmtDateShort(m.dateKey) : "") });
-  });
-
-  _lastMatchups = matchdays;
-
-  renderStandings(standings, matchdays.length);
-  fillTeamDropdowns(standings);
-  initSimulator(standings);
-
-  renderMatchups(matchdays);
-
-  // Upsets: prefer server-computed if available, otherwise clear
-  const upsets = (pack && pack.upsets) ? pack.upsets : [];
-  renderUpsets(upsets);
-
-  renderAdjustments(adjRows);
+  try{ _writeStandingsPackCache_(pack); }catch(_){}
+  _renderFromStandingsPack_(pack);
 }
 async function load(){
   try{
