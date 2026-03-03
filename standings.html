@@ -2836,7 +2836,7 @@ function renderUpsets(upsets){
     };
 
     html += `
-      <div class="match-card ${cls}" style="cursor:pointer;" data-no-ptr="1" data-matchup-key="${esc(String(u.matchupKey||\"\") )}">
+      <div class="match-card ${cls}" style="cursor:pointer;" data-no-ptr="1" data-matchup-key="${esc(String(u.matchupKey||"") )}">
         <div class="mc-left">
           <div class="mc-name"><span class="nm">${esc(leftTeam)}</span></div>
         </div>
