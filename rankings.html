@@ -313,6 +313,460 @@ th:nth-child(7), td:nth-child(7) { width: 10% !important; }
   border-radius:18px 18px 0 0;
 }
 
+
+/* =========================
+   Clickable player names + player modal (imported from Stats.html)
+   ========================= */
+
+/* clickable player names (same as Stats) */
+a.playerLink{ color:#111; text-decoration:none; font-weight:inherit; }
+a.playerLink:hover{ text-decoration:underline; }
+
+/* small/muted helpers used in the modal */
+.small{ font-size: 12px; color:#667085; font-weight:700; }
+.muted{ color:#667085; font-weight:700; }
+
+.modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2000;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.modal.show{ display:flex; }
+.modal-card{
+  width: min(640px, 100%);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.35);
+  padding: 14px;
+}
+/* sheet-style modal: fill height with equal top/bottom inset */
+:root{ --modal-inset: 12px; }
+.modal.modal-sheet{
+  align-items: stretch;
+  padding: calc(var(--modal-inset) + env(safe-area-inset-top)) var(--modal-inset) calc(var(--modal-inset) + env(safe-area-inset-bottom));
+}
+.modal.modal-sheet .modal-card{
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+}
+.modal.modal-sheet .modal-body{
+  flex:1;
+  max-height:none !important;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.modal-head .title{ font-weight:950; font-size:15px; }
+.icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background: linear-gradient(var(--btn-angle), #9aa3af, #6b7280);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+}
+.icon-btn span{ font-size:18px; line-height:1; }
+
+.form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+@media (max-width: 740px){ .form-grid{ grid-template-columns: 1fr; } }
+.field label{
+  display:block;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:#3a3f46;
+  margin:2px 0 6px;
+}
+.field select, .field input{
+  width:100%;
+  box-sizing:border-box;
+  border-radius:12px;
+  border:1px solid #e6e8ee;
+  padding:10px 12px;
+  font-size:13px;
+  outline:none;
+  background:#fff;
+}
+
+.btn-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+@media (max-width: 740px){ .btn-row{ grid-template-columns: 1fr; } }
+
+/* hide some columns on narrow screens (tables only) */
+@media (max-width: 520px){
+  thead th{ padding:9px 8px; }
+  tbody td{ padding:9px 8px; font-size:12px; }
+/* MEN/WOMEN roster tables: make Rating/Elo tighter so Name gets more width */
+@media (max-width: 520px){
+
+  /* Rating column */
+  #menRoster  table.stats th:nth-child(2),
+  #menRoster  table.stats td:nth-child(2),
+  #womenRoster table.stats th:nth-child(2),
+  #womenRoster table.stats td:nth-child(2){
+    width: 72px;
+    min-width: 72px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  /* Elo column */
+  #menRoster  table.stats th:nth-child(3),
+  #menRoster  table.stats td:nth-child(3),
+  #womenRoster table.stats th:nth-child(3),
+  #womenRoster table.stats td:nth-child(3){
+    width: 64px;
+    min-width: 64px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  /* OPTIONAL: if you prefer wrap instead of ellipsis */
+  /*
+  #menRoster  table.stats td:first-child,
+  #womenRoster table.stats td:first-child{
+    white-space: normal;
+    line-height: 1.15;
+  }
+  */
+}}
+
+/* =========================================================
+   Collapsible panels (CENTERED + ALL CAPS like your "good" version)
+   ========================================================= */
+details.collapsible{ padding:0; }
+details.collapsible > summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 14px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+  font-weight:950;
+  font-size:14px;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  position:relative;
+  list-style:none;
+}
+details.collapsible > summary::-webkit-details-marker{ display:none; }
+details.collapsible .collap-chevron{
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%) rotate(0deg);
+  transition: transform 180ms ease;
+  font-size:18px;
+  color:#667085;
+}
+details.collapsible[open] .collap-chevron{ transform: translateY(-50%) rotate(180deg); }
+details.collapsible .collap-body{ padding:0 14px 14px; }
+
+/* partner table: more row height + stacked names */
+.pair-table tbody td{ padding-top:14px; padding-bottom:14px; }
+.stack{ white-space:normal !important; line-height:1.15; }
+
+/* 
+=========================================================
+   Compact match rows (NOT bold names; score colored by result)
+   ========================================================= */
+.match-card{
+  background:#fff;
+  border:1px solid #eef2f7;
+  border-radius:16px;
+  padding:8px 10px;
+  display:grid;
+  grid-template-columns: 1fr 96px 1fr;
+  gap:8px;
+  align-items:center;
+
+  font-weight: 400; /* ✅ not bold overall */
+}
+
+/* outcome borders: left team vs right team */
+.match-card.score-win{
+  box-shadow: inset 6px 0 0 rgba(21,128,61,.22), inset -6px 0 0 rgba(185,28,28,.18);
+}
+.match-card.score-loss{
+  box-shadow: inset 6px 0 0 rgba(185,28,28,.18), inset -6px 0 0 rgba(21,128,61,.22);
+}
+.match-card.score-tie{
+  box-shadow: inset 6px 0 0 rgba(161,98,7,.18), inset -6px 0 0 rgba(161,98,7,.18);
+}
+
+/* center stack inside match-card (date over score + optional Elo delta) */
+.mc-mid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:0;
+  text-align:center;
+}
+.mc-date{
+  font-size:10px;
+  color:#667085;
+  font-weight:950;
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+.mc-delta{ font-size:11px; font-weight:950; line-height:1; min-height:12px; }
+.mc-delta:empty{ opacity:0; }
+
+.delta{ font-variant-numeric:tabular-nums; font-weight:950; }
+.delta.pos{ color:#15803d; }
+.delta.neg{ color:#b91c1c; }
+
+/* Score pill gets subtle background like ELO page */
+.mc-score.score-win{ background:#ecfdf3; color:#15803d; border:1px solid #bbf7d0; }
+.mc-score.score-loss{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+.mc-score.score-tie{ background:#f8fafc; color:#334155; border:1px solid #e2e8f0; }
+
+/* Elo number pill under player name (number only, no 'Elo' label) */
+.elo-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid #e7edf5;
+  background:#f8fafc;
+  color:#475569;
+  font-size:11px;
+  font-weight:900;
+  margin-top:0;
+}
+
+.match-card + .match-card{ margin-top:10px; }
+
+.mc-side-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:4px;
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Player blocks: name on top, rank+elo pills under (centered) */
+.mc-person{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin:4px 0;
+}
+.mc-person-name{
+  font-weight:700;
+  line-height:1.12;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-person-name a{ font-weight:700; }
+.mc-person-pills{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.eloMini{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid #e7edf5;
+  background:#f8fafc;
+  color:#475569;
+  font-size:11px;
+  font-weight:900;
+}
+
+.mc-left, .mc-right{
+  min-width:0;
+  font-weight: inherit; /* keep names non-bold */
+}
+.mc-left{ text-align:center; }
+.mc-right{ text-align:center; }
+
+.mc-left .mc-side-team{ text-align:center; }
+.mc-right .mc-side-team{ text-align:center; }
+
+.mc-name{
+  line-height:1.12;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.mc-right .mc-name{ justify-content:center; }
+.mc-left .mc-name{ justify-content:center; }
+
+.mc-name .nm{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.mc-name a{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+/* 3-col layout tweak: each side is centered and uses Team / (Rank+Elo) / Name */
+.mc-player{
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin-top:0;
+}
+.mc-player + .mc-player{ margin-top:10px; }
+.mc-pills{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.mc-player-name{
+  line-height:1.12;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-player-name a{
+  color:inherit;
+  text-decoration:none;
+}
+.mc-player-name a:hover{ text-decoration:underline; }
+
+.elo-pill{ flex:0 0 auto; }
+.mc-mid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  font-weight: 700; /* small center labels a bit stronger */
+}
+.mc-vs{
+  font-size:11px;
+  color:#667085;
+  line-height:1;
+  font-weight: 700;
+}
+.mc-mid-team{
+  font-size:10px;
+  font-weight:950;
+  color:#667085;
+  margin-bottom:3px;
+  text-align:center;
+  max-width:92px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-score{
+  font-weight:900;
+  text-align:center;
+  border-radius:12px;
+  padding:4px 6px;
+  min-width:68px;
+  border:1px solid #eef2f7;
+  background:#f8fafc;
+  line-height:1;
+}
+.mc-score-stroke{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:15px;
+}
+.mc-score-mp{ font-size:14px; line-height:1; }
+.score-win{ color:#15803d; }
+.score-loss{ color:#b91c1c; }
+.score-tie{ color:#a16207; }
+
+/* =========================================================
+   Rank pills (A/B/C/D + women AF/BF/CF)
+   - Aces pill on LEFT; Opp pill on RIGHT
+   ========================================================= */
+.rank-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0px;
+  padding:1px 4px;
+  border-radius:900px;
+  font-weight:1000;
+  font-size:10px;
+  line-height:1;
+  border:1px solid transparent;
+}
+.rank-left{ margin-right:6px; }
+.rank-right{ margin-left:6px; }
+
+/* Rank colors: A=green, B=blue, C=yellow, D=red; Women AF/BF/CF */
+.rank-A, .rank-AF{
+  background:#e8f7ee;
+  border-color:#bbf7d0;
+  color:#15803d;
+}
+.rank-B, .rank-BF{
+  background:#e8f1ff;
+  border-color:#bfdbfe;
+  color:#1d4ed8;
+}
+.rank-C, .rank-CF{
+  background:#fff7dd;
+  border-color:#fde68a;
+  color:#a16207;
+}
+.rank-D{
+  background:#ffe6e6;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
+
+@media (max-width: 520px){
+  .match-card{ grid-template-columns: 1fr 88px 1fr; padding:9px; }
+  .mc-score{ min-width:62px; padding:6px 7px; }
+  .mc-score-stroke{ font-size:14px; gap:5px; }
+}
+
 </style>
 </head>
 
@@ -1256,7 +1710,27 @@ html, body { touch-action: pan-x pan-y; }
   </div>
 </div>
 
+
 <div id="loadingOverlay"><div class="loadingPulse"></div></div>
+
+<!-- Player popup modal -->
+<div class="modal modal-sheet" id="playerModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+    <div class="modal-head">
+      <div class="title" id="pmTitle">PLAYER</div>
+      <button class="icon-btn" id="pmCloseBtn" type="button" aria-label="Close"><span>×</span></button>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="field" style="margin:0;">
+        <div class="small" id="pmMeta"></div>
+      </div>
+    </div>
+    <div class="modal-body" id="pmBody" style="overflow:auto; -webkit-overflow-scrolling:touch; padding:12px 14px;">
+      <div class="muted" style="font-weight:900;">Loading…</div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 /* ===== Big dialog helpers ===== */
@@ -1440,6 +1914,426 @@ function setLoading(on){
     if (el) el.disabled = !!on;
   });
 }
+
+
+/* =========================
+   Player result modal (same behavior as Stats page)
+   - Click any player name to open a match-history modal
+   ========================= */
+
+const FA_ACES_TEAM = (window.FA_ACES_TEAM || "Flying Aces").trim();
+
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+}
+function _key(s){ return String(s||"").trim().toLowerCase(); }
+function dispTeamName(s){ return (s||"").toString().replace(/^OPP\s*-\s*/i,"").trim(); }
+
+function gsRun(fn /*, ...args */){
+  const args = Array.prototype.slice.call(arguments, 1);
+  return new Promise((resolve, reject) => {
+    try{
+      const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      runner[fn].apply(runner, args);
+    }catch(e){ reject(e); }
+  });
+}
+
+function playerLinkHTML(name, team){
+  const nm = String(name||"").trim();
+  const tm = String(team||"").trim();
+  if (!nm) return "";
+  return `<a class="playerLink" href="#" data-name="${esc(nm)}" data-team="${esc(tm)}">${esc(nm)}</a>`;
+}
+
+/* ---------------- League Match Index (for instant player modals) ---------------- */
+let FA_MATCH_INDEX = null;
+let FA_MATCH_INDEX_LOADED_AT = 0;
+let FA_MATCH_INDEX_INFLIGHT = null;
+
+let FA_MATCH_PLAYERS_BY_ID = Object.create(null);     // id -> {id,name,team,rank,...}
+let FA_MATCH_ID_BY_NAME_TEAM = Object.create(null);   // "name|team" -> id
+let FA_MATCHES_BY_ID = Object.create(null);           // id -> [match,...] (chronological)
+
+function _nameTeamKey_(name, team){
+  return _key(name||"") + "|" + _key(team||"");
+}
+function _invertRes_(res){
+  res = String(res||"").toUpperCase();
+  if (res === "W") return "L";
+  if (res === "L") return "W";
+  return res; // T or blank
+}
+
+function loadLeagueMatchIndex(cb, force){
+  cb = cb || function(){};
+  const TTL = 5 * 60 * 1000; // 5 minutes
+  const now = Date.now();
+
+  if (!force && FA_MATCH_INDEX && (now - FA_MATCH_INDEX_LOADED_AT) < TTL){
+    cb(FA_MATCH_INDEX);
+    return;
+  }
+
+  if (FA_MATCH_INDEX_INFLIGHT){
+    FA_MATCH_INDEX_INFLIGHT.then(()=>cb(FA_MATCH_INDEX)).catch(()=>cb(null));
+    return;
+  }
+
+  FA_MATCH_INDEX_INFLIGHT = gsRun("faGetLeagueMatchIndex_v2", {});
+  FA_MATCH_INDEX_INFLIGHT.then(idx => {
+    FA_MATCH_INDEX_INFLIGHT = null;
+
+    if (typeof idx === "string") { try{ idx = JSON.parse(idx); }catch(_){ } }
+    if (!idx || idx.ok === false) { FA_MATCH_INDEX = null; cb(null); return; }
+
+    FA_MATCH_INDEX = idx;
+    FA_MATCH_INDEX_LOADED_AT = Date.now();
+
+    // players map + name/team resolver
+    FA_MATCH_PLAYERS_BY_ID = Object.create(null);
+    FA_MATCH_ID_BY_NAME_TEAM = Object.create(null);
+    (idx.players || []).forEach(p => {
+      if (!p || !p.id) return;
+      const id = String(p.id);
+      FA_MATCH_PLAYERS_BY_ID[id] = p;
+      const k = _nameTeamKey_(p.name, p.team);
+      if (k && !FA_MATCH_ID_BY_NAME_TEAM[k]) FA_MATCH_ID_BY_NAME_TEAM[k] = id;
+    });
+
+    // matches by id (chronological as stored)
+    FA_MATCHES_BY_ID = Object.create(null);
+    (idx.matches || []).forEach(m => {
+      if (!m) return;
+
+      // Resolve IDs if missing, using names + team
+      const teamA = m.teamA || "";
+      const teamB = m.teamB || "";
+
+      const aIds = (m.aIds || []).slice(0,3);
+      const bIds = (m.bIds || []).slice(0,3);
+      const aNames = (m.aNames || []).slice(0,3);
+      const bNames = (m.bNames || []).slice(0,3);
+
+      const resolvedA = [0,1,2].map(i => {
+        const raw = String(aIds[i] || "").trim();
+        if (raw) return raw;
+        const nm = String(aNames[i] || "").trim();
+        if (!nm) return "";
+        return FA_MATCH_ID_BY_NAME_TEAM[_nameTeamKey_(nm, teamA)] || "";
+      });
+
+      const resolvedB = [0,1,2].map(i => {
+        const raw = String(bIds[i] || "").trim();
+        if (raw) return raw;
+        const nm = String(bNames[i] || "").trim();
+        if (!nm) return "";
+        return FA_MATCH_ID_BY_NAME_TEAM[_nameTeamKey_(nm, teamB)] || "";
+      });
+
+      // Store back resolved ids so later adapt is simpler
+      m._aIds = resolvedA;
+      m._bIds = resolvedB;
+
+      const ids = resolvedA.concat(resolvedB).filter(Boolean);
+      ids.forEach(id => {
+        (FA_MATCHES_BY_ID[id] = FA_MATCHES_BY_ID[id] || []).push(m);
+      });
+    });
+
+    cb(FA_MATCH_INDEX);
+  }).catch(err => {
+    console.error(err);
+    FA_MATCH_INDEX_INFLIGHT = null;
+    FA_MATCH_INDEX = null;
+    cb(null);
+  });
+}
+
+function _adaptIndexMatchToCard_(m, focalId){
+  if (!m) return null;
+
+  const aIds = (m._aIds || m.aIds || []).slice(0,3);
+  const bIds = (m._bIds || m.bIds || []).slice(0,3);
+
+  const inA = aIds.indexOf(focalId) >= 0;
+  const inB = bIds.indexOf(focalId) >= 0;
+
+  // Default: show from teamA perspective
+  let leftTeam = m.teamA || "";
+  let rightTeam = m.teamB || "";
+  let leftIds = aIds;
+  let rightIds = bIds;
+  let res = String(m.result || "").toUpperCase();
+
+  // If the player is on teamB, flip so player is always on the left
+  if (!inA && inB){
+    leftTeam = m.teamB || "";
+    rightTeam = m.teamA || "";
+    leftIds = bIds;
+    rightIds = aIds;
+    res = _invertRes_(res);
+  }
+
+  const r = {
+    ts: m.ts || m.date || "",
+    mode: m.mode || "",
+    result: res,
+    scoreMode: m.scoreMode || "",
+    leftTeam: leftTeam,
+    rightTeam: rightTeam
+  };
+
+  function fillSide(prefix, ids){
+    for (let i=0; i<3; i++){
+      const id = String(ids[i] || "").trim();
+      const p = id ? (FA_MATCH_PLAYERS_BY_ID[id] || null) : null;
+      r[prefix + (i+1)] = p ? (p.name || "") : "";
+      r[prefix + (i+1) + "Id"] = id;
+      r[prefix + (i+1) + "Rank"] = p ? (p.rank || "") : "";
+    }
+  }
+
+  fillSide("a", leftIds);
+  fillSide("o", rightIds);
+
+  // Score parsing (match index encodes score as "A-B" OR "5 & 4")
+  const sc = String(m.score || "").trim();
+  const mm = sc.match(/^\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*$/);
+  if (mm){
+    let sL = mm[1], sR = mm[2];
+    // if flipped, swap numeric scores
+    if (!inA && inB){ const tmp = sL; sL = sR; sR = tmp; }
+    r.acesScore = sL;
+    r.oppScore = sR;
+  } else {
+    r.mpScore = sc;
+  }
+
+  return r;
+}
+
+/* ---------- match card renderer (lite, matches Stats styling) ---------- */
+function _rankClass_(raw){
+  raw = String(raw||"").trim().toUpperCase();
+  if (raw === "A" || raw === "AF") return "rank-A";
+  if (raw === "B" || raw === "BF") return "rank-B";
+  if (raw === "C" || raw === "CF") return "rank-C";
+  if (raw === "D") return "rank-D";
+  return "";
+}
+function _rankPillWithSide_(rankVal, isLeft){
+  const raw = String(rankVal||"").trim().toUpperCase();
+  if (!raw) return "";
+  const cls = _rankClass_(raw);
+  const side = isLeft ? "rank-left" : "rank-right";
+  return `<span class="rank-pill ${cls} ${side}">${esc(raw)}</span>`;
+}
+
+function prettyDate(ts){
+  if (!ts) return "";
+  try{
+    let d = null;
+    if (ts instanceof Date) d = ts;
+    else if (typeof ts === "number") d = new Date(ts);
+    else if (typeof ts === "string"){
+      const s = ts.trim();
+      // YYYY-MM-DD
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) d = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+      else d = new Date(s);
+    }
+    if (!d || !isFinite(d.getTime())) return String(ts||"").trim();
+    return d.toLocaleDateString("en-US", { month:"numeric", day:"numeric", year:"2-digit" });
+  }catch(_){ return String(ts||"").trim(); }
+}
+
+function _buildMatchCardHtmlLite(r){
+  const mode = String(r.mode||"").toLowerCase();
+  const resRaw = String(r.result||"").trim().toUpperCase();
+
+  const leftTeam  = dispTeamName(r.leftTeam  || r.teamA || "");
+  const rightTeam = dispTeamName(r.rightTeam || r.teamB || "");
+
+  const cls = (resRaw === "W" || resRaw === "WIN") ? "score-win"
+            : (resRaw === "L" || resRaw === "LOSS") ? "score-loss"
+            : "score-tie";
+
+  // players
+  const left = [
+    { n:r.a1, rr:r.a1Rank, id:r.a1Id },
+    { n:r.a2, rr:r.a2Rank, id:r.a2Id },
+    { n:r.a3, rr:r.a3Rank, id:r.a3Id }
+  ].filter(x => x.n);
+
+  const right = [
+    { n:r.o1, rr:r.o1Rank, id:r.o1Id },
+    { n:r.o2, rr:r.o2Rank, id:r.o2Id },
+    { n:r.o3, rr:r.o3Rank, id:r.o3Id }
+  ].filter(x => x.n);
+
+  function personBlock(x, isLeft){
+    const nm = String(x.n||"").trim();
+    const tm = isLeft ? leftTeam : rightTeam;
+    const linked = playerLinkHTML(nm, tm);
+    const rb = _rankPillWithSide_(x.rr, isLeft);
+    return `
+      <div class="mc-person">
+        <div class="mc-person-name">${linked || esc(nm)}</div>
+        <div class="mc-person-pills">${rb}</div>
+      </div>
+    `;
+  }
+
+  const leftHtml  = (leftTeam ? `<div class="mc-side-team">${esc(leftTeam)}</div>` : "") + left.map(x => personBlock(x, true)).join("");
+  const rightHtml = (rightTeam ? `<div class="mc-side-team">${esc(rightTeam)}</div>` : "") + right.map(x => personBlock(x, false)).join("");
+
+  // score
+  const aScore = (r.acesScore==null ? "" : String(r.acesScore)).trim();
+  const oScore = (r.oppScore==null  ? "" : String(r.oppScore )).trim();
+
+  const hasStrokePair = (aScore !== "" && oScore !== "");
+  const isStroke = (mode === "doubles") || (mode === "triples") || (String(r.scoreMode||"").toLowerCase() === "stroke") || hasStrokePair;
+
+  const mp = String(r.mpScore || aScore || oScore || "").trim();
+
+  const scoreHtml = isStroke
+    ? `<div class="mc-score mc-score-stroke ${cls}">
+         <span>${esc(aScore)}</span>
+         <span style="opacity:.5;">–</span>
+         <span>${esc(oScore)}</span>
+       </div>`
+    : `<div class="mc-score mc-score-mp ${cls}">${esc(mp || "—")}</div>`;
+
+  const dateStr = prettyDate(r.ts || r.date || "");
+  const dateHtml = dateStr ? `<div class="mc-date">${esc(dateStr)}</div>` : "";
+
+  return `
+    <div class="match-card ${cls}">
+      <div class="mc-left">${leftHtml}</div>
+      <div class="mc-mid">${dateHtml}${scoreHtml}</div>
+      <div class="mc-right">${rightHtml}</div>
+    </div>
+  `;
+}
+
+function renderMatchCardsLite(containerId, list){
+  const wrap = $(containerId);
+  if (!wrap) return;
+  const rows = (list||[]).map(r => _buildMatchCardHtmlLite(r));
+  wrap.innerHTML = rows.length ? rows.join("") : `<div class="muted" style="padding:12px; font-weight:900;">No matches yet.</div>`;
+}
+
+/* ---------- modal wiring ---------- */
+function closePlayerModal(){
+  const mm = $("playerModal");
+  if (!mm) return;
+  mm.classList.remove("show");
+  mm.setAttribute("aria-hidden","true");
+}
+
+function openPlayerModalByName(name, team){
+  const modal = $("playerModal");
+  const title = $("pmTitle");
+  const meta  = $("pmMeta");
+  const body  = $("pmBody");
+
+  name = String(name||"").trim();
+  team = String(team||"").trim() || FA_ACES_TEAM;
+
+  if (title) title.textContent = name ? (name + (team ? " • " + team : "")) : "Player";
+  if (meta) meta.textContent = "";
+  if (body) body.innerHTML = '<div class="muted" style="font-weight:900;">Loading match history…</div>';
+
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+
+  // Load league match index, resolve id, then render
+  loadLeagueMatchIndex(() => {
+    let pid = FA_MATCH_ID_BY_NAME_TEAM[_nameTeamKey_(name, team)] || "";
+    if (pid){
+      renderPlayerModalFromIndex(pid, name, team);
+      return;
+    }
+
+    // fallback: server resolver
+    gsRun("faResolvePlayerIdByName_v2", name, team).then(res => {
+      if (res && typeof res === "string") { try{ res = JSON.parse(res); }catch(_){ } }
+      pid = (res && (res.id || res.playerId)) ? String(res.id || res.playerId) : "";
+      if (!pid){
+        if (body) body.innerHTML = '<div class="muted" style="font-weight:900;">No player ID found.</div>';
+        return;
+      }
+      renderPlayerModalFromIndex(pid, name, team);
+    }).catch(() => {
+      if (body) body.innerHTML = '<div class="muted" style="font-weight:900;">Unable to load player.</div>';
+    });
+  }, false);
+}
+
+function renderPlayerModalFromIndex(pid, name, team){
+  pid = String(pid||"").trim();
+  const body = $("pmBody");
+  const meta = $("pmMeta");
+
+  if (!pid){
+    if (body) body.innerHTML = '<div class="muted" style="font-weight:900;">No matches found.</div>';
+    return;
+  }
+
+  // Update title from canonical player entry when possible
+  try{
+    const p = FA_MATCH_PLAYERS_BY_ID && FA_MATCH_PLAYERS_BY_ID[pid];
+    if (p && $("pmTitle")){
+      $("pmTitle").textContent = (p.name || name || "Player") + ((p.team || team) ? " • " + (p.team || team) : "");
+    }
+  }catch(_){}
+
+  const ms = (FA_MATCHES_BY_ID && FA_MATCHES_BY_ID[pid]) ? FA_MATCHES_BY_ID[pid].slice() : [];
+  if (!ms.length){
+    if (meta) meta.textContent = "0 matches";
+    if (body) body.innerHTML = '<div class="muted" style="font-weight:900;">No matches found.</div>';
+    return;
+  }
+
+  // Most recent first (match index is chronological)
+  ms.reverse();
+
+  const cards = ms.map(m => _adaptIndexMatchToCard_(m, pid)).filter(Boolean);
+
+  if (meta) meta.textContent = `${cards.length} match${cards.length===1?"":"es"}`;
+  if (body) body.innerHTML = '<div id="pmCards"></div>';
+  renderMatchCardsLite("pmCards", cards);
+}
+
+/* ---------- click delegation for player links ---------- */
+(function wirePlayerLinks(){
+  // close handlers
+  const closeBtn = $("pmCloseBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closePlayerModal);
+
+  const modal = $("playerModal");
+  if (modal){
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closePlayerModal();
+    });
+  }
+
+  // delegate clicks on any playerLink (table + modal cards)
+  document.addEventListener("click", function(e){
+    const a = e.target && e.target.closest ? e.target.closest("a.playerLink") : null;
+    if (!a) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const name = a.getAttribute("data-name") || (a.textContent || "");
+    const team = a.getAttribute("data-team") || FA_ACES_TEAM;
+    openPlayerModalByName(name, team);
+  }, true);
+})();
+
 
 /* ===== Rankings logic ===== */
 let rawData = [];
@@ -1861,7 +2755,7 @@ function renderTable(){
     html += `
       <tr class="${shade}">
         <td class="rank-cell">${p.rank}</td>
-        <td class="player-name">${p.name}</td>
+        <td class="player-name"><a class="playerLink" href="#" data-name="${esc(p.name)}" data-team="${esc(FA_ACES_TEAM)}">${esc(p.name)}</a></td>
         <td>${p.capt}</td>
         <td>${(Number(p.pdga) > 0 ? p.pdga : '—')}</td>
         <td>${p.league}</td>
